@@ -1,0 +1,3 @@
+[submodule "project_docs"]
+	path = project_docs
+	url = https://github.com/tawsif17/ai_study_docs.git
