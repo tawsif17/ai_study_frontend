@@ -1,7 +1,7 @@
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import type { IconComponent } from "@/components/icons"
-import Link from "next/link"
+import { AuthGatedLink } from "@/components/auth-gated-link"
 
 interface ModeCardProps {
   icon: IconComponent
@@ -22,7 +22,7 @@ export function ModeCard({ icon: Icon, title, description, href }: ModeCardProps
       </CardContent>
       <CardFooter className="p-6 pt-0">
         <Button className="w-full bg-transparent" variant="outline" asChild>
-          <Link href={href}>Start Practice</Link>
+          <AuthGatedLink href={href}>Start Practice</AuthGatedLink>
         </Button>
       </CardFooter>
     </Card>

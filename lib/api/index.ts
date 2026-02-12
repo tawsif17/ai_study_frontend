@@ -25,7 +25,11 @@ import type {
   ResultsResponse,
   ResultsJumpResponse,
   Section,
+  PracticeMode,
+  AttemptStatus,
   QuestionDetail,
+  McqOption,
+  QuestionPart,
 } from "./types"
 
 // ============================================
@@ -33,9 +37,15 @@ import type {
 // ============================================
 
 export async function register(data: RegisterRequest): Promise<RegisterResponse> {
+  const payload = {
+    ...data,
+    name: data.name?.trim(),
+    full_name: data.name?.trim(),
+    studentClass: data.class,
+  }
   return apiClient<RegisterResponse>("/auth/register", {
     method: "POST",
-    body: data,
+    body: payload,
   })
 }
 
@@ -188,9 +198,13 @@ export async function jumpToResult(
 // ============================================
 
 export async function getQuestionById(questionId: number): Promise<QuestionDetail> {
-  const response = await apiClient<
-    QuestionDetail | { question: QuestionDetail } | { question: QuestionDetail; options?: QuestionDetail["options"]; parts?: QuestionDetail["parts"]; media?: QuestionDetail["media"] }
-  >(`/questions/${questionId}`)
+  type QuestionDetailsEnvelope = {
+    question: QuestionDetail
+    options?: McqOption[]
+    parts?: (QuestionPart & { marks: number | string })[]
+    media?: unknown[]
+  }
+  const response = await apiClient<QuestionDetail | QuestionDetailsEnvelope>(`/questions/${questionId}`)
 
   if ("question" in response) {
     return {

@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Play } from "@/components/icons"
 import Link from "next/link"
+import { AuthGatedLink } from "@/components/auth-gated-link"
 
 export function HeroSection() {
   return (
@@ -24,10 +25,10 @@ export function HeroSection() {
           </p>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 px-4 sm:px-0">
             <Button size="lg" className="gap-2 w-full sm:w-auto" asChild>
-              <Link href="/subjects">
+              <AuthGatedLink href="/subjects">
                 Start practicing free
                 <ArrowRight className="h-4 w-4" />
-              </Link>
+              </AuthGatedLink>
             </Button>
             <Button size="lg" variant="outline" className="gap-2 bg-transparent w-full sm:w-auto" asChild>
               <Link href="/how-it-works">

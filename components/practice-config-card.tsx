@@ -62,6 +62,8 @@ export function PracticeConfigCard({
   const router = useRouter()
   const { isAuthenticated } = useAuth()
   const [count, setCount] = useState(mode === "MCQ" ? "10" : "2")
+  const [mixedMcqCount, setMixedMcqCount] = useState("10")
+  const [mixedCqCount, setMixedCqCount] = useState("2")
   const [language, setLanguage] = useState<Language>("bn")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -81,6 +83,15 @@ export function PracticeConfigCard({
     setError(null)
 
     try {
+      const mcqCount =
+        mode === "MCQ" ? Number.parseInt(count, 10) :
+        mode === "MIXED" ? Number.parseInt(mixedMcqCount, 10) :
+        0
+      const cqCount =
+        mode === "CQ" ? Number.parseInt(count, 10) :
+        mode === "MIXED" ? Number.parseInt(mixedCqCount, 10) :
+        0
+
       const response = await generatePractice({
         exam_type_id: examTypeId,
         subject_id: subjectId,
@@ -89,8 +100,8 @@ export function PracticeConfigCard({
           chapter_ids: chapterIds,
         },
         mode,
-        mcq_count: mode === "MCQ" ? Number.parseInt(count, 10) : 0,
-        cq_count: mode === "CQ" ? Number.parseInt(count, 10) : 0,
+        mcq_count: mcqCount,
+        cq_count: cqCount,
         language,
       })
 
@@ -103,7 +114,6 @@ export function PracticeConfigCard({
     }
   }
 
-  const countOptions = mode === "MCQ" ? mcqCountOptions : cqCountOptions
   const isSelectDisabled = isLoading
   const isStartDisabled = disabled || isLoading
 
@@ -125,22 +135,56 @@ export function PracticeConfigCard({
 
       {/* Configuration Area */}
       <div className="space-y-4 mb-5 pt-4 border-t border-border">
-        {/* Question Count Selector */}
-        <div className="space-y-2">
-          <Label className="text-xs font-medium text-muted-foreground">Number of questions</Label>
-          <Select value={count} onValueChange={setCount} disabled={isSelectDisabled}>
-            <SelectTrigger className="w-full h-9 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {countOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {mode !== "MIXED" ? (
+          <div className="space-y-2">
+            <Label className="text-xs font-medium text-muted-foreground">Number of questions</Label>
+            <Select value={count} onValueChange={setCount} disabled={isSelectDisabled}>
+              <SelectTrigger className="w-full h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(mode === "MCQ" ? mcqCountOptions : cqCountOptions).map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">MCQ questions</Label>
+              <Select value={mixedMcqCount} onValueChange={setMixedMcqCount} disabled={isSelectDisabled}>
+                <SelectTrigger className="w-full h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {mcqCountOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground">CQ questions</Label>
+              <Select value={mixedCqCount} onValueChange={setMixedCqCount} disabled={isSelectDisabled}>
+                <SelectTrigger className="w-full h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {cqCountOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </>
+        )}
 
         {/* Language Selector */}
         <div className="space-y-2">

@@ -1,4 +1,4 @@
-import Link from "next/link"
+import { AuthGatedLink } from "@/components/auth-gated-link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -80,7 +80,7 @@ export function SubjectCardDetailed({ subject }: SubjectCardDetailedProps) {
         {/* CTA Area */}
         <div className="mt-auto space-y-2">
           <Button className="w-full" asChild>
-            <Link href={`/subjects/${subject.id}`}>View practice options</Link>
+            <AuthGatedLink href={`/subjects/${subject.id}`}>View practice options</AuthGatedLink>
           </Button>
           <p className="text-xs text-muted-foreground text-center">MCQ • CQ mode</p>
         </div>

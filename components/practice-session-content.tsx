@@ -22,8 +22,12 @@ interface PracticeSessionContentProps {
 export function PracticeSessionContent({ practiceId, summary }: PracticeSessionContentProps) {
   const router = useRouter()
   const { mutate } = useSWRConfig()
-  const itemSection = summary.mode === "MCQ" || summary.mode === "CQ" ? summary.mode : "MCQ"
-  const { items, isLoading: itemsLoading } = usePracticeItems(practiceId, itemSection)
+  const hasMcq = (summary.mcq_total ?? 0) > 0
+  const hasCq = (summary.cq_total ?? 0) > 0
+  const [currentSection, setCurrentSection] = useState<"MCQ" | "CQ">(
+    summary.mode === "CQ" ? "CQ" : hasMcq ? "MCQ" : "CQ"
+  )
+  const { items, isLoading: itemsLoading } = usePracticeItems(practiceId, currentSection)
   const { answers: savedAnswers, mutate: mutateAnswers } = usePracticeAnswers(practiceId)
   
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -36,6 +40,10 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
     if (!items || items.length === 0) return
     setCurrentIndex((idx) => Math.min(idx, items.length - 1))
   }, [items?.length])
+
+  useEffect(() => {
+    setCurrentIndex(0)
+  }, [currentSection])
 
   // Initialize local answers from server
   useEffect(() => {
@@ -99,7 +107,7 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
 
   const { data: question, isLoading: questionLoading } = useSWR<QuestionDetail>(
     questionId ? ["question-detail", questionId] : null,
-    () => getQuestionById(questionId)
+    () => getQuestionById(questionId!)
   )
 
   if (itemsLoading || !items) {
@@ -139,6 +147,30 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
             {answeredCount} of {totalItems} answered
           </span>
         </div>
+        {summary.mode === "MIXED" && (
+          <div className="mb-3 flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={currentSection === "MCQ" ? "default" : "outline"}
+              onClick={() => setCurrentSection("MCQ")}
+              disabled={!hasMcq || itemsLoading}
+              className={currentSection !== "MCQ" ? "bg-transparent" : ""}
+            >
+              MCQ
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={currentSection === "CQ" ? "default" : "outline"}
+              onClick={() => setCurrentSection("CQ")}
+              disabled={!hasCq || itemsLoading}
+              className={currentSection !== "CQ" ? "bg-transparent" : ""}
+            >
+              CQ
+            </Button>
+          </div>
+        )}
         {/* Progress bar */}
         <div className="h-2 bg-muted rounded-full overflow-hidden">
           <div
@@ -158,7 +190,7 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
                 <Badge variant="secondary" className="font-semibold">
                   Q{displayNumber}
                 </Badge>
-                <Badge variant="outline">{itemSection}</Badge>
+                <Badge variant="outline">{currentSection}</Badge>
               </div>
 
               {questionLoading ? (
@@ -181,7 +213,7 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
               )}
 
               {/* Answer options for MCQ */}
-              {itemSection === "MCQ" && (
+              {currentSection === "MCQ" && (
                 <div className="space-y-2 mt-6">
                   {(question?.question_type === "MCQ" ? question.options ?? [] : []).map((opt) => {
                     const isSelected = localAnswers.get(currentItem.practice_item_id) === opt.label
@@ -218,7 +250,7 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
               )}
 
               {/* Text area for CQ */}
-              {itemSection === "CQ" && (
+              {currentSection === "CQ" && (
                 <div className="mt-6">
                   <textarea
                     className="w-full min-h-[200px] p-4 rounded-xl border border-border bg-background text-foreground resize-y"

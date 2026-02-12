@@ -4,7 +4,7 @@ import { FeaturesSection } from "@/components/features-section"
 import { ModeCard } from "@/components/mode-card"
 import { SubjectCard } from "@/components/subject-card"
 import { CheckCircle, FileText, Shuffle, Calculator, Atom, FlaskConical } from "@/components/icons"
-import Link from "next/link"
+import { AuthGatedLink } from "@/components/auth-gated-link"
 
 export default function HomePage() {
   return (
@@ -89,12 +89,12 @@ export default function HomePage() {
           <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
             Join thousands of SSC students who are already improving their scores with Shikkha Buddy.
           </p>
-          <Link
-            href="/subjects"
+          <AuthGatedLink
             className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-8 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            href="/subjects"
           >
             Get Started Free
-          </Link>
+          </AuthGatedLink>
         </div>
       </section>
     </PageShell>

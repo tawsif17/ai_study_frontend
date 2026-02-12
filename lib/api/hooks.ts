@@ -27,7 +27,12 @@ async function chaptersFetcher([, subjectId]: [string, number]): Promise<Chapter
 export function useExamTypes() {
   const { data, error, isLoading, mutate } = useSWR<ExamType[]>(
     "exam-types",
-    examTypesFetcher
+    examTypesFetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateIfStale: false,
+      dedupingInterval: 5 * 60 * 1000,
+    }
   )
   return {
     examTypes: data,
@@ -40,7 +45,12 @@ export function useExamTypes() {
 export function useSubjects(examTypeId: number | undefined) {
   const { data, error, isLoading, mutate } = useSWR<Subject[]>(
     examTypeId ? ["subjects", examTypeId] : null,
-    subjectsFetcher
+    subjectsFetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateIfStale: false,
+      dedupingInterval: 5 * 60 * 1000,
+    }
   )
   return {
     subjects: data,
@@ -53,7 +63,12 @@ export function useSubjects(examTypeId: number | undefined) {
 export function useChapters(subjectId: number | undefined) {
   const { data, error, isLoading, mutate } = useSWR<Chapter[]>(
     subjectId ? ["chapters", subjectId] : null,
-    chaptersFetcher
+    chaptersFetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateIfStale: false,
+      dedupingInterval: 5 * 60 * 1000,
+    }
   )
   return {
     chapters: data,

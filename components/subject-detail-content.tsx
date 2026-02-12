@@ -5,7 +5,7 @@ import Link from "next/link"
 import { SubjectBanner } from "@/components/subject-banner"
 import { PracticeConfigCard } from "@/components/practice-config-card"
 import { FeatureCard } from "@/components/feature-card"
-import { ListChecks, FileText, Zap, BookCheck, Target, ArrowLeft, Calculator, Atom, FlaskConical } from "@/components/icons"
+import { ListChecks, FileText, Shuffle, Zap, BookCheck, Target, ArrowLeft, Calculator, Atom, FlaskConical } from "@/components/icons"
 import { useChapters } from "@/lib/api/hooks"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent } from "@/components/ui/card"
@@ -174,7 +174,7 @@ export function SubjectDetailContent({ subjectId, subjectName, examTypeId }: Sub
       {/* Practice Mode Cards Section */}
       <section className="py-8 pb-16 bg-background">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             <PracticeConfigCard
               mode="MCQ"
               subjectId={subjectId}
@@ -199,6 +199,19 @@ export function SubjectDetailContent({ subjectId, subjectName, examTypeId }: Sub
               tag="Board exam style"
               iconBgClass={styles.cqIconBg}
               iconTextClass={styles.cqIconText}
+              disabled={selectedChapterIds.length === 0}
+            />
+            <PracticeConfigCard
+              mode="MIXED"
+              subjectId={subjectId}
+              examTypeId={examTypeId}
+              chapterIds={selectedChapterIds}
+              icon={Shuffle}
+              title="Mixed Practice"
+              subtitle="Combined MCQ + CQ practice in one session."
+              tag="Exam simulation"
+              iconBgClass="bg-secondary"
+              iconTextClass="text-secondary-foreground"
               disabled={selectedChapterIds.length === 0}
             />
           </div>

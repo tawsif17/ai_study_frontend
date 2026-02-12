@@ -23,16 +23,12 @@ export class ApiClientError extends Error {
 
 export function formatApiError(error: unknown): string {
   if (error instanceof ApiClientError) {
-    const message = error.message || "Something went wrong."
-    if (error.code) {
-      return `${error.code}: ${message}`
-    }
-    return `${error.status}: ${message}`
+    return error.message || "Something went wrong."
   }
   if (error instanceof Error && error.message) {
-    return `UNKNOWN_ERROR: ${error.message}`
+    return error.message
   }
-  return "UNKNOWN_ERROR: An unexpected error occurred."
+  return "Something went wrong."
 }
 
 interface RequestOptions {
@@ -111,10 +107,19 @@ export async function apiClient<T>(
   if (!response.ok) {
     let error: ApiError
     try {
-      error = await response.json()
+      const payload = await response.json()
+      const message =
+        (typeof payload?.message === "string" && payload.message) ||
+        (typeof payload?.error?.message === "string" && payload.error.message) ||
+        (typeof payload?.data?.message === "string" && payload.data.message) ||
+        (typeof payload?.msg === "string" && payload.msg)
+      error = {
+        code: typeof payload?.code === "string" ? payload.code : undefined,
+        message: message || `Request failed with status ${response.status}`,
+      }
     } catch {
       error = {
-        code: "UNKNOWN_ERROR",
+        code: undefined,
         message: `Request failed with status ${response.status}`,
       }
     }

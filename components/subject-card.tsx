@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card"
 import type { IconComponent } from "@/components/icons"
-import Link from "next/link"
+import { AuthGatedLink } from "@/components/auth-gated-link"
 
 interface SubjectCardProps {
   icon: IconComponent
@@ -12,7 +12,7 @@ interface SubjectCardProps {
 
 export function SubjectCard({ icon: Icon, title, description, color, slug }: SubjectCardProps) {
   return (
-    <Link href={`/subjects/${slug}`} className="block">
+    <AuthGatedLink href={`/subjects/${slug}`} className="block">
       <Card className="border-border bg-card hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer overflow-hidden">
         <div className={`h-2 ${color}`} />
         <CardContent className="p-6">
@@ -23,6 +23,6 @@ export function SubjectCard({ icon: Icon, title, description, color, slug }: Sub
           <p className="text-sm text-muted-foreground">{description}</p>
         </CardContent>
       </Card>
-    </Link>
+    </AuthGatedLink>
   )
 }
