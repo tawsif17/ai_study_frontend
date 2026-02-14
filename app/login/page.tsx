@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { GraduationCap } from "@/components/icons"
+import { BrandLogo } from "@/components/brand-logo"
 import { useAuth } from "@/lib/auth-context"
 import { formatApiError } from "@/lib/api/client"
 
@@ -48,9 +48,7 @@ export default function LoginPage() {
         <Card className="w-full max-w-md border-border">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <GraduationCap className="h-6 w-6 text-primary" />
-              </div>
+              <BrandLogo variant="auth" priority />
             </div>
             <CardTitle className="text-2xl">Welcome back</CardTitle>
             <CardDescription>

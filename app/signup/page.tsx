@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { GraduationCap } from "@/components/icons"
+import { BrandLogo } from "@/components/brand-logo"
 import { useAuth } from "@/lib/auth-context"
 import { formatApiError } from "@/lib/api/client"
 
@@ -58,9 +58,7 @@ export default function SignUpPage() {
         <Card className="w-full max-w-md border-border">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <GraduationCap className="h-6 w-6 text-primary" />
-              </div>
+              <BrandLogo variant="auth" priority />
             </div>
             <CardTitle className="text-2xl">Create an account</CardTitle>
             <CardDescription>

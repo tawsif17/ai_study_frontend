@@ -13,7 +13,7 @@ export const metadata = {
 
 const freePlan = {
   name: "Free",
-  price: "০",
+  price: "0",
   description: "Start learning with basic practice.",
   features: [
     "Daily limited questions (10–15 per day)",
@@ -28,7 +28,8 @@ const freePlan = {
 
 const proPlan = {
   name: "Pro",
-  price: "৪৯৯",
+  oldPrice: "499",
+  price: "0",
   period: " / month",
   badge: "Most popular",
   description: "Everything you need to practice seriously and improve consistently.",
@@ -113,8 +114,13 @@ export default function PricingPage() {
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
               <div className="text-center mb-4 md:mb-6">
-                <span className="text-3xl md:text-4xl font-bold text-foreground">৳{proPlan.price}</span>
-                <span className="text-sm md:text-base text-muted-foreground">{proPlan.period}</span>
+                <div>
+                  <span className="text-3xl md:text-4xl font-bold text-foreground">৳{proPlan.price}</span>
+                </div>
+                <div className="mt-1 flex items-end justify-center gap-1">
+                  <span className="text-3xl md:text-4xl font-bold text-black line-through decoration-red-500">৳{proPlan.oldPrice}</span>
+                  <span className="text-sm md:text-base text-muted-foreground">{proPlan.period}</span>
+                </div>
               </div>
               <ul className="space-y-2 md:space-y-3 mb-4 md:mb-6 flex-1">
                 {proPlan.features.map((feature) => (
