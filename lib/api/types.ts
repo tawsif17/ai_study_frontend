@@ -17,17 +17,28 @@ export interface ApiError {
 // ============================================
 
 export interface RegisterRequest {
-  name: string
   email: string
   password: string
+  fullName: string
   school: string
   city: string
-  class: number
+  studentClass: number
 }
 
 export interface RegisterResponse {
-  id: number
-  email: string
+  user: {
+    id: string
+    email: string
+    full_name: string
+    role: string
+    plan_tier: string
+    school: string
+    city: string
+    student_class: number
+    created_at: string
+    updated_at: string
+  }
+  token: string
 }
 
 export interface LoginRequest {

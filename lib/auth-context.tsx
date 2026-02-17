@@ -2,13 +2,19 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react"
 import { setAuthToken, clearAuthToken, isAuthenticated as checkAuth } from "./api/client"
-import { login as apiLogin, register as apiRegister, type LoginRequest, type RegisterRequest } from "./api"
+import {
+  login as apiLogin,
+  register as apiRegister,
+  type LoginRequest,
+  type RegisterRequest,
+  type RegisterResponse,
+} from "./api"
 
 interface AuthContextValue {
   isAuthenticated: boolean
   isLoading: boolean
   login: (data: LoginRequest) => Promise<void>
-  register: (data: RegisterRequest) => Promise<{ id: number; email: string }>
+  register: (data: RegisterRequest) => Promise<RegisterResponse>
   logout: () => void
 }
 

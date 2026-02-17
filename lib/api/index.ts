@@ -38,10 +38,12 @@ import type {
 
 export async function register(data: RegisterRequest): Promise<RegisterResponse> {
   const payload = {
-    ...data,
-    name: data.name?.trim(),
-    full_name: data.name?.trim(),
-    studentClass: data.class,
+    email: data.email,
+    password: data.password,
+    fullName: data.fullName.trim(),
+    school: data.school,
+    city: data.city,
+    studentClass: data.studentClass,
   }
   return apiClient<RegisterResponse>("/auth/register", {
     method: "POST",
