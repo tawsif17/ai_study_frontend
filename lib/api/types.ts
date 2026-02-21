@@ -26,6 +26,15 @@ export interface RegisterRequest {
 }
 
 export interface RegisterResponse {
+  message: string
+}
+
+export interface LoginRequest {
+  email: string
+  password: string
+}
+
+export interface LoginResponse {
   user: {
     id: string
     email: string
@@ -35,19 +44,28 @@ export interface RegisterResponse {
     school: string
     city: string
     student_class: number
+    email_verified_at: string
+    last_login_at: string | null
     created_at: string
     updated_at: string
   }
   token: string
 }
 
-export interface LoginRequest {
-  email: string
-  password: string
+export interface VerifyEmailRequest {
+  token: string
 }
 
-export interface LoginResponse {
-  token: string
+export interface VerifyEmailResponse {
+  message: string
+}
+
+export interface ResendVerificationRequest {
+  email: string
+}
+
+export interface ResendVerificationResponse {
+  message: string
 }
 
 // ============================================

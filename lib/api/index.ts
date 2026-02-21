@@ -11,6 +11,10 @@ import type {
   RegisterResponse,
   LoginRequest,
   LoginResponse,
+  VerifyEmailRequest,
+  VerifyEmailResponse,
+  ResendVerificationRequest,
+  ResendVerificationResponse,
   ExamType,
   Subject,
   Chapter,
@@ -53,6 +57,22 @@ export async function register(data: RegisterRequest): Promise<RegisterResponse>
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
   return apiClient<LoginResponse>("/auth/login", {
+    method: "POST",
+    body: data,
+  })
+}
+
+export async function verifyEmail(data: VerifyEmailRequest): Promise<VerifyEmailResponse> {
+  return apiClient<VerifyEmailResponse>("/auth/verify-email", {
+    method: "POST",
+    body: data,
+  })
+}
+
+export async function resendVerification(
+  data: ResendVerificationRequest
+): Promise<ResendVerificationResponse> {
+  return apiClient<ResendVerificationResponse>("/auth/resend-verification", {
     method: "POST",
     body: data,
   })
