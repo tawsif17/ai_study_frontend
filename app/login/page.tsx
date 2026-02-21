@@ -4,7 +4,7 @@ import React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { PageShell } from "@/components/page-shell"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,21 +12,25 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { GraduationCap } from "@/components/icons"
 import { useAuth } from "@/lib/auth-context"
-import { formatApiError } from "@/lib/api/client"
+import { ApiClientError, formatApiError } from "@/lib/api/client"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { login } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isUnverified, setIsUnverified] = useState(false)
   const [formData, setFormData] = useState({
-    email: "",
+    email: searchParams.get("email") ?? "",
     password: "",
   })
+  const registered = searchParams.get("registered") === "true"
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setIsUnverified(false)
     setIsLoading(true)
 
     try {
@@ -36,6 +40,9 @@ export default function LoginPage() {
       })
       router.push("/subjects")
     } catch (err) {
+      if (err instanceof ApiClientError && err.status === 401 && err.message === "Email verification required") {
+        setIsUnverified(true)
+      }
       setError(formatApiError(err))
     } finally {
       setIsLoading(false)
@@ -59,10 +66,24 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {registered && (
+                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-700">
+                  Registration successful. Please check your email to verify your account.
+                </div>
+              )}
+
               {error && (
                 <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
                   {error}
                 </div>
+              )}
+
+              {isUnverified && (
+                <Button asChild variant="outline" className="w-full">
+                  <Link href={`/resend-verification?email=${encodeURIComponent(formData.email)}`}>
+                    Resend verification email
+                  </Link>
+                </Button>
               )}
 
               <div className="space-y-2">

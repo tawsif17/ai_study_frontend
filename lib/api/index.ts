@@ -11,6 +11,10 @@ import type {
   RegisterResponse,
   LoginRequest,
   LoginResponse,
+  VerifyEmailRequest,
+  VerifyEmailResponse,
+  ResendVerificationRequest,
+  ResendVerificationResponse,
   ExamType,
   Subject,
   Chapter,
@@ -38,10 +42,12 @@ import type {
 
 export async function register(data: RegisterRequest): Promise<RegisterResponse> {
   const payload = {
-    ...data,
-    name: data.name?.trim(),
-    full_name: data.name?.trim(),
-    studentClass: data.class,
+    email: data.email,
+    password: data.password,
+    fullName: data.fullName.trim(),
+    school: data.school,
+    city: data.city,
+    studentClass: data.studentClass,
   }
   return apiClient<RegisterResponse>("/auth/register", {
     method: "POST",
@@ -51,6 +57,22 @@ export async function register(data: RegisterRequest): Promise<RegisterResponse>
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
   return apiClient<LoginResponse>("/auth/login", {
+    method: "POST",
+    body: data,
+  })
+}
+
+export async function verifyEmail(data: VerifyEmailRequest): Promise<VerifyEmailResponse> {
+  return apiClient<VerifyEmailResponse>("/auth/verify-email", {
+    method: "POST",
+    body: data,
+  })
+}
+
+export async function resendVerification(
+  data: ResendVerificationRequest
+): Promise<ResendVerificationResponse> {
+  return apiClient<ResendVerificationResponse>("/auth/resend-verification", {
     method: "POST",
     body: data,
   })

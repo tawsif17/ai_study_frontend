@@ -36,15 +36,15 @@ export default function SignUpPage() {
 
     try {
       await register({
-        name: formData.name,
         email: formData.email,
         password: formData.password,
+        fullName: formData.name,
         school: formData.school,
         city: formData.city,
-        class: Number.parseInt(formData.class, 10),
+        studentClass: Number.parseInt(formData.class, 10),
       })
       // Registration successful, redirect to login
-      router.push("/login?registered=true")
+      router.push(`/login?registered=true&email=${encodeURIComponent(formData.email)}`)
     } catch (err) {
       setError(formatApiError(err))
     } finally {

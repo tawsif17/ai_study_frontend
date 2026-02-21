@@ -17,17 +17,16 @@ export interface ApiError {
 // ============================================
 
 export interface RegisterRequest {
-  name: string
   email: string
   password: string
+  fullName: string
   school: string
   city: string
-  class: number
+  studentClass: number
 }
 
 export interface RegisterResponse {
-  id: number
-  email: string
+  message: string
 }
 
 export interface LoginRequest {
@@ -36,7 +35,37 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
+  user: {
+    id: string
+    email: string
+    full_name: string
+    role: string
+    plan_tier: string
+    school: string
+    city: string
+    student_class: number
+    email_verified_at: string
+    last_login_at: string | null
+    created_at: string
+    updated_at: string
+  }
   token: string
+}
+
+export interface VerifyEmailRequest {
+  token: string
+}
+
+export interface VerifyEmailResponse {
+  message: string
+}
+
+export interface ResendVerificationRequest {
+  email: string
+}
+
+export interface ResendVerificationResponse {
+  message: string
 }
 
 // ============================================
