@@ -43,7 +43,8 @@ const proPlan = {
     "Bookmark & revision mode",
     "Faster question generation",
   ],
-  cta: "Upgrade to Pro",
+  cta: "Request Pro Upgrade",
+  helperText: "In-app plan upgrade API is not available in current backend contracts.",
 }
 
 export default function PricingPage() {
@@ -125,8 +126,11 @@ export default function PricingPage() {
                 ))}
               </ul>
               <Button className="w-full" asChild>
-                <Link href="/subjects">{proPlan.cta}</Link>
+                <Link href="/?contact=upgrade">
+                  {proPlan.cta}
+                </Link>
               </Button>
+              <p className="text-[10px] md:text-xs text-muted-foreground text-center mt-2">{proPlan.helperText}</p>
             </CardContent>
           </Card>
         </div>

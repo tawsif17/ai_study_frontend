@@ -85,13 +85,9 @@ export async function apiClient<T>(
 
   if (requiresAuth) {
     const token = getAuthToken()
-    if (!token) {
-      throw new ApiClientError(
-        { code: "UNAUTHORIZED", message: "Authentication required" },
-        401
-      )
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`
     }
-    headers["Authorization"] = `Bearer ${token}`
   }
 
   // Make request

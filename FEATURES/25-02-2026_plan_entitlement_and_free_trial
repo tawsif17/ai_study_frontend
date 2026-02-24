@@ -1,0 +1,148 @@
+# Plan Entitlement and Free Trial Frontend Brief
+
+## Status
+proposed
+
+## Problem
+Frontend must align with updated backend entitlement and free-trial contracts without assuming any missing plan-management APIs. Access control and user messaging must be driven by contract-defined auth payloads and entitlement error responses.
+
+## Scope
+- Contract-aligned UX for login, email verification, subject/question access, and practice generation entitlement blocks.
+- Surface free/pro plan behavior using existing API responses only.
+- Handle entitlement-specific `403` responses from practice generation with distinct UI messages.
+- Route free users to `/pricing` when they attempt pro-only features.
+
+## Out of Scope
+- Any new billing, checkout, payment status, or subscription lifecycle endpoints.
+- Any backend contract changes.
+- Any feature depending on non-existent plan/trial API routes (contract gap).
+- In-app subscription mutation to pro (no contract endpoint exists for this yet).
+
+## Screens and Routes
+- `/login`
+  - Submit credentials.
+  - Handle unverified-account flow (`401` with `Email verification required`) and resend verification CTA.
+- `/signup`
+  - Register and show "check your email" success state.
+  - Link to verification help/resend flow.
+- `/verify-email?token=<token>` (new frontend route required by contract note)
+  - Read `token` query param and verify email.
+- `/subjects`
+  - Auth-required subject list; unauthorized redirects or auth error state.
+- `/subjects/[slug]`
+  - Auth-required question discovery and practice setup entry.
+- `/practice/[id]`
+  - Practice session route entered only after successful generation.
+- `/pricing`
+  - Destination route for upgrade CTA when entitlement blocks occur.
+  - Shows request-upgrade path only; cannot finalize upgrade in-app without backend endpoint.
+
+## UX States
+- `/login`
+  - `loading`: disable submit and show pending state.
+  - `error`: invalid credentials (`400/401`), unverified email (`401` specific message).
+  - `success`: store token/user and navigate to authenticated area.
+  - `empty`: initial untouched form.
+- `/signup`
+  - `loading`: disable submit during register call.
+  - `error`: validation or conflict (`400/409`) and unexpected failure (`500`).
+  - `success`: confirmation that verification email was sent.
+  - `empty`: initial form.
+- `/verify-email`
+  - `loading`: verifying token.
+  - `error`: invalid/expired/used/already-verified (`400`) and rate-limit (`429`).
+  - `success`: show brief success confirmation, then auto-redirect to `/login`.
+  - `empty`: missing `token` query param (client-side invalid state).
+- `/subjects`
+  - `loading`: skeleton/list loader.
+  - `error`: unauthorized (`401`) or server error.
+  - `success`: subject list rendered.
+  - `empty`: no subjects for selected exam type.
+- `/subjects/[slug]` (question/practice setup)
+  - `loading`: fetch questions/setup data.
+  - `error`: unauthorized (`401`), bad filter (`400`), not found (`404`).
+  - `success`: valid setup form and generate action.
+  - `empty`: no questions in selected filter scope.
+- Practice generation action (from `/subjects/[slug]`)
+  - `loading`: disable generate button and show progress.
+  - `error`: `400/401/404` plus entitlement `403` mapped to message-specific UI and upgrade CTA.
+  - `pro-gated`: free users attempting CQ/MIXED are sent to `/pricing`.
+  - `success`: navigate to `/practice/{practice_session_id}`; show partial-generation warning when returned.
+  - `empty`: no setup selected yet.
+
+## Exact Endpoints Used (from `project_docs/CONTRACTS/api.md`)
+- `POST /api/auth/register` (signup)
+- `POST /api/auth/login` (login)
+- `GET /api/auth/me` (hydrate auth + `plan_tier`)
+- `POST /api/auth/verify-email` (verify route)
+- `POST /api/auth/resend-verification` (unverified flow)
+- `GET /api/subjects` (authenticated subjects listing)
+- `GET /api/questions` (authenticated question discovery)
+- `POST /api/practice/generate` (entitlement-aware session generation)
+
+No additional plan/trial endpoint exists in current contracts; frontend must not call any invented `/plan`, `/trial`, or billing APIs.
+No dedicated endpoint exists to upgrade a subscription to pro from frontend in this phase.
+
+## Validation Rules (mirror schemas)
+- `POST /api/auth/register`
+  - Follow `project_docs/CONTRACTS/schemas/auth.register.post.json` exactly (body shape, required fields, no extra properties).
+- `POST /api/auth/login` (`schemas/auth.login.post.json`)
+  - Body required: `email:string`, `password:string`.
+  - No extra body/query properties.
+- `GET /api/auth/me` (`schemas/auth.me.get.json`)
+  - No query/body fields.
+  - Response user includes `plan_tier` enum: `free | pro`.
+- `POST /api/auth/verify-email` (`schemas/auth.verify-email.post.json`)
+  - Body required: `token:string`.
+  - No additional properties.
+- `POST /api/auth/resend-verification` (`schemas/auth.resend-verification.post.json`)
+  - Body required: `email:string`.
+  - No additional properties.
+- `GET /api/subjects` (`schemas/subjects.get.json`)
+  - Query optional: `exam_type:string` (defaults handled server-side).
+  - No additional query/body properties.
+- `GET /api/questions` (`schemas/questions.list.get.json`)
+  - Query required: `exam_type_id:integer`, `subject_id:integer`.
+  - Query optional: `chapter_id:integer`, `question_type:string`, `language:string`.
+  - No additional query/body properties.
+- `POST /api/practice/generate` (`schemas/practice.generate.post.json`)
+  - Body required: `exam_type_id:integer`, `subject_id:integer`, `mode:string`, `selection:object`.
+  - `mode`: backend allows `MCQ|CQ|MIXED` (case-normalized server-side).
+  - `selection.type`: backend allows `CHAPTERS|FULL_SYLLABUS` (case-normalized server-side).
+  - `selection.chapter_ids`: integer array, `minItems: 1` when provided.
+  - Optional numeric fields accepted by contract: `mcq_count`, `mcqCount`, `mcq_requested`, `cq_count`, `cqCount`, `cq_requested`.
+  - No additional body/query properties.
+
+## Tests To Add
+- Contract-mapper unit tests
+  - Map `POST /api/practice/generate` `403` messages by exact backend message string to correct entitlement UI states and upgrade CTA behavior.
+  - Ensure non-entitlement errors (`400/401/404/500`) use generic error handling.
+- Auth flow tests
+  - Login handles unverified `401` with resend-verification path.
+  - Verify-email page handles `200`, `400`, and `429`.
+  - Resend-verification handles `200`, `400`, `429`, `500`.
+- Data access guard tests
+  - `/api/subjects` and `/api/questions` unauthorized (`401`) flow in UI.
+- Request validation tests (frontend payload builder)
+  - Reject missing required fields per schema before request.
+  - Reject additional properties not allowed by schema contracts.
+  - Enforce required query params for `/api/questions`.
+- Integration tests (route level)
+  - `/subjects` and `/subjects/[slug]` loading/empty/error/success states.
+  - Practice generation success navigates to `/practice/[id]`.
+  - Practice generation `warning` payload is surfaced to user.
+
+## Acceptance Criteria
+- Frontend only uses endpoints listed above and none outside current contracts.
+- All listed routes implement loading/empty/error/success states.
+- Payload/query shapes match schema constraints.
+- Entitlement-specific `403` responses from practice generation produce distinct UX outcomes.
+- Free-user attempts to access pro-only features always expose a `/pricing` path.
+- Test coverage includes auth, entitlement, and guarded data-access paths.
+
+## Risks
+- Contract provides entitlement outcomes by message text, not stable machine-readable error codes; UI mapping may be brittle if backend wording changes.
+- No dedicated plan/trial endpoint means plan state visibility is limited to `plan_tier` and request-time entitlement failures.
+
+## Open Questions
+- None.

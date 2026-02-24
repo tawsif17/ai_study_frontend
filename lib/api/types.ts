@@ -1,11 +1,6 @@
 /**
- * Backend API Types
- * Matches the backend contract in docs/BACKEND_INTEGRATION_BRIEF.md
+ * Backend API types aligned with project_docs/CONTRACTS/schemas/*
  */
-
-// ============================================
-// ERROR FORMAT
-// ============================================
 
 export interface ApiError {
   code?: string
@@ -15,6 +10,21 @@ export interface ApiError {
 // ============================================
 // AUTH TYPES
 // ============================================
+
+export interface AuthUser {
+  id: string
+  email: string
+  full_name: string
+  role: string
+  plan_tier: "free" | "pro"
+  school: string | null
+  city: string | null
+  student_class: number | null
+  email_verified_at: string | null
+  last_login_at: string | null
+  created_at: string
+  updated_at: string
+}
 
 export interface RegisterRequest {
   email: string
@@ -26,19 +36,7 @@ export interface RegisterRequest {
 }
 
 export interface RegisterResponse {
-  user: {
-    id: string
-    email: string
-    full_name: string
-    role: string
-    plan_tier: string
-    school: string
-    city: string
-    student_class: number
-    created_at: string
-    updated_at: string
-  }
-  token: string
+  message: string
 }
 
 export interface LoginRequest {
@@ -47,7 +45,28 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
+  user: AuthUser
   token: string
+}
+
+export interface AuthMeResponse {
+  user: AuthUser
+}
+
+export interface VerifyEmailRequest {
+  token: string
+}
+
+export interface VerifyEmailResponse {
+  message: string
+}
+
+export interface ResendVerificationRequest {
+  email: string
+}
+
+export interface ResendVerificationResponse {
+  message: string
 }
 
 // ============================================
@@ -67,14 +86,55 @@ export interface ExamType {
 export interface Subject {
   id: number
   name: string
-  exam_type_id?: number
-  exam_type_code?: string
-  exam_type_name?: string
+  exam_type_id: number
+  exam_type_code: string
+  exam_type_name: string
+}
+
+export interface SubjectsResponse {
+  exam_type: string
+  subjects: Subject[]
 }
 
 export interface Chapter {
   id: number
+  subject_id: number
   chapter_name: string
+  order_no: number | null
+}
+
+export interface ChaptersResponse {
+  subject_id: string
+  chapters: Chapter[]
+}
+
+// ============================================
+// QUESTION TYPES
+// ============================================
+
+export interface QuestionsListRequest {
+  exam_type_id: number
+  subject_id: number
+  chapter_id?: number
+  question_type?: string
+  language?: string
+}
+
+export interface QuestionListItem {
+  id: number
+  exam_type_id: number
+  subject_id: number
+  chapter_id: number | null
+  question_type: string
+  stem_text: string | null
+  difficulty: number | null
+  source: string | null
+  language: string
+  created_at: string
+}
+
+export interface QuestionsListResponse {
+  questions: QuestionListItem[]
 }
 
 // ============================================
@@ -82,7 +142,7 @@ export interface Chapter {
 // ============================================
 
 export type PracticeMode = "MCQ" | "CQ" | "MIXED"
-export type SelectionType = "CHAPTERS"
+export type SelectionType = "CHAPTERS" | "FULL_SYLLABUS"
 export type AttemptStatus = "IN_PROGRESS" | "SUBMITTED"
 export type Section = "MCQ" | "CQ"
 export type AnswerType = "MCQ" | "CQ"
@@ -91,20 +151,28 @@ export type Language = "bn" | "en"
 export interface PracticeGenerateRequest {
   exam_type_id: number
   subject_id: number
+  mode: PracticeMode
   selection: {
     type: SelectionType
-    chapter_ids: number[]
+    chapter_ids?: number[]
   }
-  mode: PracticeMode
-  mcq_count: number
-  cq_count: number
-  language: Language
+  mcq_count?: number
+  mcqCount?: number
+  mcq_requested?: number
+  cq_count?: number
+  cqCount?: number
+  cq_requested?: number
+  language?: string
 }
 
 export interface PracticeGenerateResponse {
   practice_session_id: number
   mcq_total: number
   cq_total: number
+  warning?: {
+    code: string
+    message: string
+  }
 }
 
 export interface PracticeSummaryResponse {
@@ -124,7 +192,7 @@ export interface PracticeItem {
   question_id: number
 }
 
-export interface PracticeItemsResponse extends Array<PracticeItem> {}
+export type PracticeItemsResponse = PracticeItem[]
 
 // ============================================
 // ANSWER TYPES
