@@ -8,6 +8,7 @@ export * from "./contracts"
 
 import { apiClient } from "./client"
 import {
+  validateContactSubmitRequest,
   validateLoginRequest,
   validatePracticeGenerateRequest,
   validateQuestionsListRequest,
@@ -19,6 +20,8 @@ import type {
   AuthMeResponse,
   Chapter,
   ChaptersResponse,
+  ContactSubmitRequest,
+  ContactSubmitResponse,
   ExamType,
   GetAnswersResponse,
   LoginRequest,
@@ -108,6 +111,22 @@ export async function upgradeToPro(): Promise<UpgradeToProResponse> {
     method: "POST",
     body: {},
     requiresAuth: true,
+  })
+}
+
+export async function submitContact(
+  data: ContactSubmitRequest
+): Promise<ContactSubmitResponse> {
+  const payload = validateContactSubmitRequest({
+    name: data.name.trim(),
+    email: data.email.trim(),
+    message: data.message.trim(),
+  })
+
+  return apiClient<ContactSubmitResponse>("/contact", {
+    method: "POST",
+    body: payload,
+    includeAuth: true,
   })
 }
 

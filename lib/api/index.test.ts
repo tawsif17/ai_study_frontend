@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { resendVerification, upgradeToPro, verifyEmail } from "./index"
+import { resendVerification, submitContact, upgradeToPro, verifyEmail } from "./index"
 import { apiClient } from "./client"
 
 vi.mock("./client", () => ({
@@ -47,6 +47,28 @@ describe("auth API contract calls", () => {
       method: "POST",
       body: {},
       requiresAuth: true,
+    })
+  })
+
+  it("calls contact endpoint with exact contract payload", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce({
+      message: "Contact message submitted successfully.",
+    })
+
+    await submitContact({
+      name: " Student Name ",
+      email: " student@example.com ",
+      message: " I need help with the platform. ",
+    })
+
+    expect(apiClient).toHaveBeenCalledWith("/contact", {
+      method: "POST",
+      body: {
+        name: "Student Name",
+        email: "student@example.com",
+        message: "I need help with the platform.",
+      },
+      includeAuth: true,
     })
   })
 })

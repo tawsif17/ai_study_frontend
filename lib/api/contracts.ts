@@ -1,6 +1,7 @@
 import { z } from "zod"
 import { ApiClientError } from "./client"
 import type {
+  ContactSubmitRequest,
   LoginRequest,
   PracticeGenerateRequest,
   QuestionsListRequest,
@@ -46,6 +47,14 @@ const verifyEmailRequestSchema = z
 const resendVerificationRequestSchema = z
   .object({
     email: z.string().min(1),
+  })
+  .strict()
+
+const contactSubmitRequestSchema = z
+  .object({
+    name: z.string().min(1),
+    email: z.string().min(1),
+    message: z.string().min(1),
   })
   .strict()
 
@@ -112,6 +121,14 @@ export function validateResendVerificationRequest(
   input: ResendVerificationRequest
 ): ResendVerificationRequest {
   const parsed = resendVerificationRequestSchema.safeParse(input)
+  if (!parsed.success) {
+    throw new Error(zodMessage(parsed.error))
+  }
+  return parsed.data
+}
+
+export function validateContactSubmitRequest(input: ContactSubmitRequest): ContactSubmitRequest {
+  const parsed = contactSubmitRequestSchema.safeParse(input)
   if (!parsed.success) {
     throw new Error(zodMessage(parsed.error))
   }

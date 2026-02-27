@@ -1,0 +1,135 @@
+# Contact Form Frontend Brief
+
+## Status
+proposed
+
+## Problem
+Frontend needs a contract-aligned contact form flow that submits user messages to the backend without inventing any additional API routes or payload fields.
+
+## Scope
+- Add a dedicated contact form screen for message submission.
+- Support anonymous submission, with optional bearer token attached when the user is already authenticated.
+- Prefill authenticated users' `name` and `email` from the logged-in profile and keep those two fields non-editable in the form.
+- Implement request/response handling strictly against the current backend contract.
+
+## Out of Scope
+- Any backend contract changes.
+- Any inbox, message history, or admin review UI.
+- Any new API routes beyond those defined in `project_docs/CONTRACTS/api.md`.
+
+## Screens/routes
+- `/contact`
+  - Render a form with `name`, `email`, and `message`.
+  - Submit to the backend contract-defined contact endpoint.
+  - Stay on the same route for validation errors, rate-limit errors, and success confirmation.
+- Shared entry points into `/contact` (header/footer/CTA placement) are implementation details and must not introduce extra routes or endpoint calls.
+
+## UX states (loading/empty/error/success)
+
+### Route: `/contact`
+- `empty`
+  - Initial untouched form state.
+  - Fields visible: `name`, `email`, `message`.
+  - For authenticated users, `name` and `email` are prefilled from the logged-in user and are non-editable.
+  - For unauthenticated users, `name` and `email` are editable inputs.
+  - Submit action is available once the client-side form is valid.
+- `loading`
+  - While `POST /api/contact` is in flight.
+  - Disable submit to prevent duplicate requests.
+  - Preserve entered values while request is pending.
+- `error`
+  - `400`: show the backend validation message inline or in a form-level error state.
+  - Contract examples and notes indicate messages such as:
+    - `Name is required`
+    - `Invalid email address`
+    - `Message is required`
+  - `429`: show the backend rate-limit message and keep the form data intact.
+  - `500` or network failure: show a generic retryable error state; do not clear user input.
+- `success`
+  - `201` with success payload from contract.
+  - Show confirmation using the returned `data.message`.
+  - Clear or reset the form only after the success state is confirmed in the UI.
+
+## Exact endpoints used
+Source: `project_docs/CONTRACTS/api.md`
+
+1. `POST /api/contact`
+- Auth: none required
+- Auth note from contract: `Authorization` is optional. If a valid bearer token is present, the backend associates the message to that user. Missing, malformed, invalid, or expired tokens do not block submission.
+- Request schema: `project_docs/CONTRACTS/schemas/contact.submit.post.json#/properties/request`
+- Success schema: `project_docs/CONTRACTS/schemas/contact.submit.post.json#/properties/response`
+- Success status: `201`
+- Error statuses: `400`, `429`, `500`
+- Example request: `project_docs/CONTRACTS/examples/contact.submit.post.request.json`
+- Example success response: `project_docs/CONTRACTS/examples/contact.submit.post.response.json`
+- Example validation error: `project_docs/CONTRACTS/examples/contact.submit.post.error.json`
+- Example rate-limit error: `project_docs/CONTRACTS/examples/contact.submit.post.error.rate-limit.json`
+
+No other backend endpoint is required by the current contact form contract.
+
+## Validation rules (mirror schemas)
+Source:
+- `project_docs/CONTRACTS/schemas/contact.submit.post.json`
+
+1. Request shape
+- Request body is required.
+- Request query must be an empty object (`additionalProperties: false`).
+- No additional top-level request fields are allowed beyond `body` and `query`.
+
+2. Body fields
+- `name` is required.
+- `name` type: `string`.
+- `email` is required.
+- `email` type: `string`.
+- `message` is required.
+- `message` type: `string`.
+- No additional body properties are allowed (`additionalProperties: false`).
+
+3. Response handling
+- Success payload requires:
+  - `success: true`
+  - `data.message: string`
+- Error payload follows common error contract from `project_docs/CONTRACTS/api.md`:
+  - `success: false`
+  - `error.message: string`
+
+4. Client-side validation constraints
+- Mirror schema constraints exactly:
+  - require presence of `name`, `email`, and `message`
+  - send string values only
+  - send no extra fields
+- For authenticated users, the frontend should source `name` and `email` from the current authenticated user profile while still submitting the same contract-defined fields.
+- Do not add frontend-only payload fields such as `subject`, `phone`, or metadata, because they are not in the contract schema.
+- Email format validation may be applied in the UI for usability, but the request shape must still remain limited to the single `email: string` field defined by the schema.
+
+## Tests to add
+
+1. API layer tests
+- Verify the contact submission helper calls `POST /api/contact` exactly.
+- Verify the request body contains only `name`, `email`, and `message`.
+- Verify the request sends an empty query object shape where the client request abstraction models query separately.
+- Verify no extra properties are sent.
+- Verify optional `Authorization` header can be attached when the user is authenticated, without making auth mandatory.
+
+2. Component/route tests: `/contact`
+- Initial render shows the empty form state.
+- Invalid client-side form blocks submit until required fields are present.
+- Authenticated render prefills `name` and `email` and keeps those two inputs non-editable.
+- Submit enters loading state and disables the submit action.
+- `201` success renders the contract message `Contact message submitted successfully.` from the response payload.
+- `400` renders backend validation messages such as `Name is required`, `Invalid email address`, and `Message is required`.
+- `429` renders `Too many requests. Please try again later.`
+- `500` or network failure renders a generic retryable error state.
+- Error paths preserve the current field values.
+
+3. Integration tests
+- Anonymous user can submit the contact form successfully through `POST /api/contact`.
+- Authenticated user can submit the same form successfully without changing the endpoint or payload shape.
+- Duplicate rapid submissions are prevented by loading-state submit disabling.
+
+## Acceptance Criteria
+- Frontend uses only `POST /api/contact` for the contact form backend interaction.
+- The `/contact` route implements `empty`, `loading`, `error`, and `success` states.
+- Submitted payloads match `project_docs/CONTRACTS/schemas/contact.submit.post.json` exactly.
+- When a user is authenticated, `name` and `email` are prefilled from the authenticated profile and are non-editable.
+- No extra request fields or undocumented endpoints are introduced.
