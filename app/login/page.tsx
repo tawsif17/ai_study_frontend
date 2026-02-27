@@ -1,8 +1,6 @@
 "use client"
 
-import React from "react"
-
-import { useState } from "react"
+import React, { Suspense, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { PageShell } from "@/components/page-shell"
@@ -12,25 +10,40 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { GraduationCap } from "@/components/icons"
 import { useAuth } from "@/lib/auth-context"
-import { ApiClientError, formatApiError } from "@/lib/api/client"
+import { formatApiError } from "@/lib/api/client"
+import { isUnverifiedLoginError } from "@/lib/api"
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<PageShell><div className="min-h-[calc(100vh-8rem)]" /></PageShell>}>
+      <LoginPageContent />
+    </Suspense>
+  )
+}
+
+function LoginPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { login } = useAuth()
+
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isUnverified, setIsUnverified] = useState(false)
+  const [success, setSuccess] = useState<string | null>(
+    searchParams.get("registered") === "true"
+      ? "Registration successful. Please check your email and verify your account before logging in."
+      : null
+  )
+  const [showResend, setShowResend] = useState(false)
   const [formData, setFormData] = useState({
     email: searchParams.get("email") ?? "",
     password: "",
   })
-  const registered = searchParams.get("registered") === "true"
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    setIsUnverified(false)
+    setSuccess(null)
+    setShowResend(false)
     setIsLoading(true)
 
     try {
@@ -40,10 +53,8 @@ export default function LoginPage() {
       })
       router.push("/subjects")
     } catch (err) {
-      if (err instanceof ApiClientError && err.status === 401 && err.message === "Email verification required") {
-        setIsUnverified(true)
-      }
       setError(formatApiError(err))
+      setShowResend(isUnverifiedLoginError(err))
     } finally {
       setIsLoading(false)
     }
@@ -60,15 +71,13 @@ export default function LoginPage() {
               </div>
             </div>
             <CardTitle className="text-2xl">Welcome back</CardTitle>
-            <CardDescription>
-              Sign in to continue your learning journey
-            </CardDescription>
+            <CardDescription>Sign in to continue your learning journey</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {registered && (
-                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-700">
-                  Registration successful. Please check your email to verify your account.
+              {success && (
+                <div className="p-3 rounded-lg bg-success/10 border border-success/20 text-sm text-success">
+                  {success}
                 </div>
               )}
 
@@ -76,14 +85,6 @@ export default function LoginPage() {
                 <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
                   {error}
                 </div>
-              )}
-
-              {isUnverified && (
-                <Button asChild variant="outline" className="w-full">
-                  <Link href={`/resend-verification?email=${encodeURIComponent(formData.email)}`}>
-                    Resend verification email
-                  </Link>
-                </Button>
               )}
 
               <div className="space-y-2">
@@ -115,6 +116,14 @@ export default function LoginPage() {
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
+
+              {showResend && (
+                <Button asChild variant="outline" className="w-full bg-transparent">
+                  <Link href={`/resend-verification?email=${encodeURIComponent(formData.email)}`}>
+                    Resend verification email
+                  </Link>
+                </Button>
+              )}
 
               <p className="text-center text-sm text-muted-foreground">
                 {"Don't have an account? "}

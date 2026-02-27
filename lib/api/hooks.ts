@@ -3,37 +3,40 @@
 import useSWR from "swr"
 import {
   getExamTypes,
-  getSubjects,
+  getQuestions,
   getSubjectChapters,
-  type ExamType,
-  type Subject,
+  getSubjects,
   type Chapter,
+  type ExamType,
+  type QuestionListItem,
+  type QuestionsListRequest,
+  type Subject,
 } from "./index"
 
-// Custom fetchers that wrap our API functions
 async function examTypesFetcher(): Promise<ExamType[]> {
   return getExamTypes()
 }
 
-async function subjectsFetcher([, examTypeId]: [string, number]): Promise<Subject[]> {
-  return getSubjects(examTypeId)
+async function subjectsFetcher([, examType]: [string, string | undefined]): Promise<Subject[]> {
+  return getSubjects(examType)
 }
 
 async function chaptersFetcher([, subjectId]: [string, number]): Promise<Chapter[]> {
   return getSubjectChapters(subjectId)
 }
 
-// SWR hooks
+async function questionsFetcher([, query]: [string, QuestionsListRequest]): Promise<QuestionListItem[]> {
+  const response = await getQuestions(query)
+  return response.questions
+}
+
 export function useExamTypes() {
-  const { data, error, isLoading, mutate } = useSWR<ExamType[]>(
-    "exam-types",
-    examTypesFetcher,
-    {
-      revalidateOnFocus: false,
-      revalidateIfStale: false,
-      dedupingInterval: 5 * 60 * 1000,
-    }
-  )
+  const { data, error, isLoading, mutate } = useSWR<ExamType[]>("exam-types", examTypesFetcher, {
+    revalidateOnFocus: false,
+    revalidateIfStale: false,
+    dedupingInterval: 5 * 60 * 1000,
+  })
+
   return {
     examTypes: data,
     isLoading,
@@ -42,16 +45,14 @@ export function useExamTypes() {
   }
 }
 
-export function useSubjects(examTypeId: number | undefined) {
-  const { data, error, isLoading, mutate } = useSWR<Subject[]>(
-    examTypeId ? ["subjects", examTypeId] : null,
-    subjectsFetcher,
-    {
-      revalidateOnFocus: false,
-      revalidateIfStale: false,
-      dedupingInterval: 5 * 60 * 1000,
-    }
-  )
+export function useSubjects(examType?: string, enabled: boolean = true) {
+  const key = enabled ? ["subjects", examType] : null
+  const { data, error, isLoading, mutate } = useSWR<Subject[]>(key, subjectsFetcher, {
+    revalidateOnFocus: false,
+    revalidateIfStale: false,
+    dedupingInterval: 5 * 60 * 1000,
+  })
+
   return {
     subjects: data,
     isLoading,
@@ -72,6 +73,22 @@ export function useChapters(subjectId: number | undefined) {
   )
   return {
     chapters: data,
+    isLoading,
+    isError: error,
+    mutate,
+  }
+}
+
+export function useQuestions(query: QuestionsListRequest | null, enabled: boolean = true) {
+  const key = enabled && query ? (["questions", query] as const) : null
+  const { data, error, isLoading, mutate } = useSWR<QuestionListItem[]>(key, questionsFetcher, {
+    revalidateOnFocus: false,
+    revalidateIfStale: false,
+    dedupingInterval: 30 * 1000,
+  })
+
+  return {
+    questions: data,
     isLoading,
     isError: error,
     mutate,

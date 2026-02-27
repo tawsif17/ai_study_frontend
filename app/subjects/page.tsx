@@ -1,23 +1,34 @@
 "use client"
 
+import { useEffect } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { PageShell } from "@/components/page-shell"
 import { SubjectCardDetailed } from "@/components/subject-card-detailed"
 import { Breadcrumb } from "@/components/breadcrumb"
 import { BookOpen } from "@/components/icons"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useExamTypes, useSubjects } from "@/lib/api/hooks"
+import { Button } from "@/components/ui/button"
+import { ApiClientError } from "@/lib/api/client"
+import { useSubjects } from "@/lib/api/hooks"
+import { useAuth } from "@/lib/auth-context"
 
 export default function SubjectsPage() {
-  // Fetch exam types first, then subjects for SSC (assuming SSC is the first exam type)
-  const { examTypes, isLoading: examTypesLoading } = useExamTypes()
-  const sscExamType = examTypes?.find((et) => et.code === "SSC")
-  const { subjects, isLoading: subjectsLoading } = useSubjects(sscExamType?.id)
+  const router = useRouter()
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { subjects, isLoading: subjectsLoading, isError } = useSubjects("SSC", isAuthenticated)
 
-  const isLoading = examTypesLoading || subjectsLoading
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push("/login?next=%2Fsubjects")
+    }
+  }, [authLoading, isAuthenticated, router])
+
+  const isLoading = authLoading || subjectsLoading
+  const isUnauthorized = isError instanceof ApiClientError && isError.status === 401
 
   return (
     <PageShell>
-      {/* Hero / Intro Section */}
       <section className="bg-secondary/50 border-b border-border">
         <div className="container mx-auto px-4 py-16 md:py-20">
           <div className="max-w-2xl mx-auto">
@@ -36,14 +47,23 @@ export default function SubjectsPage() {
         </div>
       </section>
 
-      {/* Subjects Grid Section */}
       <section className="container mx-auto px-4 py-12 md:py-16">
-        {/* Subjects Grid */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-64 rounded-xl" />
             ))}
+          </div>
+        ) : isUnauthorized ? (
+          <div className="text-center py-12 space-y-4">
+            <p className="text-muted-foreground">Authorization token missing or invalid</p>
+            <Button asChild>
+              <Link href="/login?next=%2Fsubjects">Login to continue</Link>
+            </Button>
+          </div>
+        ) : isError ? (
+          <div className="text-center py-12">
+            <p className="text-destructive">Unable to load subjects right now.</p>
           </div>
         ) : subjects && subjects.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -58,7 +78,6 @@ export default function SubjectsPage() {
         )}
       </section>
 
-      {/* Info Block - Coming Soon */}
       <section className="bg-muted/50 border-t border-border">
         <div className="container mx-auto px-4 py-12 md:py-16">
           <div className="max-w-xl mx-auto text-center">
@@ -67,7 +86,7 @@ export default function SubjectsPage() {
             </div>
             <h2 className="text-xl font-semibold text-foreground mb-2">More subjects coming soon</h2>
             <p className="text-muted-foreground leading-relaxed">
-              We're starting with Higher Math, Physics, and Chemistry for SSC. HSC, O-levels and A-levels content
+              We&apos;re starting with Higher Math, Physics, and Chemistry for SSC. HSC, O-levels and A-levels content
               will be added next.
             </p>
           </div>

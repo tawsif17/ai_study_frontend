@@ -64,9 +64,10 @@ interface SubjectDetailContentProps {
   subjectId: number
   subjectName: string
   examTypeId: number
+  questionCount: number
 }
 
-export function SubjectDetailContent({ subjectId, subjectName, examTypeId }: SubjectDetailContentProps) {
+export function SubjectDetailContent({ subjectId, subjectName, examTypeId, questionCount }: SubjectDetailContentProps) {
   const [selectedChapterIds, setSelectedChapterIds] = useState<number[]>([])
   const { chapters, isLoading: chaptersLoading } = useChapters(subjectId)
   
@@ -115,6 +116,11 @@ export function SubjectDetailContent({ subjectId, subjectName, examTypeId }: Sub
       <section className="py-10 bg-background">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
+            <p className="text-sm text-muted-foreground mb-2">
+              {questionCount > 0
+                ? `${questionCount} published questions available for this subject.`
+                : "No published questions found for this subject yet."}
+            </p>
             <h2 className="text-lg font-semibold text-foreground mb-4">Select Chapters to Practice</h2>
             
             {chaptersLoading ? (
@@ -186,7 +192,7 @@ export function SubjectDetailContent({ subjectId, subjectName, examTypeId }: Sub
               tag="Best for quick revision"
               iconBgClass={styles.mcqIconBg}
               iconTextClass={styles.mcqIconText}
-              disabled={selectedChapterIds.length === 0}
+              disabled={selectedChapterIds.length === 0 || questionCount === 0}
             />
             <PracticeConfigCard
               mode="CQ"
@@ -199,7 +205,7 @@ export function SubjectDetailContent({ subjectId, subjectName, examTypeId }: Sub
               tag="Board exam style"
               iconBgClass={styles.cqIconBg}
               iconTextClass={styles.cqIconText}
-              disabled={selectedChapterIds.length === 0}
+              disabled={selectedChapterIds.length === 0 || questionCount === 0}
             />
             <PracticeConfigCard
               mode="MIXED"
@@ -212,7 +218,7 @@ export function SubjectDetailContent({ subjectId, subjectName, examTypeId }: Sub
               tag="Exam simulation"
               iconBgClass="bg-secondary"
               iconTextClass="text-secondary-foreground"
-              disabled={selectedChapterIds.length === 0}
+              disabled={selectedChapterIds.length === 0 || questionCount === 0}
             />
           </div>
         </div>

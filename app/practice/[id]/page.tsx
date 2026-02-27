@@ -1,7 +1,7 @@
 "use client"
 
-import { use } from "react"
-import { notFound, useRouter } from "next/navigation"
+import { Suspense, use } from "react"
+import { notFound, useRouter, useSearchParams } from "next/navigation"
 import { PageShell } from "@/components/page-shell"
 import { PracticeSessionContent } from "@/components/practice-session-content"
 import { PracticeResultsContent } from "@/components/practice-results-content"
@@ -25,13 +25,17 @@ export default function PracticeSessionPage({
 
   return (
     <PageShell>
-      <PracticeSessionWrapper practiceId={practiceId} />
+      <Suspense fallback={<div className="container mx-auto px-4 py-12"><Skeleton className="h-32 w-full mb-8" /><Skeleton className="h-96 w-full" /></div>}>
+        <PracticeSessionWrapper practiceId={practiceId} />
+      </Suspense>
     </PageShell>
   )
 }
 
 function PracticeSessionWrapper({ practiceId }: { practiceId: number }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const warning = searchParams.get("warning")
   const { isAuthenticated, isLoading: authLoading } = useAuth()
   const { summary, isLoading, isError } = usePracticeSummary(practiceId)
 
@@ -62,9 +66,27 @@ function PracticeSessionWrapper({ practiceId }: { practiceId: number }) {
 
   // Show results if the session is submitted
   if (summary.attempt_status === "SUBMITTED") {
-    return <PracticeResultsContent practiceId={practiceId} summary={summary} />
+    return (
+      <>
+        {warning && (
+          <div className="container mx-auto px-4 pt-6">
+            <div className="p-3 rounded-lg bg-secondary border border-border text-sm text-foreground">{warning}</div>
+          </div>
+        )}
+        <PracticeResultsContent practiceId={practiceId} summary={summary} />
+      </>
+    )
   }
 
   // Show practice content if in progress
-  return <PracticeSessionContent practiceId={practiceId} summary={summary} />
+  return (
+    <>
+      {warning && (
+        <div className="container mx-auto px-4 pt-6">
+          <div className="p-3 rounded-lg bg-secondary border border-border text-sm text-foreground">{warning}</div>
+        </div>
+      )}
+      <PracticeSessionContent practiceId={practiceId} summary={summary} />
+    </>
+  )
 }

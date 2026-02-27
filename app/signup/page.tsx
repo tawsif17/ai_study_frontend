@@ -1,8 +1,6 @@
 "use client"
 
-import React from "react"
-
-import { useState } from "react"
+import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { PageShell } from "@/components/page-shell"
@@ -18,6 +16,7 @@ import { formatApiError } from "@/lib/api/client"
 export default function SignUpPage() {
   const router = useRouter()
   const { register } = useAuth()
+
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
@@ -43,8 +42,8 @@ export default function SignUpPage() {
         city: formData.city,
         studentClass: Number.parseInt(formData.class, 10),
       })
-      // Registration successful, redirect to login
-      router.push(`/login?registered=true&email=${encodeURIComponent(formData.email)}`)
+      const params = new URLSearchParams({ registered: "true", email: formData.email })
+      router.push(`/login?${params.toString()}`)
     } catch (err) {
       setError(formatApiError(err))
     } finally {
@@ -63,9 +62,7 @@ export default function SignUpPage() {
               </div>
             </div>
             <CardTitle className="text-2xl">Create an account</CardTitle>
-            <CardDescription>
-              Start your SSC exam preparation journey
-            </CardDescription>
+            <CardDescription>Start your SSC exam preparation journey</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -111,7 +108,6 @@ export default function SignUpPage() {
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
                   disabled={isLoading}
-                  minLength={6}
                 />
               </div>
 

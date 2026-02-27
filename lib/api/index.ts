@@ -1,39 +1,53 @@
 /**
- * API Layer - All backend API calls
+ * API Layer - Backend calls aligned with project_docs/CONTRACTS/api.md
  */
 
 export * from "./types"
 export * from "./client"
+export * from "./contracts"
 
 import { apiClient } from "./client"
+import {
+  validateLoginRequest,
+  validatePracticeGenerateRequest,
+  validateQuestionsListRequest,
+  validateRegisterRequest,
+  validateResendVerificationRequest,
+  validateVerifyEmailRequest,
+} from "./contracts"
 import type {
-  RegisterRequest,
-  RegisterResponse,
+  AuthMeResponse,
+  Chapter,
+  ChaptersResponse,
+  ExamType,
+  GetAnswersResponse,
   LoginRequest,
   LoginResponse,
-  VerifyEmailRequest,
-  VerifyEmailResponse,
-  ResendVerificationRequest,
-  ResendVerificationResponse,
-  ExamType,
-  Subject,
-  Chapter,
+  McqOption,
   PracticeGenerateRequest,
   PracticeGenerateResponse,
-  PracticeSummaryResponse,
   PracticeItem,
+  PracticeMode,
+  PracticeSummaryResponse,
+  QuestionDetail,
+  QuestionPart,
+  QuestionsListRequest,
+  QuestionsListResponse,
+  RegisterRequest,
+  RegisterResponse,
+  ResendVerificationRequest,
+  ResendVerificationResponse,
+  ResultsJumpResponse,
+  ResultsResponse,
   SaveAnswersRequest,
   SaveAnswersResponse,
-  GetAnswersResponse,
-  SubmitResponse,
-  ResultsResponse,
-  ResultsJumpResponse,
   Section,
-  PracticeMode,
+  Subject,
+  SubjectsResponse,
+  SubmitResponse,
   AttemptStatus,
-  QuestionDetail,
-  McqOption,
-  QuestionPart,
+  VerifyEmailRequest,
+  VerifyEmailResponse,
 } from "./types"
 
 // ============================================
@@ -41,14 +55,15 @@ import type {
 // ============================================
 
 export async function register(data: RegisterRequest): Promise<RegisterResponse> {
-  const payload = {
+  const payload = validateRegisterRequest({
     email: data.email,
     password: data.password,
     fullName: data.fullName.trim(),
     school: data.school,
     city: data.city,
     studentClass: data.studentClass,
-  }
+  })
+
   return apiClient<RegisterResponse>("/auth/register", {
     method: "POST",
     body: payload,
@@ -56,25 +71,34 @@ export async function register(data: RegisterRequest): Promise<RegisterResponse>
 }
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
+  const payload = validateLoginRequest(data)
   return apiClient<LoginResponse>("/auth/login", {
     method: "POST",
-    body: data,
+    body: payload,
+  })
+}
+
+export async function getAuthMe(): Promise<AuthMeResponse> {
+  return apiClient<AuthMeResponse>("/auth/me", {
+    requiresAuth: true,
   })
 }
 
 export async function verifyEmail(data: VerifyEmailRequest): Promise<VerifyEmailResponse> {
+  const payload = validateVerifyEmailRequest(data)
   return apiClient<VerifyEmailResponse>("/auth/verify-email", {
     method: "POST",
-    body: data,
+    body: payload,
   })
 }
 
 export async function resendVerification(
   data: ResendVerificationRequest
 ): Promise<ResendVerificationResponse> {
+  const payload = validateResendVerificationRequest(data)
   return apiClient<ResendVerificationResponse>("/auth/resend-verification", {
     method: "POST",
-    body: data,
+    body: payload,
   })
 }
 
@@ -90,16 +114,57 @@ export async function getExamTypes(): Promise<ExamType[]> {
 // SUBJECTS API
 // ============================================
 
-export async function getSubjects(examTypeId: number): Promise<Subject[]> {
-  const response = await apiClient<Subject[] | { subjects: Subject[] }>("/subjects", {
-    params: { exam_type_id: examTypeId },
+export async function getSubjects(examType?: string): Promise<Subject[]> {
+  const response = await apiClient<SubjectsResponse>("/subjects", {
+    params: examType ? { exam_type: examType } : undefined,
+    requiresAuth: true,
   })
-  return Array.isArray(response) ? response : response.subjects
+  return response.subjects
 }
 
 export async function getSubjectChapters(subjectId: number): Promise<Chapter[]> {
-  const response = await apiClient<Chapter[] | { chapters: Chapter[] }>(`/subjects/${subjectId}/chapters`)
-  return Array.isArray(response) ? response : response.chapters
+  const response = await apiClient<ChaptersResponse>(`/subjects/${subjectId}/chapters`)
+  return response.chapters
+}
+
+// ============================================
+// QUESTIONS API
+// ============================================
+
+export async function getQuestions(query: QuestionsListRequest): Promise<QuestionsListResponse> {
+  const params = validateQuestionsListRequest(query)
+  return apiClient<QuestionsListResponse>("/questions", {
+    params,
+    requiresAuth: true,
+  })
+}
+
+export async function getQuestionById(questionId: number): Promise<QuestionDetail> {
+  type QuestionDetailsEnvelope = {
+    question: QuestionDetail
+    options?: McqOption[]
+    parts?: (QuestionPart & { marks: number | string })[]
+    media?: unknown[]
+  }
+  const response = await apiClient<QuestionDetail | QuestionDetailsEnvelope>(`/questions/${questionId}`)
+
+  if ("question" in response) {
+    return {
+      ...(response.question ?? {}),
+      ...(response.options ? { options: response.options } : {}),
+      ...(response.parts
+        ? {
+            parts: response.parts.map((part) => ({
+              ...part,
+              marks: typeof part.marks === "string" ? Number.parseFloat(part.marks) : part.marks,
+            })),
+          }
+        : {}),
+      ...(response.media ? { media: response.media } : {}),
+    } as QuestionDetail
+  }
+
+  return response
 }
 
 // ============================================
@@ -109,9 +174,11 @@ export async function getSubjectChapters(subjectId: number): Promise<Chapter[]> 
 export async function generatePractice(
   data: PracticeGenerateRequest
 ): Promise<PracticeGenerateResponse> {
+  const payload = validatePracticeGenerateRequest(data)
+
   return apiClient<PracticeGenerateResponse>("/practice/generate", {
     method: "POST",
-    body: data,
+    body: payload,
     requiresAuth: true,
   })
 }
@@ -213,36 +280,4 @@ export async function jumpToResult(
     },
     requiresAuth: true,
   })
-}
-
-// ============================================
-// QUESTIONS API
-// ============================================
-
-export async function getQuestionById(questionId: number): Promise<QuestionDetail> {
-  type QuestionDetailsEnvelope = {
-    question: QuestionDetail
-    options?: McqOption[]
-    parts?: (QuestionPart & { marks: number | string })[]
-    media?: unknown[]
-  }
-  const response = await apiClient<QuestionDetail | QuestionDetailsEnvelope>(`/questions/${questionId}`)
-
-  if ("question" in response) {
-    return {
-      ...(response.question ?? {}),
-      ...(response.options ? { options: response.options } : {}),
-      ...(response.parts
-        ? {
-            parts: response.parts.map((part) => ({
-              ...part,
-              marks: typeof part.marks === "string" ? Number.parseFloat(part.marks) : part.marks,
-            })),
-          }
-        : {}),
-      ...(response.media ? { media: response.media } : {}),
-    } as QuestionDetail
-  }
-
-  return response
 }

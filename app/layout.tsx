@@ -1,13 +1,11 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter, Geist_Mono } from "next/font/google"
+import { Inter } from "next/font/google"
 import "./globals.css"
 import { ScrollToTop } from "@/components/scroll-to-top"
 import { AuthProvider } from "@/lib/auth-context"
 
-// Updated to Inter font as requested
 const inter = Inter({ subsets: ["latin"] })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 // Updated metadata for Shikkha Buddy
 export const metadata: Metadata = {
@@ -41,7 +39,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`font-sans antialiased`}>
+      <body className={`${inter.className} font-sans antialiased`}>
         <AuthProvider>
           <ScrollToTop />
           {children}
