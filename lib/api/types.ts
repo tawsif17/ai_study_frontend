@@ -69,6 +69,11 @@ export interface ResendVerificationResponse {
   message: string
 }
 
+export interface UpgradeToProResponse {
+  message: string
+  plan_tier: "pro"
+}
+
 // ============================================
 // EXAM TYPES
 // ============================================

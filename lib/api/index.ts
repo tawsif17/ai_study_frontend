@@ -37,6 +37,7 @@ import type {
   RegisterResponse,
   ResendVerificationRequest,
   ResendVerificationResponse,
+  UpgradeToProResponse,
   ResultsJumpResponse,
   ResultsResponse,
   SaveAnswersRequest,
@@ -99,6 +100,14 @@ export async function resendVerification(
   return apiClient<ResendVerificationResponse>("/auth/resend-verification", {
     method: "POST",
     body: payload,
+  })
+}
+
+export async function upgradeToPro(): Promise<UpgradeToProResponse> {
+  return apiClient<UpgradeToProResponse>("/auth/upgrade-to-pro", {
+    method: "POST",
+    body: {},
+    requiresAuth: true,
   })
 }
 
