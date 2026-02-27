@@ -1,28 +1,17 @@
-import js from "@eslint/js"
-import globals from "globals"
-import tseslint from "typescript-eslint"
+import { defineConfig, globalIgnores } from "eslint/config"
+import nextVitals from "eslint-config-next/core-web-vitals"
+import nextTs from "eslint-config-next/typescript"
 
-export default tseslint.config(
+export default defineConfig([
+  ...nextVitals,
+  ...nextTs,
   {
-    ignores: [".next/**", "node_modules/**", "out/**", "dist/**"],
-  },
-  js.configs.recommended,
-  ...tseslint.configs.recommended,
-  {
-    files: ["**/*.{ts,tsx}"],
-    languageOptions: {
-      parserOptions: {
-        ecmaFeatures: {
-          jsx: true,
-        },
-      },
-      globals: {
-        ...globals.browser,
-        ...globals.node,
-      },
-    },
     rules: {
-      "no-console": "off",
+      "react/no-unescaped-entities": "off",
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/purity": "off",
+      "@typescript-eslint/no-empty-object-type": "off",
     },
-  }
-)
+  },
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
+])

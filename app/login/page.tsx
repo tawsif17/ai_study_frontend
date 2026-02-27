@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { GraduationCap } from "@/components/icons"
 import { useAuth } from "@/lib/auth-context"
 import { formatApiError } from "@/lib/api/client"
-import { isUnverifiedLoginError, resendVerification } from "@/lib/api"
+import { isUnverifiedLoginError } from "@/lib/api"
 
 export default function LoginPage() {
   return (
@@ -27,7 +27,6 @@ function LoginPageContent() {
   const { login } = useAuth()
 
   const [isLoading, setIsLoading] = useState(false)
-  const [isResending, setIsResending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(
     searchParams.get("registered") === "true"
@@ -58,25 +57,6 @@ function LoginPageContent() {
       setShowResend(isUnverifiedLoginError(err))
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const handleResendVerification = async () => {
-    if (!formData.email) {
-      setError("Email is required")
-      return
-    }
-
-    setIsResending(true)
-    setError(null)
-
-    try {
-      const response = await resendVerification({ email: formData.email })
-      setSuccess(response.message)
-    } catch (err) {
-      setError(formatApiError(err))
-    } finally {
-      setIsResending(false)
     }
   }
 
@@ -116,7 +96,7 @@ function LoginPageContent() {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
-                  disabled={isLoading || isResending}
+                  disabled={isLoading}
                 />
               </div>
 
@@ -129,23 +109,19 @@ function LoginPageContent() {
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
-                  disabled={isLoading || isResending}
+                  disabled={isLoading}
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading || isResending}>
+              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
 
               {showResend && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full bg-transparent"
-                  onClick={handleResendVerification}
-                  disabled={isResending || isLoading}
-                >
-                  {isResending ? "Resending verification..." : "Resend verification email"}
+                <Button asChild variant="outline" className="w-full bg-transparent">
+                  <Link href={`/resend-verification?email=${encodeURIComponent(formData.email)}`}>
+                    Resend verification email
+                  </Link>
                 </Button>
               )}
 
