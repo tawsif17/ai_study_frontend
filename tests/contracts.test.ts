@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   entitlementErrorMessages,
   matchEntitlementErrorByExactMessage,
+  validateContactSubmitRequest,
   validatePracticeGenerateRequest,
   validateQuestionsListRequest,
 } from "../lib/api/contracts"
@@ -33,6 +34,36 @@ describe("contract request validators", () => {
     expect(() => validateQuestionsListRequest({ exam_type_id: 1 } as never)).toThrow()
     expect(() =>
       validateQuestionsListRequest({ exam_type_id: 1, subject_id: 2, extra: "x" } as never)
+    ).toThrow()
+  })
+
+  it("validates contact submit required fields and rejects extras", () => {
+    const valid = validateContactSubmitRequest({
+      name: "Student Name",
+      email: "student@example.com",
+      message: "I need help with the platform.",
+    })
+
+    expect(valid).toEqual({
+      name: "Student Name",
+      email: "student@example.com",
+      message: "I need help with the platform.",
+    })
+
+    expect(() =>
+      validateContactSubmitRequest({
+        name: "Student Name",
+        email: "student@example.com",
+      } as never)
+    ).toThrow()
+
+    expect(() =>
+      validateContactSubmitRequest({
+        name: "Student Name",
+        email: "student@example.com",
+        message: "I need help with the platform.",
+        subject: "Extra field",
+      } as never)
     ).toThrow()
   })
 
