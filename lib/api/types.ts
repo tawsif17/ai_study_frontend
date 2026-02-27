@@ -74,6 +74,16 @@ export interface UpgradeToProResponse {
   plan_tier: "pro"
 }
 
+export interface ContactSubmitRequest {
+  name: string
+  email: string
+  message: string
+}
+
+export interface ContactSubmitResponse {
+  message: string
+}
+
 // ============================================
 // EXAM TYPES
 // ============================================

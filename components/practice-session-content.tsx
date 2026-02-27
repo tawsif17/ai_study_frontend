@@ -39,7 +39,7 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
   useEffect(() => {
     if (!items || items.length === 0) return
     setCurrentIndex((idx) => Math.min(idx, items.length - 1))
-  }, [items?.length])
+  }, [items])
 
   useEffect(() => {
     setCurrentIndex(0)

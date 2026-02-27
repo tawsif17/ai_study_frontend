@@ -36,6 +36,7 @@ interface RequestOptions {
   body?: unknown
   params?: Record<string, string | number | undefined>
   requiresAuth?: boolean
+  includeAuth?: boolean
 }
 
 function getAuthToken(): string | null {
@@ -61,7 +62,7 @@ export async function apiClient<T>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { method = "GET", body, params, requiresAuth = false } = options
+  const { method = "GET", body, params, requiresAuth = false, includeAuth = false } = options
 
   // Build URL with query params
   let url = `${API_BASE_URL}${endpoint}`
@@ -83,7 +84,7 @@ export async function apiClient<T>(
     "Content-Type": "application/json",
   }
 
-  if (requiresAuth) {
+  if (requiresAuth || includeAuth) {
     const token = getAuthToken()
     if (token) {
       headers["Authorization"] = `Bearer ${token}`
