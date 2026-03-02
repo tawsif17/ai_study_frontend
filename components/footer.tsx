@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { GraduationCap, Facebook, Twitter, Youtube, Mail } from "@/components/icons"
+import { Facebook, Twitter, Youtube, Mail } from "@/components/icons"
+import { BrandLogo } from "@/components/brand-logo"
 
 export function Footer() {
   return (
@@ -8,9 +9,8 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo & Description */}
           <div className="md:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <GraduationCap className="h-8 w-8 text-primary" />
-              <span className="text-xl font-bold text-foreground">Shikkha Buddy</span>
+            <Link href="/" className="mb-4 inline-flex items-center" aria-label="Shikkha Buddy home">
+              <BrandLogo className="h-12" />
             </Link>
             <p className="text-sm text-muted-foreground max-w-sm">
               Your AI-powered study companion for SSC Higher Math, Physics & Chemistry. Practice smarter, score higher.

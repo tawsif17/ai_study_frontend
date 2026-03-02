@@ -14,21 +14,9 @@ export const metadata: Metadata = {
     "AI-powered practice platform for SSC students in Bangladesh. Master Higher Math, Physics & Chemistry with mock tests, past papers and instant explanations.",
   generator: "v0.app",
   icons: {
-    icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
-    ],
-    apple: "/apple-icon.png",
+    icon: "/favicon_48.png",
+    shortcut: "/favicon_48.png",
+    apple: "/favicon_48.png",
   },
 }
 
