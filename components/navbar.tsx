@@ -5,7 +5,8 @@ import type React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Menu, X, GraduationCap, LogOut } from "@/components/icons"
+import { Menu, X, LogOut } from "@/components/icons"
+import { BrandLogo } from "@/components/brand-logo"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/auth-context"
@@ -38,14 +39,13 @@ export function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+      <div className="container mx-auto flex h-24 items-center justify-between px-2 sm:h-28 sm:px-3">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <GraduationCap className="h-8 w-8 text-primary" />
-          <span className="text-xl font-bold text-foreground">Shikkha Buddy</span>
+        <Link href="/" className="-ml-1 flex items-center sm:-ml-3" aria-label="Shikkha Buddy home">
+          <BrandLogo className="h-20 sm:h-24" priority />
         </Link>
 
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-6 lg:gap-8">
           <NavLink href="/">Home</NavLink>
           <NavLink href="/subjects">Subjects</NavLink>
           <NavLink href="/how-it-works">How it works</NavLink>
@@ -53,7 +53,7 @@ export function Navbar() {
         </div>
 
         {/* Auth Buttons - Hidden on mobile */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-2 lg:gap-3">
           {!isLoading && (
             <>
               {isAuthenticated ? (
@@ -104,7 +104,7 @@ function MobileMenu() {
       </Button>
 
       {isOpen && (
-        <div className="absolute top-16 left-0 right-0 bg-background border-b border-border p-4">
+        <div className="absolute top-full left-0 right-0 bg-background border-b border-border p-4">
           <div className="flex flex-col gap-4">
             <Link
               href="/"

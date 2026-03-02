@@ -15,7 +15,7 @@
   --card-foreground: oklch(0.2 0.02 240);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.2 0.02 240);
-  --primary: oklch(0.55 0.15 220);
+  --primary: #1375c9;
   --primary-foreground: oklch(0.99 0 0);
   --secondary: oklch(0.96 0.01 220);
   --secondary-foreground: oklch(0.2 0.02 240);
@@ -27,7 +27,7 @@
   --destructive-foreground: oklch(0.577 0.245 27.325);
   --border: oklch(0.9 0.01 220);
   --input: oklch(0.9 0.01 220);
-  --ring: oklch(0.55 0.15 220);
+  --ring: #1375c9;
 
   /* Added semantic colors for status/feedback */
   --success: oklch(0.6 0.15 150);
@@ -38,12 +38,12 @@
   --info-foreground: oklch(0.99 0 0);
 
   /* Added subject-specific colors */
-  --subject-math: oklch(0.55 0.15 220);
+  --subject-math: #1375c9;
   --subject-physics: oklch(0.6 0.15 150);
   --subject-chemistry: oklch(0.65 0.18 30);
 
   /* --- Chart Colors --- */
-  --chart-1: oklch(0.55 0.15 220);
+  --chart-1: #1375c9;
   --chart-2: oklch(0.65 0.12 180);
   --chart-3: oklch(0.6 0.15 150);
   --chart-4: oklch(0.7 0.1 200);
@@ -69,7 +69,7 @@
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
   --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
-  --shadow-primary: 0 4px 14px 0 oklch(0.55 0.15 220 / 0.25);
+  --shadow-primary: 0 4px 14px 0 rgb(19 117 201 / 0.25);
   --shadow-accent: 0 4px 14px 0 oklch(0.65 0.12 180 / 0.25);
 
   /* Added spacing scale */
@@ -126,12 +126,12 @@
   /* --- Sidebar Colors --- */
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.2 0.02 240);
-  --sidebar-primary: oklch(0.55 0.15 220);
+  --sidebar-primary: #1375c9;
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.96 0.01 220);
   --sidebar-accent-foreground: oklch(0.2 0.02 240);
   --sidebar-border: oklch(0.9 0.01 220);
-  --sidebar-ring: oklch(0.55 0.15 220);
+  --sidebar-ring: #1375c9;
 }
 
 .dark {
@@ -141,7 +141,7 @@
   --card-foreground: oklch(0.96 0.01 220);
   --popover: oklch(0.18 0.02 240);
   --popover-foreground: oklch(0.96 0.01 220);
-  --primary: oklch(0.65 0.15 220);
+  --primary: #1375c9;
   --primary-foreground: oklch(0.15 0.02 240);
   --secondary: oklch(0.25 0.02 240);
   --secondary-foreground: oklch(0.96 0.01 220);
@@ -153,7 +153,7 @@
   --destructive-foreground: oklch(0.637 0.237 25.331);
   --border: oklch(0.28 0.02 240);
   --input: oklch(0.28 0.02 240);
-  --ring: oklch(0.5 0.1 220);
+  --ring: #1375c9;
 
   /* Status colors - dark mode */
   --success: oklch(0.5 0.12 150);
@@ -164,12 +164,12 @@
   --info-foreground: oklch(0.96 0.01 240);
 
   /* Subject colors - dark mode */
-  --subject-math: oklch(0.65 0.15 220);
+  --subject-math: #1375c9;
   --subject-physics: oklch(0.55 0.12 150);
   --subject-chemistry: oklch(0.6 0.15 30);
 
   /* Chart colors */
-  --chart-1: oklch(0.55 0.15 220);
+  --chart-1: #1375c9;
   --chart-2: oklch(0.65 0.12 180);
   --chart-3: oklch(0.6 0.15 150);
   --chart-4: oklch(0.7 0.1 200);
@@ -182,18 +182,18 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
   --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.5);
-  --shadow-primary: 0 4px 14px 0 oklch(0.65 0.15 220 / 0.3);
+  --shadow-primary: 0 4px 14px 0 rgb(19 117 201 / 0.3);
   --shadow-accent: 0 4px 14px 0 oklch(0.55 0.12 180 / 0.3);
 
   /* Sidebar - dark mode */
   --sidebar: oklch(0.18 0.02 240);
   --sidebar-foreground: oklch(0.96 0.01 220);
-  --sidebar-primary: oklch(0.55 0.15 220);
+  --sidebar-primary: #1375c9;
   --sidebar-primary-foreground: oklch(0.96 0.01 220);
   --sidebar-accent: oklch(0.25 0.02 240);
   --sidebar-accent-foreground: oklch(0.96 0.01 220);
   --sidebar-border: oklch(0.28 0.02 240);
-  --sidebar-ring: oklch(0.5 0.1 220);
+  --sidebar-ring: #1375c9;
 }
 
 @theme inline {
