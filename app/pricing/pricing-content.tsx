@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Check, Sparkles, Zap } from "@/components/icons"
 import { UpgradeToProButton } from "@/components/upgrade-to-pro-button"
 import Link from "next/link"
+import { Suspense } from "react"
 
 const freePlan = {
   name: "Free",
@@ -39,6 +40,19 @@ const proPlan = {
     "Bookmark & revision mode",
     "Faster question generation",
   ],
+}
+
+function UpgradeToProButtonFallback() {
+  return (
+    <>
+      <Button className="w-full" disabled>
+        Upgrade to Pro
+      </Button>
+      <p className="text-[10px] md:text-xs text-muted-foreground text-center mt-2">
+        One click upgrade. No payment step in this release.
+      </p>
+    </>
+  )
 }
 
 export function PricingContent() {
@@ -115,7 +129,9 @@ export function PricingContent() {
                   </li>
                 ))}
               </ul>
-              <UpgradeToProButton />
+              <Suspense fallback={<UpgradeToProButtonFallback />}>
+                <UpgradeToProButton />
+              </Suspense>
             </CardContent>
           </Card>
         </div>
