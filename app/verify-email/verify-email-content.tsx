@@ -78,7 +78,7 @@ export function VerifyEmailContent() {
             )}
 
             {status === "error" && token && (
-              <Button className="w-full" onClick={() => void verifyToken(token)} disabled={status === "loading"}>
+              <Button className="w-full" onClick={() => void verifyToken(token)}>
                 Try again
               </Button>
             )}

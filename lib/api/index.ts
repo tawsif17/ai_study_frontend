@@ -162,7 +162,13 @@ export async function getSubjectChapters(subjectId: number): Promise<Chapter[]> 
 export async function getQuestions(query: QuestionsListRequest): Promise<QuestionsListResponse> {
   const params = validateQuestionsListRequest(query)
   return apiClient<QuestionsListResponse>("/questions", {
-    params,
+    params: {
+      exam_type_id: params.exam_type_id,
+      subject_id: params.subject_id,
+      chapter_id: params.chapter_id,
+      question_type: params.question_type,
+      language: params.language,
+    },
     requiresAuth: true,
   })
 }
