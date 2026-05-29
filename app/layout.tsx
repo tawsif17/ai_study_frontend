@@ -9,10 +9,23 @@ const inter = Inter({ subsets: ["latin"] })
 
 // Updated metadata for Shikkha Buddy
 export const metadata: Metadata = {
+  applicationName: "Shikkha Buddy",
   title: "Shikkha Buddy - SSC Higher Math, Physics & Chemistry Practice",
   description:
     "AI-powered practice platform for SSC students in Bangladesh. Master Higher Math, Physics & Chemistry with mock tests, past papers and instant explanations.",
-  generator: "v0.app",
+  openGraph: {
+    title: "Shikkha Buddy - SSC Higher Math, Physics & Chemistry Practice",
+    description:
+      "AI-powered practice platform for SSC students in Bangladesh. Master Higher Math, Physics & Chemistry with mock tests, past papers and instant explanations.",
+    siteName: "Shikkha Buddy",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Shikkha Buddy - SSC Higher Math, Physics & Chemistry Practice",
+    description:
+      "AI-powered practice platform for SSC students in Bangladesh. Master Higher Math, Physics & Chemistry with mock tests, past papers and instant explanations.",
+  },
   icons: {
     icon: "/favicon_48.png",
     shortcut: "/favicon_48.png",

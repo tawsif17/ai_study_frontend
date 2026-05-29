@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Facebook, Twitter, Youtube, Mail } from "@/components/icons"
+import { Mail } from "@/components/icons"
 import { BrandLogo } from "@/components/brand-logo"
 
 export function Footer() {
@@ -22,23 +22,23 @@ export function Footer() {
             <h4 className="font-semibold text-foreground mb-4">Quick Links</h4>
             <ul className="space-y-2">
               <li>
-                <Link href="/about" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  About
+                <Link href="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Home
                 </Link>
               </li>
               <li>
-                <Link href="/help" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Help Center
+                <Link href="/how-it-works" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  How it works
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Privacy Policy
+                <Link href="/subjects" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Subjects
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Contact
+                <Link href="/pricing" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Pricing
                 </Link>
               </li>
             </ul>
@@ -47,19 +47,15 @@ export function Footer() {
           {/* Social Links */}
           <div>
             <h4 className="font-semibold text-foreground mb-4">Connect</h4>
-            <div className="flex gap-4">
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                <Facebook className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                <Twitter className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                <Youtube className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+            <div className="flex flex-col gap-3">
+              <Link
+                href="/contact"
+                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+                aria-label="Contact Shikkha Buddy"
+              >
                 <Mail className="h-5 w-5" />
-              </a>
+                Contact
+              </Link>
             </div>
           </div>
         </div>

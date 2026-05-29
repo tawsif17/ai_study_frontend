@@ -145,7 +145,7 @@ export function PricingContent() {
               We&apos;re here to help you choose the right plan for your learning journey.
             </p>
             <Button variant="outline" asChild>
-              <Link href="/">Contact Support</Link>
+              <Link href="/contact">Contact Support</Link>
             </Button>
           </div>
         </div>
