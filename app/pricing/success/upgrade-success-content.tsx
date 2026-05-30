@@ -36,7 +36,7 @@ export function UpgradeSuccessContent() {
               <Link href={nextPath}>Continue</Link>
             </Button>
             <Button className="w-full rounded-lg bg-transparent" variant="outline" asChild>
-              <Link href="/subjects">Go to dashboard</Link>
+              <Link href="/subjects">Go to subjects</Link>
             </Button>
           </CardContent>
         </Card>

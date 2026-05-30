@@ -86,21 +86,18 @@ export default function HomePage() {
               title="Higher Math"
               description="Practice algebra, geometry, trigonometry, statistics, and related problem types."
               color="bg-blue-500"
-              slug="higher-math"
             />
             <SubjectCard
               icon={Atom}
               title="Physics"
               description="Review mechanics, light, sound, electricity, and magnetism through targeted practice."
               color="bg-teal-500"
-              slug="physics"
             />
             <SubjectCard
               icon={FlaskConical}
               title="Chemistry"
               description="Practice organic, inorganic, and physical chemistry topics with question-based review."
               color="bg-emerald-500"
-              slug="chemistry"
             />
           </div>
         </div>

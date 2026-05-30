@@ -27,19 +27,22 @@ const proPlan = {
   name: "Pro",
   price: "499",
   period: " / month",
-  badge: "Most popular",
+  badge: "Beta access",
   description: "More practice access for students who want broader revision.",
   features: [
     "Unlimited questions",
     "MCQ, CQ & Mixed Mode",
     "Detailed explanations",
     "All available subjects",
-    "Weak area analysis (coming soon)",
-    "Progress tracking (coming soon)",
     "Mixed practice sessions",
-    "Bookmark & revision mode (coming soon)",
-    "Faster question generation (coming soon)",
   ],
+  plannedFeatures: [
+    "Weak area analysis",
+    "Progress tracking",
+    "Bookmark & revision mode",
+    "Faster question generation",
+  ],
+  helperText: "Listed pricing is for the planned paid Pro plan. This beta release upgrades through the account flow without an online payment step.",
 }
 
 function UpgradeToProButtonFallback() {
@@ -49,7 +52,7 @@ function UpgradeToProButtonFallback() {
         Upgrade to Pro
       </Button>
       <p className="text-[10px] md:text-xs text-muted-foreground text-center mt-2">
-        Upgrade uses the account flow available in this release.
+        Beta upgrade uses the account flow available in this release.
       </p>
     </>
   )
@@ -121,15 +124,32 @@ export function PricingContent() {
               <div className="text-center mb-4 md:mb-6">
                 <span className="text-3xl md:text-4xl font-bold text-foreground">Tk {proPlan.price}</span>
                 <span className="text-sm md:text-base text-muted-foreground">{proPlan.period}</span>
+                <p className="mt-2 text-[10px] md:text-xs text-muted-foreground">{proPlan.helperText}</p>
               </div>
-              <ul className="space-y-2 md:space-y-3 mb-4 md:mb-6 flex-1">
+              <div className="mb-4 md:mb-6 flex-1 space-y-4">
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Available today</p>
+                  <ul className="space-y-2 md:space-y-3">
                 {proPlan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2 text-xs md:text-sm">
                     <Check className="h-4 w-4 text-success shrink-0 mt-0.5" />
                     <span className="text-muted-foreground">{feature}</span>
                   </li>
                 ))}
-              </ul>
+                  </ul>
+                </div>
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Planned</p>
+                  <ul className="space-y-2 md:space-y-3">
+                    {proPlan.plannedFeatures.map((feature) => (
+                      <li key={feature} className="flex items-start gap-2 text-xs md:text-sm">
+                        <Check className="h-4 w-4 text-muted-foreground/60 shrink-0 mt-0.5" />
+                        <span className="text-muted-foreground">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
               <Suspense fallback={<UpgradeToProButtonFallback />}>
                 <UpgradeToProButton />
               </Suspense>

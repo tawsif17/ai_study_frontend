@@ -82,7 +82,7 @@ function SubjectDetailWrapper({ subjectId }: { subjectId: number }) {
     return (
       <div className="container mx-auto px-4 py-12 text-center space-y-4">
         <h1 className="text-xl font-semibold text-foreground mb-2">Please sign in to continue</h1>
-        <p className="text-muted-foreground">Authorization token missing or invalid</p>
+        <p className="text-muted-foreground">Please sign in again to continue practicing.</p>
         <Button asChild>
           <Link href={`/login?next=${encodeURIComponent(`/subjects/${subjectId}`)}`}>Login</Link>
         </Button>

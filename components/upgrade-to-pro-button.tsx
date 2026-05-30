@@ -69,7 +69,7 @@ export function UpgradeToProButton() {
         {label}
       </Button>
       <p className="text-[10px] md:text-xs text-muted-foreground text-center mt-2">
-        One click upgrade. No payment step in this release.
+        Beta upgrade uses the account flow available in this release. No online payment step is shown here.
       </p>
       {error && <p className="text-[10px] md:text-xs text-destructive text-center mt-2">{error}</p>}
     </>

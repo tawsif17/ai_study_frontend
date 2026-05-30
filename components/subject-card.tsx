@@ -7,12 +7,11 @@ interface SubjectCardProps {
   title: string
   description: string
   color: string
-  slug: string
 }
 
-export function SubjectCard({ icon: Icon, title, description, color, slug }: SubjectCardProps) {
+export function SubjectCard({ icon: Icon, title, description, color }: SubjectCardProps) {
   return (
-    <AuthGatedLink href={`/subjects/${slug}`} className="block h-full">
+    <AuthGatedLink href="/subjects" className="block h-full">
       <Card className="group h-full cursor-pointer overflow-hidden border-border/80 bg-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg">
         <div className={`h-1.5 ${color}`} />
         <CardContent className="p-6">

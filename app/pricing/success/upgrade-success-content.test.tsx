@@ -23,7 +23,7 @@ describe("upgrade success content", () => {
     render(<UpgradeSuccessContent />)
 
     expect(screen.getByRole("link", { name: "Continue" })).toHaveAttribute("href", "/subjects/9")
-    expect(screen.getByRole("link", { name: "Go to dashboard" })).toHaveAttribute("href", "/subjects")
+    expect(screen.getByRole("link", { name: "Go to subjects" })).toHaveAttribute("href", "/subjects")
   })
 
   it("falls back to /subjects when next query is invalid", () => {

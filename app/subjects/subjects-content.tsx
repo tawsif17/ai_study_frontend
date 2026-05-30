@@ -60,7 +60,7 @@ export function SubjectsContent() {
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
               <AlertCircle className="h-6 w-6 text-primary" aria-hidden="true" />
             </div>
-            <p className="mb-4 text-muted-foreground">Authorization token missing or invalid</p>
+            <p className="mb-4 text-muted-foreground">Please sign in again to view your subjects.</p>
             <Button asChild>
               <Link href="/login?next=%2Fsubjects">Login to continue</Link>
             </Button>
