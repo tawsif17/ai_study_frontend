@@ -18,10 +18,10 @@ export function HeroSection() {
             Practice smarter. Learn deeper. Succeed confidently.
           </h1>
           <p className="mb-3 sm:mb-4 text-base sm:text-lg md:text-xl text-muted-foreground text-pretty px-2 sm:px-0">
-            AI-powered practice, explanations, and mock tests — designed to adapt to how you learn.
+            Guided practice, explanations, and mock-style sessions for focused SSC science preparation.
           </p>
           <p className="mb-6 sm:mb-10 text-xs sm:text-sm text-muted-foreground/80 px-2 sm:px-0">
-            Start with Physics, Chemistry, and Higher Math. Expanding to all major subjects and exams.
+            Start with Higher Math, Physics, and Chemistry for SSC.
           </p>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 px-4 sm:px-0">
             <Button size="lg" className="gap-2 w-full sm:w-auto" asChild>

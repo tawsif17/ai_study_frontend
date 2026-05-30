@@ -15,21 +15,21 @@ interface Feature {
 const features: Feature[] = [
   {
     icon: Zap,
-    title: "Practice that adapts to you",
-    shortTitle: "Adaptive practice",
-    description: "AI-generated questions matched to your level.",
+    title: "Practice with focus",
+    shortTitle: "Focused practice",
+    description: "Work through structured questions for the subjects currently available.",
   },
   {
     icon: BookOpen,
-    title: "Learn with clarity",
-    shortTitle: "Clear explanations",
-    description: "Instant explanations with textbook-based references.",
+    title: "Review with clarity",
+    shortTitle: "Clear review",
+    description: "Use explanations to understand mistakes and reinforce core concepts.",
   },
   {
     icon: TrendingUp,
-    title: "Build confidence over time",
-    shortTitle: "Track progress",
-    description: "Track progress, identify weak areas, and improve steadily.",
+    title: "Build study consistency",
+    shortTitle: "Study consistency",
+    description: "Keep practice sessions organized so revision is easier to return to.",
   },
 ]
 
@@ -98,10 +98,10 @@ export function FeaturesSection() {
         {/* Header - compact on mobile */}
         <div className="text-center mb-6 md:mb-12">
           <h2 className="text-xl md:text-3xl font-bold text-foreground mb-2 md:mb-4">
-            Your learning companion
+            A clearer way to practice
           </h2>
           <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto hidden md:block">
-            Designed to help you prepare efficiently and build lasting confidence.
+            Designed to keep SSC science practice focused and manageable.
           </p>
         </div>
 

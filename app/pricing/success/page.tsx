@@ -1,10 +1,20 @@
+import type { Metadata } from "next"
 import { Suspense } from "react"
 import { PageShell } from "@/components/page-shell"
 import { UpgradeSuccessContent } from "./upgrade-success-content"
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Upgrade Successful | Shikkha Buddy",
-  description: "Your plan is now upgraded to pro.",
+  description: "Your Shikkha Buddy plan upgrade has been confirmed.",
+  openGraph: {
+    title: "Upgrade Successful | Shikkha Buddy",
+    description: "Your Shikkha Buddy plan upgrade has been confirmed.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Upgrade Successful | Shikkha Buddy",
+    description: "Your Shikkha Buddy plan upgrade has been confirmed.",
+  },
 }
 
 function PricingSuccessFallback() {

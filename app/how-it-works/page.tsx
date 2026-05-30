@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { PageShell } from "@/components/page-shell"
 import { Breadcrumb } from "@/components/breadcrumb"
 import { Button } from "@/components/ui/button"
@@ -16,41 +17,52 @@ import {
 } from "@/components/icons"
 import Link from "next/link"
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "How It Works | Shikkha Buddy",
-  description: "A simple, step-by-step practice flow designed to build confidence — not pressure.",
+  description:
+    "See how Shikkha Buddy organizes SSC science practice into clear subject, question, and review steps.",
+  openGraph: {
+    title: "How It Works | Shikkha Buddy",
+    description:
+      "See how Shikkha Buddy organizes SSC science practice into clear subject, question, and review steps.",
+  },
+  twitter: {
+    card: "summary",
+    title: "How It Works | Shikkha Buddy",
+    description:
+      "See how Shikkha Buddy organizes SSC science practice into clear subject, question, and review steps.",
+  },
 }
 
 const steps = [
   {
     number: 1,
     title: "Choose what you want to practice",
-    description: "Select your subject, chapter, or the full syllabus. Start small or practice everything.",
+    description: "Select your subject, chapter, or the full syllabus. Start small or practice a wider set of topics.",
     icon: BookOpen,
   },
   {
     number: 2,
-    title: "Practice real and AI-generated questions",
-    description: "Solve a mix of real board questions and new AI-generated questions based on the same exam patterns.",
+    title: "Practice guided questions",
+    description: "Work through MCQ, CQ, or mixed practice based on the mode you choose.",
     icon: Sparkles,
   },
   {
     number: 3,
-    title: "Understand every answer clearly",
-    description: "Get instant explanations with textbook-based references — even when your answer is wrong.",
+    title: "Review explanations clearly",
+    description: "Use answer feedback and explanations to understand what to improve.",
     icon: Lightbulb,
   },
   {
     number: 4,
-    title: "Identify weak topics automatically",
-    description:
-      "We highlight the specific topics within each chapter that need more attention — not just the chapter name.",
+    title: "Notice patterns in your practice",
+    description: "Use completed sessions to see where you may need more review.",
     icon: Target,
   },
   {
     number: 5,
-    title: "Practice more where you need it most",
-    description: "Future practice sessions include more MCQs and CQs from your weak areas to help you improve faster.",
+    title: "Return to focused revision",
+    description: "Use your results and recent practice to decide what to work on next.",
     icon: TrendingUp,
   },
 ]
@@ -69,21 +81,21 @@ const practiceModes = [
   {
     icon: Shuffle,
     title: "Mixed Mode",
-    description: "Real exam-style practice combining both.",
+    description: "Practice MCQ and CQ together for broader review.",
     recommended: true,
   },
 ]
 
 const feedbackPoints = [
-  "See which questions you struggled with and why",
-  "View weak topics inside each chapter",
-  "Get better-focused questions in your next practice",
+  "Review submitted answers and explanations",
+  "Spot topics that need more attention",
+  "Choose the next practice session with more confidence",
 ]
 
 const trustPoints = [
-  "Based on real board questions and exam patterns",
+  "Built around SSC science practice needs",
   "Designed to reduce exam stress",
-  "Works at your pace — pause anytime",
+  "Works at your pace - pause anytime",
   "Start free, upgrade only if it helps you",
 ]
 
@@ -99,10 +111,10 @@ export default function HowItWorksPage() {
             </div>
             <div className="text-center">
               <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold text-foreground mb-3 md:mb-4 text-balance">
-                How Shikkha Buddy helps you learn
+                How Shikkha Buddy helps you practice
               </h1>
               <p className="text-base md:text-lg text-muted-foreground leading-relaxed text-pretty mb-2">
-                A simple, step-by-step practice flow designed to build confidence — not pressure.
+                A simple, step-by-step practice flow designed to build confidence without adding pressure.
               </p>
               <p className="text-xs md:text-sm text-muted-foreground/70">No complicated setup. No guesswork.</p>
             </div>
@@ -181,7 +193,7 @@ export default function HowItWorksPage() {
       <section className="container mx-auto px-4 py-8 md:py-12">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-lg md:text-2xl font-bold text-foreground mb-4 md:mb-6 text-center">
-            You don't just get a score — you get direction
+            Use each session to plan the next step
           </h2>
           <Card className="border-border">
             <CardContent className="p-4 md:p-6">

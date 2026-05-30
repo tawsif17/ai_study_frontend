@@ -74,7 +74,7 @@ export function SubjectCardDetailed({ subject }: SubjectCardDetailedProps) {
 
         {/* Description */}
         <p className="text-sm text-muted-foreground leading-relaxed mb-6 flex-1">
-          Practice {subject.name} with AI-powered mock tests and instant explanations.
+          Practice {subject.name} with guided question sessions and explanations.
         </p>
 
         {/* CTA Area */}
@@ -82,7 +82,7 @@ export function SubjectCardDetailed({ subject }: SubjectCardDetailedProps) {
           <Button className="w-full" asChild>
             <AuthGatedLink href={`/subjects/${subject.id}`}>View practice options</AuthGatedLink>
           </Button>
-          <p className="text-xs text-muted-foreground text-center">MCQ • CQ mode</p>
+          <p className="text-xs text-muted-foreground text-center">MCQ and CQ mode</p>
         </div>
       </CardContent>
     </Card>

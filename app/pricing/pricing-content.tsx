@@ -11,11 +11,11 @@ import { Suspense } from "react"
 const freePlan = {
   name: "Free",
   price: "0",
-  description: "Start learning with basic practice.",
+  description: "Start with limited MCQ practice.",
   features: [
     "Daily limited questions (10-15 per day)",
     "MCQ practice only",
-    "Basic AI explanations",
+    "Basic explanations",
     "1 subject access",
     "Progress saved automatically",
   ],
@@ -28,17 +28,17 @@ const proPlan = {
   price: "499",
   period: " / month",
   badge: "Most popular",
-  description: "Everything you need to practice seriously and improve consistently.",
+  description: "More practice access for students who want broader revision.",
   features: [
     "Unlimited questions",
     "MCQ, CQ & Mixed Mode",
-    "Detailed AI explanations",
-    "All subjects access",
-    "Weak area analysis",
-    "Progress tracking",
-    "Exam-style mock practice",
-    "Bookmark & revision mode",
-    "Faster question generation",
+    "Detailed explanations",
+    "All available subjects",
+    "Weak area analysis (coming soon)",
+    "Progress tracking (coming soon)",
+    "Mixed practice sessions",
+    "Bookmark & revision mode (coming soon)",
+    "Faster question generation (coming soon)",
   ],
 }
 
@@ -49,7 +49,7 @@ function UpgradeToProButtonFallback() {
         Upgrade to Pro
       </Button>
       <p className="text-[10px] md:text-xs text-muted-foreground text-center mt-2">
-        One click upgrade. No payment step in this release.
+        Upgrade uses the account flow available in this release.
       </p>
     </>
   )
@@ -66,7 +66,7 @@ export function PricingContent() {
             </div>
             <div className="text-center">
               <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold text-foreground mb-3 md:mb-4 text-balance">
-                Simple pricing for serious learners
+                Simple pricing for focused SSC practice
               </h1>
               <p className="text-base md:text-lg text-muted-foreground leading-relaxed text-pretty">
                 Start free. Upgrade when you&apos;re ready to go further.

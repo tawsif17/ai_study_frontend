@@ -13,7 +13,7 @@ export function Footer() {
               <BrandLogo className="h-12" />
             </Link>
             <p className="text-sm text-muted-foreground max-w-sm">
-              Your AI-powered study companion for SSC Higher Math, Physics & Chemistry. Practice smarter, score higher.
+              Focused SSC science practice for Higher Math, Physics, and Chemistry.
             </p>
           </div>
 
@@ -63,7 +63,7 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="mt-8 pt-8 border-t border-border text-center">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Shikkha Buddy. All rights reserved.
+            &copy; {new Date().getFullYear()} Shikkha Buddy. All rights reserved.
           </p>
         </div>
       </div>

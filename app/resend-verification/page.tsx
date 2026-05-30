@@ -1,6 +1,21 @@
+import type { Metadata } from "next"
 import { Suspense } from "react"
 import { PageShell } from "@/components/page-shell"
 import { ResendVerificationContent } from "./resend-verification-content"
+
+export const metadata: Metadata = {
+  title: "Resend Verification Email | Shikkha Buddy",
+  description: "Request a new verification email for your Shikkha Buddy account.",
+  openGraph: {
+    title: "Resend Verification Email | Shikkha Buddy",
+    description: "Request a new verification email for your Shikkha Buddy account.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Resend Verification Email | Shikkha Buddy",
+    description: "Request a new verification email for your Shikkha Buddy account.",
+  },
+}
 
 function ResendVerificationFallback() {
   return (

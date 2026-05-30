@@ -26,7 +26,7 @@ export function UpgradeSuccessContent() {
         <Card className="w-full max-w-lg border-border">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl" role="heading" aria-level={1}>Upgrade successful</CardTitle>
-            <CardDescription>Your pro plan is now active. You now have access to pro-only practice modes.</CardDescription>
+            <CardDescription>Your Pro plan is now active. Continue when you are ready to practice.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="p-3 rounded-lg bg-success/10 border border-success/20 text-sm text-success">

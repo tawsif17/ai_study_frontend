@@ -1,6 +1,21 @@
+import type { Metadata } from "next"
 import { Suspense } from "react"
 import { PageShell } from "@/components/page-shell"
 import { VerifyEmailContent } from "./verify-email-content"
+
+export const metadata: Metadata = {
+  title: "Verify Email | Shikkha Buddy",
+  description: "Complete email verification for your Shikkha Buddy account.",
+  openGraph: {
+    title: "Verify Email | Shikkha Buddy",
+    description: "Complete email verification for your Shikkha Buddy account.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Verify Email | Shikkha Buddy",
+    description: "Complete email verification for your Shikkha Buddy account.",
+  },
+}
 
 function VerifyEmailFallback() {
   return (
