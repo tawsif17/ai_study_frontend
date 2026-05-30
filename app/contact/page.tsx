@@ -78,19 +78,25 @@ export default function ContactPage() {
       <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-12">
         <Card className="w-full max-w-2xl border-border">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Contact us</CardTitle>
+            <CardTitle className="text-2xl" role="heading" aria-level={1}>Contact us</CardTitle>
             <CardDescription>Send a message and we will get back to you.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {status === "error" && (
-                <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+                <div
+                  className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
+                  role="alert"
+                >
                   {feedback || "Something went wrong. Please try again."}
                 </div>
               )}
 
               {status === "success" && (
-                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-700">
+                <div
+                  className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-700"
+                  role="status"
+                >
                   {feedback}
                 </div>
               )}

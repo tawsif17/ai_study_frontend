@@ -61,13 +61,13 @@ export default function SignUpPage() {
                 <GraduationCap className="h-6 w-6 text-primary" />
               </div>
             </div>
-            <CardTitle className="text-2xl">Create an account</CardTitle>
+            <CardTitle className="text-2xl" role="heading" aria-level={1}>Create an account</CardTitle>
             <CardDescription>Start your SSC exam preparation journey</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive" role="alert">
                   {error}
                 </div>
               )}

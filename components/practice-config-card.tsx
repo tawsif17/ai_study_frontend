@@ -74,6 +74,7 @@ export function PracticeConfigCard({
   const [error, setError] = useState<string | null>(null)
   const [showUpgradeCta, setShowUpgradeCta] = useState(false)
   const requiresProForMode = user?.plan_tier === "free" && (mode === "CQ" || mode === "MIXED")
+  const controlIdPrefix = `practice-${subjectId}-${mode.toLowerCase()}`
 
   const handleStartPractice = async () => {
     if (!isAuthenticated) {
@@ -153,9 +154,11 @@ export function PracticeConfigCard({
       <div className="space-y-4 mb-5 pt-4 border-t border-border">
         {mode !== "MIXED" ? (
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-muted-foreground">Number of questions</Label>
+            <Label id={`${controlIdPrefix}-count-label`} className="text-xs font-medium text-muted-foreground">
+              Number of questions
+            </Label>
             <Select value={count} onValueChange={setCount} disabled={isSelectDisabled}>
-              <SelectTrigger className="w-full h-9 text-sm">
+              <SelectTrigger className="w-full h-9 text-sm" aria-labelledby={`${controlIdPrefix}-count-label`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -170,9 +173,11 @@ export function PracticeConfigCard({
         ) : (
           <>
             <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">MCQ questions</Label>
+              <Label id={`${controlIdPrefix}-mcq-count-label`} className="text-xs font-medium text-muted-foreground">
+                MCQ questions
+              </Label>
               <Select value={mixedMcqCount} onValueChange={setMixedMcqCount} disabled={isSelectDisabled}>
-                <SelectTrigger className="w-full h-9 text-sm">
+                <SelectTrigger className="w-full h-9 text-sm" aria-labelledby={`${controlIdPrefix}-mcq-count-label`}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -185,9 +190,11 @@ export function PracticeConfigCard({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">CQ questions</Label>
+              <Label id={`${controlIdPrefix}-cq-count-label`} className="text-xs font-medium text-muted-foreground">
+                CQ questions
+              </Label>
               <Select value={mixedCqCount} onValueChange={setMixedCqCount} disabled={isSelectDisabled}>
-                <SelectTrigger className="w-full h-9 text-sm">
+                <SelectTrigger className="w-full h-9 text-sm" aria-labelledby={`${controlIdPrefix}-cq-count-label`}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -203,9 +210,11 @@ export function PracticeConfigCard({
         )}
 
         <div className="space-y-2">
-          <Label className="text-xs font-medium text-muted-foreground">Language</Label>
+          <Label id={`${controlIdPrefix}-language-label`} className="text-xs font-medium text-muted-foreground">
+            Language
+          </Label>
           <Select value={language} onValueChange={(v) => setLanguage(v as Language)} disabled={isSelectDisabled}>
-            <SelectTrigger className="w-full h-9 text-sm">
+            <SelectTrigger className="w-full h-9 text-sm" aria-labelledby={`${controlIdPrefix}-language-label`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -219,7 +228,7 @@ export function PracticeConfigCard({
         </div>
       </div>
 
-      {error && <p className="text-xs text-destructive text-center mb-3">{error}</p>}
+      {error && <p className="text-xs text-destructive text-center mb-3" role="alert">{error}</p>}
 
       {(showUpgradeCta || requiresProForMode) && (
         <Button variant="outline" className="w-full mb-3 bg-transparent" asChild>

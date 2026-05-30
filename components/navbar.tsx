@@ -22,6 +22,7 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
   return (
     <Link
       href={href}
+      aria-current={isActive ? "page" : undefined}
       className={cn(
         "text-sm font-medium transition-colors relative py-1",
         isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary",
@@ -97,17 +98,28 @@ function MobileMenu() {
     setIsOpen(false)
   }
 
+  const menuId = "mobile-navigation"
+
   return (
     <div className="md:hidden">
-      <Button variant="ghost" size="icon" onClick={() => setIsOpen(!isOpen)}>
-        {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      <Button
+        variant="ghost"
+        size="icon"
+        type="button"
+        aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
+        aria-expanded={isOpen}
+        aria-controls={menuId}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {isOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
       </Button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 bg-background border-b border-border p-4">
+        <div id={menuId} className="absolute top-full left-0 right-0 bg-background border-b border-border p-4">
           <div className="flex flex-col gap-4">
             <Link
               href="/"
+              aria-current={isActive("/") ? "page" : undefined}
               onClick={() => setIsOpen(false)}
               className={cn(
                 "text-sm font-medium transition-colors",
@@ -118,6 +130,7 @@ function MobileMenu() {
             </Link>
             <Link
               href="/subjects"
+              aria-current={isActive("/subjects") ? "page" : undefined}
               onClick={() => setIsOpen(false)}
               className={cn(
                 "text-sm font-medium transition-colors",
@@ -128,6 +141,7 @@ function MobileMenu() {
             </Link>
             <Link
               href="/how-it-works"
+              aria-current={isActive("/how-it-works") ? "page" : undefined}
               onClick={() => setIsOpen(false)}
               className={cn(
                 "text-sm font-medium transition-colors",
@@ -138,6 +152,7 @@ function MobileMenu() {
             </Link>
             <Link
               href="/pricing"
+              aria-current={isActive("/pricing") ? "page" : undefined}
               onClick={() => setIsOpen(false)}
               className={cn(
                 "text-sm font-medium transition-colors",
@@ -150,7 +165,7 @@ function MobileMenu() {
               <div className="flex flex-col gap-2 pt-2 border-t border-border">
                 {isAuthenticated ? (
                   <Button variant="ghost" size="sm" className="justify-start gap-2" onClick={handleLogout}>
-                    <LogOut className="h-4 w-4" />
+                    <LogOut className="h-4 w-4" aria-hidden="true" />
                     Logout
                   </Button>
                 ) : (

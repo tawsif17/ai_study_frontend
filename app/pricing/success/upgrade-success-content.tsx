@@ -25,7 +25,7 @@ export function UpgradeSuccessContent() {
       <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
         <Card className="w-full max-w-lg border-border">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Upgrade successful</CardTitle>
+            <CardTitle className="text-2xl" role="heading" aria-level={1}>Upgrade successful</CardTitle>
             <CardDescription>Your pro plan is now active. You now have access to pro-only practice modes.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

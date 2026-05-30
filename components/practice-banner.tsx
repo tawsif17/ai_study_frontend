@@ -35,22 +35,25 @@ export function PracticeBanner({
       <div className="hidden md:block absolute -bottom-24 -right-24 w-72 h-72 rounded-full bg-white/5" />
 
       <div className="container mx-auto px-4 relative z-10">
-        <nav className="flex items-center gap-1 text-xs sm:text-sm text-white/70 mb-4 sm:mb-6 flex-wrap">
-          <Link href="/" className="flex items-center hover:text-white transition-colors">
-            <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+        <nav
+          aria-label="Breadcrumb"
+          className="flex items-center gap-1 text-xs sm:text-sm text-white/70 mb-4 sm:mb-6 flex-wrap"
+        >
+          <Link href="/" aria-label="Home" className="flex items-center hover:text-white transition-colors">
+            <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
           <Link href="/subjects" className="hover:text-white transition-colors">
             Subjects
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
           <Link href={`/subjects/${subjectSlug}`} className="hover:text-white transition-colors">
             {subjectName}
           </Link>
-          <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
           <span className="capitalize">{difficulty}</span>
-          <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          <span className="text-white font-medium">{modeName}</span>
+          <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
+          <span className="text-white font-medium" aria-current="page">{modeName}</span>
         </nav>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">

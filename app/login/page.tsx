@@ -70,19 +70,19 @@ function LoginPageContent() {
                 <GraduationCap className="h-6 w-6 text-primary" />
               </div>
             </div>
-            <CardTitle className="text-2xl">Welcome back</CardTitle>
+            <CardTitle className="text-2xl" role="heading" aria-level={1}>Welcome back</CardTitle>
             <CardDescription>Sign in to continue your learning journey</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {success && (
-                <div className="p-3 rounded-lg bg-success/10 border border-success/20 text-sm text-success">
+                <div className="p-3 rounded-lg bg-success/10 border border-success/20 text-sm text-success" role="status">
                   {success}
                 </div>
               )}
 
               {error && (
-                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive" role="alert">
                   {error}
                 </div>
               )}

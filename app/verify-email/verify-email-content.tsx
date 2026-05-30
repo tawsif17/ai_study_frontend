@@ -49,30 +49,30 @@ export function VerifyEmailContent() {
       <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md border-border">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Verify your email</CardTitle>
+            <CardTitle className="text-2xl" role="heading" aria-level={1}>Verify your email</CardTitle>
             <CardDescription>Complete account verification to continue.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {status === "loading" && (
-              <div className="p-3 rounded-lg bg-muted text-sm text-muted-foreground">
+              <div className="p-3 rounded-lg bg-muted text-sm text-muted-foreground" role="status">
                 Verifying your email...
               </div>
             )}
 
             {status === "success" && (
-              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-700">
+              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-700" role="status">
                 {message}
               </div>
             )}
 
             {status === "error" && (
-              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive" role="alert">
                 {message || "Verification failed. Please try again."}
               </div>
             )}
 
             {status === "empty" && (
-              <div className="p-3 rounded-lg bg-muted text-sm text-muted-foreground">
+              <div className="p-3 rounded-lg bg-muted text-sm text-muted-foreground" role="status">
                 {message}
               </div>
             )}

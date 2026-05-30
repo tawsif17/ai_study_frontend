@@ -39,18 +39,18 @@ export function ResendVerificationContent() {
       <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md border-border">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Resend verification email</CardTitle>
+            <CardTitle className="text-2xl" role="heading" aria-level={1}>Resend verification email</CardTitle>
             <CardDescription>Enter your email to receive a new verification link.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {status === "error" && (
-                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive" role="alert">
                   {message}
                 </div>
               )}
               {status === "success" && (
-                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-700">
+                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-700" role="status">
                   {message}
                 </div>
               )}

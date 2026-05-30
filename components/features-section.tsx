@@ -38,6 +38,7 @@ function MobileFeatureItem({ feature, isOpen, onToggle }: { feature: Feature; is
   
   return (
     <button
+      type="button"
       onClick={onToggle}
       className="w-full text-left"
       aria-expanded={isOpen}
