@@ -50,7 +50,7 @@ export function SubjectCardDetailed({ subject }: SubjectCardDetailedProps) {
   const { Icon, colorClass, iconBgClass, iconTextClass } = getSubjectStyles(subject.name)
 
   return (
-    <Card className="group border-border bg-card hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col">
+    <Card className="group flex flex-col overflow-hidden border-border/80 bg-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg">
       {/* Top color bar */}
       <div className={`h-1.5 ${colorClass}`} />
 
@@ -63,7 +63,7 @@ export function SubjectCardDetailed({ subject }: SubjectCardDetailedProps) {
         </div>
 
         {/* Title */}
-        <h3 className="text-xl font-semibold text-card-foreground mb-2">{subject.name}</h3>
+        <h3 className="mb-2 text-xl font-semibold text-card-foreground">{subject.name}</h3>
 
         {/* Tag - SSC */}
         <div className="flex flex-wrap gap-2 mb-3">
@@ -79,7 +79,7 @@ export function SubjectCardDetailed({ subject }: SubjectCardDetailedProps) {
 
         {/* CTA Area */}
         <div className="mt-auto space-y-2">
-          <Button className="w-full" asChild>
+          <Button className="w-full rounded-lg" asChild>
             <AuthGatedLink href={`/subjects/${subject.id}`}>View practice options</AuthGatedLink>
           </Button>
           <p className="text-xs text-muted-foreground text-center">MCQ and CQ mode</p>

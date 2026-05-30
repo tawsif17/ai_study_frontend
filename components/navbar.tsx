@@ -24,13 +24,13 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
       href={href}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "text-sm font-medium transition-colors relative py-1",
+        "relative rounded-full px-3 py-2 text-sm font-medium transition-colors",
         isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary",
       )}
     >
       {children}
       {/* Active indicator underline */}
-      {isActive && <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full" />}
+      {isActive && <span className="absolute inset-x-3 bottom-1 h-0.5 rounded-full bg-primary" />}
     </Link>
   )
 }
@@ -39,11 +39,11 @@ export function Navbar() {
   const { isAuthenticated, logout, isLoading } = useAuth()
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto flex h-24 items-center justify-between px-2 sm:h-28 sm:px-3">
+    <nav className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+      <div className="container mx-auto flex h-20 items-center justify-between px-2 sm:h-24 sm:px-3">
         {/* Logo */}
         <Link href="/" className="-ml-1 flex items-center sm:-ml-3" aria-label="Shikkha Buddy home">
-          <BrandLogo className="h-20 sm:h-24" priority />
+          <BrandLogo className="h-16 sm:h-20" priority />
         </Link>
 
         <div className="hidden md:flex items-center gap-6 lg:gap-8">
@@ -67,7 +67,7 @@ export function Navbar() {
                   <Button variant="ghost" size="sm" asChild>
                     <Link href="/login">Login</Link>
                   </Button>
-                  <Button size="sm" asChild>
+                  <Button size="sm" className="rounded-lg shadow-primary" asChild>
                     <Link href="/signup">Sign Up</Link>
                   </Button>
                 </>
@@ -115,7 +115,7 @@ function MobileMenu() {
       </Button>
 
       {isOpen && (
-        <div id={menuId} className="absolute top-full left-0 right-0 bg-background border-b border-border p-4">
+        <div id={menuId} className="absolute left-0 right-0 top-full border-b border-border bg-background/95 p-4 shadow-lg backdrop-blur">
           <div className="flex flex-col gap-4">
             <Link
               href="/"
@@ -173,7 +173,7 @@ function MobileMenu() {
                     <Button variant="ghost" size="sm" className="justify-start" asChild>
                       <Link href="/login" onClick={() => setIsOpen(false)}>Login</Link>
                     </Button>
-                    <Button size="sm" asChild>
+                    <Button size="sm" className="rounded-lg" asChild>
                       <Link href="/signup" onClick={() => setIsOpen(false)}>Sign Up</Link>
                     </Button>
                   </>

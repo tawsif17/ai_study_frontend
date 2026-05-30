@@ -22,20 +22,20 @@ export function UpgradeSuccessContent() {
 
   return (
     <PageShell>
-      <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-lg border-border">
+      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center bg-[linear-gradient(180deg,rgba(19,117,201,0.06),rgba(255,255,255,0))] px-4 py-12">
+        <Card className="w-full max-w-lg border-border/80 shadow-xl shadow-primary/10">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl" role="heading" aria-level={1}>Upgrade successful</CardTitle>
             <CardDescription>Your Pro plan is now active. Continue when you are ready to practice.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="p-3 rounded-lg bg-success/10 border border-success/20 text-sm text-success">
+            <div className="rounded-lg border border-success/20 bg-success/10 p-3 text-sm text-success">
               Plan updated to Pro.
             </div>
-            <Button className="w-full" asChild>
+            <Button className="w-full rounded-lg" asChild>
               <Link href={nextPath}>Continue</Link>
             </Button>
-            <Button className="w-full bg-transparent" variant="outline" asChild>
+            <Button className="w-full rounded-lg bg-transparent" variant="outline" asChild>
               <Link href="/subjects">Go to dashboard</Link>
             </Button>
           </CardContent>

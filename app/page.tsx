@@ -34,15 +34,18 @@ export default function HomePage() {
       <FeaturesSection />
 
       {/* Practice Modes Section */}
-      <section className="py-20 bg-muted/30">
+      <section className="border-y border-border bg-muted/30 py-16 md:py-20">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-foreground mb-4">Choose Your Practice Mode</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+          <div className="mx-auto mb-10 max-w-2xl text-center md:mb-12">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">Practice modes</p>
+            <h2 className="mb-3 text-2xl font-bold text-foreground text-balance md:text-3xl">
+              Choose Your Practice Mode
+            </h2>
+            <p className="mx-auto leading-7 text-muted-foreground">
               Choose a format that fits the topic and your study goal.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
             <ModeCard
               icon={CheckCircle}
               title="MCQ Practice"
@@ -66,15 +69,18 @@ export default function HomePage() {
       </section>
 
       {/* Subjects Section */}
-      <section className="py-20 bg-background">
+      <section className="bg-background py-16 md:py-20">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-foreground mb-4">SSC Science Subjects</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+          <div className="mx-auto mb-10 max-w-2xl text-center md:mb-12">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">Available subjects</p>
+            <h2 className="mb-3 text-2xl font-bold text-foreground text-balance md:text-3xl">
+              SSC Science Subjects
+            </h2>
+            <p className="mx-auto leading-7 text-muted-foreground">
               Focused practice paths for the subjects currently available.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
             <SubjectCard
               icon={Calculator}
               title="Higher Math"
@@ -101,14 +107,16 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-primary/5">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold text-foreground mb-4">Ready to Start Practicing?</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
+      <section className="bg-background px-4 py-16 md:py-20">
+        <div className="container mx-auto rounded-2xl border border-primary/15 bg-primary/5 px-6 py-10 text-center shadow-sm md:px-10 md:py-12">
+          <h2 className="mb-3 text-2xl font-bold text-foreground text-balance md:text-3xl">
+            Ready to Start Practicing?
+          </h2>
+          <p className="mx-auto mb-7 max-w-2xl leading-7 text-muted-foreground">
             Start with a focused SSC science practice flow and build consistency over time.
           </p>
           <AuthGatedLink
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-8 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-7 text-sm font-medium text-primary-foreground shadow-primary transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             href="/subjects"
           >
             Get Started Free

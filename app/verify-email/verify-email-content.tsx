@@ -46,51 +46,51 @@ export function VerifyEmailContent() {
 
   return (
     <PageShell>
-      <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-md border-border">
+      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center bg-[linear-gradient(180deg,rgba(19,117,201,0.06),rgba(255,255,255,0))] px-4 py-12">
+        <Card className="w-full max-w-md border-border/80 shadow-xl shadow-primary/10">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl" role="heading" aria-level={1}>Verify your email</CardTitle>
             <CardDescription>Complete account verification to continue.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {status === "loading" && (
-              <div className="p-3 rounded-lg bg-muted text-sm text-muted-foreground" role="status">
+              <div className="rounded-lg bg-muted p-3 text-sm text-muted-foreground" role="status">
                 Verifying your email...
               </div>
             )}
 
             {status === "success" && (
-              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-700" role="status">
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-700" role="status">
                 {message}
               </div>
             )}
 
             {status === "error" && (
-              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive" role="alert">
+              <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
                 {message || "Verification failed. Please try again."}
               </div>
             )}
 
             {status === "empty" && (
-              <div className="p-3 rounded-lg bg-muted text-sm text-muted-foreground" role="status">
+              <div className="rounded-lg bg-muted p-3 text-sm text-muted-foreground" role="status">
                 {message}
               </div>
             )}
 
             {status === "error" && token && (
-              <Button className="w-full" onClick={() => void verifyToken(token)}>
+              <Button className="w-full rounded-lg" onClick={() => void verifyToken(token)}>
                 Try again
               </Button>
             )}
 
             {status === "success" && (
-              <Button asChild className="w-full">
+              <Button asChild className="w-full rounded-lg">
                 <Link href="/login">Go to login</Link>
               </Button>
             )}
 
             {(status === "empty" || status === "error") && (
-              <Button asChild variant="outline" className="w-full">
+              <Button asChild variant="outline" className="w-full rounded-lg bg-transparent">
                 <Link href="/resend-verification">Resend verification email</Link>
               </Button>
             )}

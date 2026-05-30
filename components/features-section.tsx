@@ -73,13 +73,13 @@ function DesktopFeatureCard({ feature }: { feature: Feature }) {
   const Icon = feature.icon
   
   return (
-    <Card className="border-border bg-card hover:shadow-lg transition-shadow duration-300">
+    <Card className="group border-border/80 bg-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg">
       <CardContent className="p-6 text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-          <Icon className="h-7 w-7 text-primary" />
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 transition-colors group-hover:bg-primary">
+          <Icon className="h-7 w-7 text-primary transition-colors group-hover:text-primary-foreground" />
         </div>
         <h3 className="mb-2 text-lg font-semibold text-card-foreground">{feature.title}</h3>
-        <p className="text-sm text-muted-foreground">{feature.description}</p>
+        <p className="text-sm leading-6 text-muted-foreground">{feature.description}</p>
       </CardContent>
     </Card>
   )
@@ -93,21 +93,22 @@ export function FeaturesSection() {
   }
 
   return (
-    <section className="py-10 md:py-20 bg-background">
+    <section className="bg-background py-14 md:py-20">
       <div className="container mx-auto px-4">
         {/* Header - compact on mobile */}
-        <div className="text-center mb-6 md:mb-12">
-          <h2 className="text-xl md:text-3xl font-bold text-foreground mb-2 md:mb-4">
+        <div className="mx-auto mb-8 max-w-2xl text-center md:mb-12">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">Focused study flow</p>
+          <h2 className="mb-3 text-2xl font-bold text-foreground text-balance md:text-3xl">
             A clearer way to practice
           </h2>
-          <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto hidden md:block">
+          <p className="hidden text-base leading-7 text-muted-foreground md:block">
             Designed to keep SSC science practice focused and manageable.
           </p>
         </div>
 
         {/* Mobile: Compact vertical list */}
         <div className="md:hidden">
-          <div className="divide-y divide-border rounded-lg border border-border bg-card px-4">
+          <div className="divide-y divide-border rounded-xl border border-border bg-card px-4 shadow-sm">
             {features.map((feature, index) => (
               <MobileFeatureItem
                 key={index}

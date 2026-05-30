@@ -53,11 +53,11 @@ export function SignupContent() {
 
   return (
     <PageShell>
-      <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-md border-border">
+      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center bg-[linear-gradient(180deg,rgba(19,117,201,0.06),rgba(255,255,255,0))] px-4 py-12">
+        <Card className="w-full max-w-md border-border/80 shadow-xl shadow-primary/10">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/15">
                 <GraduationCap className="h-6 w-6 text-primary" />
               </div>
             </div>
@@ -67,7 +67,7 @@ export function SignupContent() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive" role="alert">
+                <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
                   {error}
                 </div>
               )}
@@ -156,7 +156,7 @@ export function SignupContent() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading || !formData.class}>
+              <Button type="submit" className="w-full rounded-lg" disabled={isLoading || !formData.class}>
                 {isLoading ? "Creating account..." : "Create Account"}
               </Button>
 

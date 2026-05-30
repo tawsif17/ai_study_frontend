@@ -75,8 +75,8 @@ export function ContactContent() {
 
   return (
     <PageShell>
-      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-2xl border-border">
+      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center bg-[linear-gradient(180deg,rgba(19,117,201,0.06),rgba(255,255,255,0))] px-4 py-12">
+        <Card className="w-full max-w-2xl border-border/80 shadow-xl shadow-primary/10">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl" role="heading" aria-level={1}>Contact us</CardTitle>
             <CardDescription>Send a message about your account or study experience, and we will get back to you.</CardDescription>
@@ -142,7 +142,7 @@ export function ContactContent() {
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={status === "loading" || !isValid}>
+              <Button type="submit" className="w-full rounded-lg" disabled={status === "loading" || !isValid}>
                 {status === "loading" ? "Sending..." : "Send message"}
               </Button>
             </form>

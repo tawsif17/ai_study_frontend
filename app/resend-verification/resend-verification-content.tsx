@@ -36,8 +36,8 @@ export function ResendVerificationContent() {
 
   return (
     <PageShell>
-      <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-md border-border">
+      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center bg-[linear-gradient(180deg,rgba(19,117,201,0.06),rgba(255,255,255,0))] px-4 py-12">
+        <Card className="w-full max-w-md border-border/80 shadow-xl shadow-primary/10">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl" role="heading" aria-level={1}>Resend verification email</CardTitle>
             <CardDescription>Enter your email to receive a new verification link.</CardDescription>
@@ -45,12 +45,12 @@ export function ResendVerificationContent() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {status === "error" && (
-                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive" role="alert">
+                <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
                   {message}
                 </div>
               )}
               {status === "success" && (
-                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-700" role="status">
+                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-700" role="status">
                   {message}
                 </div>
               )}
@@ -68,11 +68,11 @@ export function ResendVerificationContent() {
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={status === "loading" || !email.trim()}>
+              <Button type="submit" className="w-full rounded-lg" disabled={status === "loading" || !email.trim()}>
                 {status === "loading" ? "Sending..." : "Send verification email"}
               </Button>
 
-              <Button asChild variant="outline" className="w-full" disabled={status === "loading"}>
+              <Button asChild variant="outline" className="w-full rounded-lg bg-transparent" disabled={status === "loading"}>
                 <Link href="/login">Back to login</Link>
               </Button>
             </form>

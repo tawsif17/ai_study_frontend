@@ -58,14 +58,15 @@ function UpgradeToProButtonFallback() {
 export function PricingContent() {
   return (
     <PageShell>
-      <section className="bg-secondary/50 border-b border-border">
+      <section className="border-b border-border bg-[linear-gradient(180deg,rgba(19,117,201,0.08),rgba(255,255,255,0))]">
         <div className="container mx-auto px-4 py-10 md:py-16">
           <div className="max-w-2xl mx-auto">
             <div className="mb-4 md:mb-6">
               <Breadcrumb items={[{ label: "Pricing" }]} />
             </div>
             <div className="text-center">
-              <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold text-foreground mb-3 md:mb-4 text-balance">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">Plans</p>
+              <h1 className="mb-3 text-3xl font-bold text-foreground text-balance md:mb-4 md:text-4xl lg:text-5xl">
                 Simple pricing for focused SSC practice
               </h1>
               <p className="text-base md:text-lg text-muted-foreground leading-relaxed text-pretty">
@@ -76,9 +77,9 @@ export function PricingContent() {
         </div>
       </section>
 
-      <section className="container mx-auto px-4 py-8 md:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 max-w-3xl mx-auto">
-          <Card className="relative flex flex-col border-border">
+      <section className="container mx-auto px-4 py-10 md:py-16">
+        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-5 md:grid-cols-2 md:gap-8">
+          <Card className="relative flex flex-col border-border/80 shadow-sm">
             <CardHeader className="text-center pb-3 md:pb-4">
               <div className="mx-auto mb-3 md:mb-4 flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl bg-muted">
                 <Zap className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground" />
@@ -98,15 +99,15 @@ export function PricingContent() {
                   </li>
                 ))}
               </ul>
-              <Button className="w-full bg-transparent" variant="outline" asChild>
+              <Button className="w-full rounded-lg border-primary/20 bg-transparent" variant="outline" asChild>
                 <Link href="/subjects">{freePlan.cta}</Link>
               </Button>
               <p className="text-[10px] md:text-xs text-muted-foreground text-center mt-2">{freePlan.helperText}</p>
             </CardContent>
           </Card>
 
-          <Card className="relative flex flex-col border-primary shadow-lg md:scale-105">
-            <Badge className="absolute -top-2.5 md:-top-3 left-1/2 -translate-x-1/2 bg-primary text-xs">
+          <Card className="relative flex flex-col border-primary shadow-xl shadow-primary/10 md:scale-[1.03]">
+            <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-xs md:-top-3">
               {proPlan.badge}
             </Badge>
             <CardHeader className="text-center pb-3 md:pb-4 pt-6">
@@ -137,14 +138,14 @@ export function PricingContent() {
         </div>
       </section>
 
-      <section className="bg-muted/50 border-t border-border">
+      <section className="border-t border-border bg-muted/40">
         <div className="container mx-auto px-4 py-8 md:py-12">
           <div className="max-w-xl mx-auto text-center">
             <h2 className="text-lg md:text-xl font-semibold text-foreground mb-2">Have questions?</h2>
             <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-4">
               We&apos;re here to help you choose the right plan for your learning journey.
             </p>
-            <Button variant="outline" asChild>
+            <Button variant="outline" className="rounded-lg border-primary/20 bg-background" asChild>
               <Link href="/contact">Contact Support</Link>
             </Button>
           </div>

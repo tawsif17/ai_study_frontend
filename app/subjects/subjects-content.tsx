@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { PageShell } from "@/components/page-shell"
 import { SubjectCardDetailed } from "@/components/subject-card-detailed"
 import { Breadcrumb } from "@/components/breadcrumb"
-import { BookOpen } from "@/components/icons"
+import { AlertCircle, BookOpen } from "@/components/icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { ApiClientError } from "@/lib/api/client"
@@ -29,14 +29,15 @@ export function SubjectsContent() {
 
   return (
     <PageShell>
-      <section className="bg-secondary/50 border-b border-border">
-        <div className="container mx-auto px-4 py-16 md:py-20">
+      <section className="border-b border-border bg-[linear-gradient(180deg,rgba(19,117,201,0.08),rgba(255,255,255,0))]">
+        <div className="container mx-auto px-4 py-12 md:py-16">
           <div className="max-w-2xl mx-auto">
             <div className="mb-6">
               <Breadcrumb items={[{ label: "Subjects" }]} />
             </div>
             <div className="text-center">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 text-balance">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">Subject library</p>
+              <h1 className="mb-4 text-3xl font-bold text-foreground text-balance md:text-4xl lg:text-5xl">
                 Choose an SSC science subject
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed text-pretty">
@@ -47,38 +48,47 @@ export function SubjectsContent() {
         </div>
       </section>
 
-      <section className="container mx-auto px-4 py-12 md:py-16">
+      <section className="container mx-auto px-4 py-10 md:py-16">
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3" role="status" aria-label="Loading subjects">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-64 rounded-xl" />
+              <Skeleton key={i} className="h-64 rounded-xl border border-border/60 bg-muted/70" />
             ))}
           </div>
         ) : isUnauthorized ? (
-          <div className="text-center py-12 space-y-4">
-            <p className="text-muted-foreground">Authorization token missing or invalid</p>
+          <div className="mx-auto max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+              <AlertCircle className="h-6 w-6 text-primary" aria-hidden="true" />
+            </div>
+            <p className="mb-4 text-muted-foreground">Authorization token missing or invalid</p>
             <Button asChild>
               <Link href="/login?next=%2Fsubjects">Login to continue</Link>
             </Button>
           </div>
         ) : isError ? (
-          <div className="text-center py-12">
+          <div className="mx-auto max-w-md rounded-2xl border border-destructive/20 bg-destructive/5 p-8 text-center shadow-sm" role="alert">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10">
+              <AlertCircle className="h-6 w-6 text-destructive" aria-hidden="true" />
+            </div>
             <p className="text-destructive">Unable to load subjects right now.</p>
           </div>
         ) : subjects && subjects.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {subjects.map((subject) => (
               <SubjectCardDetailed key={subject.id} subject={subject} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
+          <div className="mx-auto max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
+              <BookOpen className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
+            </div>
             <p className="text-muted-foreground">No subjects available at this time.</p>
           </div>
         )}
       </section>
 
-      <section className="bg-muted/50 border-t border-border">
+      <section className="border-t border-border bg-muted/40">
         <div className="container mx-auto px-4 py-12 md:py-16">
           <div className="max-w-xl mx-auto text-center">
             <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-primary/10 mb-4">

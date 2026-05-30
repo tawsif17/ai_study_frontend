@@ -103,14 +103,15 @@ export default function HowItWorksPage() {
   return (
     <PageShell>
       {/* Hero Section */}
-      <section id="how-it-works" className="bg-secondary/50 border-b border-border">
-        <div className="container mx-auto px-4 py-10 md:py-16">
+      <section id="how-it-works" className="border-b border-border bg-[linear-gradient(180deg,rgba(19,117,201,0.08),rgba(255,255,255,0))]">
+        <div className="container mx-auto px-4 py-12 md:py-16">
           <div className="max-w-2xl mx-auto">
             <div className="mb-4 md:mb-6">
               <Breadcrumb items={[{ label: "How It Works" }]} />
             </div>
             <div className="text-center">
-              <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold text-foreground mb-3 md:mb-4 text-balance">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">Simple study flow</p>
+              <h1 className="mb-3 text-3xl font-bold text-foreground text-balance md:mb-4 md:text-4xl lg:text-5xl">
                 How Shikkha Buddy helps you practice
               </h1>
               <p className="text-base md:text-lg text-muted-foreground leading-relaxed text-pretty mb-2">
@@ -123,7 +124,7 @@ export default function HowItWorksPage() {
       </section>
 
       {/* Step Flow Section */}
-      <section className="container mx-auto px-4 py-8 md:py-16">
+      <section className="container mx-auto px-4 py-10 md:py-16">
         <div className="max-w-2xl mx-auto">
           <div className="space-y-0">
             {steps.map((step, index) => {
@@ -136,7 +137,7 @@ export default function HowItWorksPage() {
                   )}
                   <div className="flex gap-3 md:gap-4 pb-6 md:pb-8">
                     {/* Step number circle */}
-                    <div className="relative z-10 flex h-10 w-10 md:h-12 md:w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold text-sm md:text-base">
+                    <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-4 border-background bg-primary text-sm font-semibold text-primary-foreground shadow-primary md:h-12 md:w-12 md:text-base">
                       {step.number}
                     </div>
                     {/* Content */}
@@ -153,7 +154,7 @@ export default function HowItWorksPage() {
       </section>
 
       {/* Practice Modes Section */}
-      <section className="bg-muted/30 border-y border-border">
+      <section className="border-y border-border bg-muted/30">
         <div className="container mx-auto px-4 py-8 md:py-12">
           <div className="max-w-2xl mx-auto">
             <h2 className="text-lg md:text-2xl font-bold text-foreground mb-4 md:mb-6 text-center">
@@ -165,7 +166,7 @@ export default function HowItWorksPage() {
                 return (
                   <div
                     key={mode.title}
-                    className="flex items-start gap-3 p-3 md:p-4 rounded-lg bg-card border border-border"
+                    className="flex items-start gap-3 rounded-xl border border-border/80 bg-card p-3 shadow-sm md:p-4"
                   >
                     <div className="flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                       <Icon className="h-4 w-4 md:h-5 md:w-5 text-primary" />
@@ -174,7 +175,7 @@ export default function HowItWorksPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="text-sm md:text-base font-semibold text-foreground">{mode.title}</h3>
                         {mode.recommended && (
-                          <span className="text-[10px] md:text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary md:text-xs">
                             Recommended
                           </span>
                         )}
@@ -195,7 +196,7 @@ export default function HowItWorksPage() {
           <h2 className="text-lg md:text-2xl font-bold text-foreground mb-4 md:mb-6 text-center">
             Use each session to plan the next step
           </h2>
-          <Card className="border-border">
+          <Card className="border-border/80 shadow-sm">
             <CardContent className="p-4 md:p-6">
               <ul className="space-y-2 md:space-y-3">
                 {feedbackPoints.map((point) => (
@@ -214,13 +215,13 @@ export default function HowItWorksPage() {
       </section>
 
       {/* Trust & Reassurance Section */}
-      <section className="bg-muted/30 border-y border-border">
+      <section className="border-y border-border bg-muted/30">
         <div className="container mx-auto px-4 py-8 md:py-12">
           <div className="max-w-2xl mx-auto">
-            <ul className="space-y-2 md:space-y-3">
+            <ul className="grid gap-3 md:grid-cols-2">
               {trustPoints.map((point) => (
-                <li key={point} className="flex items-center gap-2 md:gap-3">
-                  <Check className="h-4 w-4 md:h-5 md:w-5 text-success shrink-0" />
+                <li key={point} className="flex items-center gap-2 rounded-xl border border-border/80 bg-card p-3 shadow-sm md:gap-3">
+                  <Check className="h-4 w-4 shrink-0 text-success md:h-5 md:w-5" />
                   <span className="text-sm md:text-base text-muted-foreground">{point}</span>
                 </li>
               ))}
@@ -230,12 +231,12 @@ export default function HowItWorksPage() {
       </section>
 
       {/* Final CTA Section */}
-      <section className="container mx-auto px-4 py-10 md:py-16">
-        <div className="max-w-xl mx-auto text-center">
+      <section className="container mx-auto px-4 py-12 md:py-16">
+        <div className="mx-auto max-w-xl rounded-2xl border border-primary/15 bg-primary/5 px-6 py-8 text-center shadow-sm">
           <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4 md:mb-6">
             Ready to try your first practice session?
           </h2>
-          <Button size="lg" className="gap-2 w-full sm:w-auto" asChild>
+          <Button size="lg" className="h-11 w-full gap-2 rounded-lg shadow-primary sm:w-auto" asChild>
             <Link href="/subjects">
               Start practicing free
               <ArrowRight className="h-4 w-4" />
