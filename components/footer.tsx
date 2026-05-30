@@ -1,12 +1,42 @@
 import Link from "next/link"
-import { Mail } from "@/components/icons"
 import { BrandLogo } from "@/components/brand-logo"
+
+const footerGroups = [
+  {
+    title: "Product",
+    links: [
+      { label: "Subjects", href: "/subjects" },
+      { label: "Pricing", href: "/pricing" },
+      { label: "How it works", href: "/how-it-works" },
+    ],
+  },
+  {
+    title: "Company",
+    links: [
+      { label: "About", href: "/about" },
+      { label: "Contact", href: "/contact" },
+      { label: "Support", href: "/support" },
+      { label: "FAQ", href: "/faq" },
+    ],
+  },
+  {
+    title: "Trust & Legal",
+    links: [
+      { label: "Privacy", href: "/privacy" },
+      { label: "Terms", href: "/terms" },
+      { label: "Refund Policy", href: "/refund-policy" },
+      { label: "Data Protection", href: "/data-protection" },
+      { label: "AI Disclaimer", href: "/ai-disclaimer" },
+      { label: "Data Deletion", href: "/data-deletion" },
+    ],
+  },
+]
 
 export function Footer() {
   return (
     <footer className="border-t border-border bg-muted/40">
       <div className="container mx-auto px-4 py-10 md:py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-5">
           {/* Logo & Description */}
           <div className="md:col-span-2">
             <Link href="/" className="mb-4 inline-flex items-center" aria-label="Shikkha Buddy home">
@@ -17,47 +47,20 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h4 className="mb-4 text-sm font-semibold text-foreground">Quick Links</h4>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link href="/how-it-works" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  How it works
-                </Link>
-              </li>
-              <li>
-                <Link href="/subjects" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Subjects
-                </Link>
-              </li>
-              <li>
-                <Link href="/pricing" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Pricing
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Social Links */}
-          <div>
-            <h4 className="mb-4 text-sm font-semibold text-foreground">Connect</h4>
-            <div className="flex flex-col gap-3">
-              <Link
-                href="/contact"
-                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-                aria-label="Contact Shikkha Buddy"
-              >
-                <Mail className="h-5 w-5" />
-                Contact
-              </Link>
+          {footerGroups.map((group) => (
+            <div key={group.title}>
+              <h4 className="mb-4 text-sm font-semibold text-foreground">{group.title}</h4>
+              <ul className="space-y-2">
+                {group.links.map((link) => (
+                  <li key={link.href}>
+                    <Link href={link.href} className="text-sm text-muted-foreground transition-colors hover:text-primary">
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
-          </div>
+          ))}
         </div>
 
         {/* Bottom Bar */}
