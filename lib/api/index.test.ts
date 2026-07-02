@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { resendVerification, submitContact, upgradeToPro, verifyEmail } from "./index"
+import { reportQuestion, resendVerification, submitContact, upgradeToPro, verifyEmail } from "./index"
 import { apiClient } from "./client"
 
 vi.mock("./client", () => ({
@@ -69,6 +69,55 @@ describe("auth API contract calls", () => {
         message: "I need help with the platform.",
       },
       includeAuth: true,
+    })
+  })
+
+  it("calls question report endpoint with mapped contract payload", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce({
+      id: 1,
+      question_id: 123,
+      reason_code: "OUT_OF_SYLLABUS",
+      status: "OPEN",
+      message: "Question report submitted successfully.",
+      created_at: "2026-07-02T00:00:00.000Z",
+    })
+
+    await reportQuestion(123, {
+      reason_code: "OUT_OF_SYLLABUS",
+      details: " This topic is no longer in the current SSC syllabus. ",
+    })
+
+    expect(apiClient).toHaveBeenCalledWith("/questions/123/reports", {
+      method: "POST",
+      body: {
+        reason_code: "OUT_OF_SYLLABUS",
+        details: "This topic is no longer in the current SSC syllabus.",
+      },
+      requiresAuth: true,
+    })
+  })
+
+  it("omits blank question report details", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce({
+      id: 2,
+      question_id: 123,
+      reason_code: "TYPO",
+      status: "OPEN",
+      message: "Question report submitted successfully.",
+      created_at: "2026-07-02T00:00:00.000Z",
+    })
+
+    await reportQuestion(123, {
+      reason_code: "TYPO",
+      details: "   ",
+    })
+
+    expect(apiClient).toHaveBeenCalledWith("/questions/123/reports", {
+      method: "POST",
+      body: {
+        reason_code: "TYPO",
+      },
+      requiresAuth: true,
     })
   })
 })
