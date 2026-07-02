@@ -152,6 +152,32 @@ export interface QuestionsListResponse {
   questions: QuestionListItem[]
 }
 
+export const questionReportReasonOptions = [
+  { label: "Out of Syllabus", value: "OUT_OF_SYLLABUS" },
+  { label: "No Correct Answer", value: "NO_CORRECT_ANSWER" },
+  { label: "Wrong Answer", value: "WRONG_ANSWER" },
+  { label: "Unclear Question", value: "UNCLEAR_QUESTION" },
+  { label: "Typo", value: "TYPO" },
+  { label: "Other", value: "OTHER" },
+] as const
+
+export type QuestionReportReasonCode = (typeof questionReportReasonOptions)[number]["value"]
+export type QuestionReportStatus = "OPEN" | "REVIEWED" | "RESOLVED" | "DISMISSED"
+
+export interface QuestionReportRequest {
+  reason_code: QuestionReportReasonCode
+  details?: string
+}
+
+export interface QuestionReportResponse {
+  id: number
+  question_id: number
+  reason_code: QuestionReportReasonCode
+  status: QuestionReportStatus
+  message: string
+  created_at: string
+}
+
 // ============================================
 // PRACTICE SESSION TYPES
 // ============================================

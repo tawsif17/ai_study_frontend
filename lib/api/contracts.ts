@@ -1,9 +1,11 @@
 import { z } from "zod"
 import { ApiClientError } from "./client"
+import { questionReportReasonOptions } from "./types"
 import type {
   ContactSubmitRequest,
   LoginRequest,
   PracticeGenerateRequest,
+  QuestionReportRequest,
   QuestionsListRequest,
   RegisterRequest,
   ResendVerificationRequest,
@@ -65,6 +67,18 @@ const questionsListRequestSchema = z
     chapter_id: z.number().int().optional(),
     question_type: z.string().optional(),
     language: z.string().optional(),
+  })
+  .strict()
+
+const questionReportReasonCodes = questionReportReasonOptions.map((option) => option.value) as [
+  QuestionReportRequest["reason_code"],
+  ...QuestionReportRequest["reason_code"][],
+]
+
+const questionReportRequestSchema = z
+  .object({
+    reason_code: z.enum(questionReportReasonCodes),
+    details: z.string().max(1000).optional(),
   })
   .strict()
 
@@ -137,6 +151,16 @@ export function validateContactSubmitRequest(input: ContactSubmitRequest): Conta
 
 export function validateQuestionsListRequest(input: QuestionsListRequest): QuestionsListRequest {
   const parsed = questionsListRequestSchema.safeParse(input)
+  if (!parsed.success) {
+    throw new Error(zodMessage(parsed.error))
+  }
+  return parsed.data
+}
+
+export function validateQuestionReportRequest(
+  input: QuestionReportRequest
+): QuestionReportRequest {
+  const parsed = questionReportRequestSchema.safeParse(input)
   if (!parsed.success) {
     throw new Error(zodMessage(parsed.error))
   }

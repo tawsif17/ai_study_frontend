@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Trophy, CheckCircle2, XCircle, ChevronLeft, ChevronRight, ArrowLeft } from "@/components/icons"
+import { QuestionReportDialog } from "@/components/question-report-dialog"
 import { usePracticeResults } from "@/lib/api/practice-hooks"
 import type { PracticeSummaryResponse, Section, ResultItem } from "@/lib/api/types"
 import { cn } from "@/lib/utils"
@@ -144,17 +145,20 @@ function ResultItemCard({ item }: { item: ResultItem }) {
     <Card className="border-border bg-card shadow-sm overflow-hidden">
       <CardContent className="p-6">
         {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="font-semibold">
-              Q{item.section_order_no}
-            </Badge>
-            <Badge variant="outline">{item.question.question_type}</Badge>
-            {item.question.source && (
-              <Badge variant="outline" className="text-muted-foreground">
-                {item.question.source}
+        <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <Badge variant="secondary" className="font-semibold">
+                Q{item.section_order_no}
               </Badge>
-            )}
+              <Badge variant="outline">{item.question.question_type}</Badge>
+              {item.question.source && (
+                <Badge variant="outline" className="text-muted-foreground">
+                  {item.question.source}
+                </Badge>
+              )}
+            </div>
+            <QuestionReportDialog questionId={item.question.id} />
           </div>
           {isMcq && (
             <div className={cn(

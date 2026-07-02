@@ -4,8 +4,10 @@ import {
   matchEntitlementErrorByExactMessage,
   validateContactSubmitRequest,
   validatePracticeGenerateRequest,
+  validateQuestionReportRequest,
   validateQuestionsListRequest,
 } from "../lib/api/contracts"
+import { questionReportReasonOptions } from "../lib/api/types"
 import { ApiClientError } from "../lib/api/client"
 
 describe("matchEntitlementErrorByExactMessage", () => {
@@ -85,5 +87,39 @@ describe("contract request validators", () => {
         selection: { type: "CHAPTERS" },
       })
     ).toThrow("selection.chapter_ids is required when selection.type is CHAPTERS")
+  })
+
+  it("validates question report contract values and rejects readable labels", () => {
+    const valid = validateQuestionReportRequest({
+      reason_code: "OUT_OF_SYLLABUS",
+      details: "This topic is no longer in the current SSC syllabus.",
+    })
+
+    expect(valid).toEqual({
+      reason_code: "OUT_OF_SYLLABUS",
+      details: "This topic is no longer in the current SSC syllabus.",
+    })
+
+    expect(questionReportReasonOptions.find((option) => option.label === "Out of Syllabus")).toEqual({
+      label: "Out of Syllabus",
+      value: "OUT_OF_SYLLABUS",
+    })
+
+    expect(() =>
+      validateQuestionReportRequest({ reason_code: "Out of Syllabus" } as never)
+    ).toThrow()
+    expect(() => validateQuestionReportRequest({} as never)).toThrow()
+    expect(() =>
+      validateQuestionReportRequest({
+        reason_code: "TYPO",
+        details: "x".repeat(1001),
+      })
+    ).toThrow()
+    expect(() =>
+      validateQuestionReportRequest({
+        reason_code: "TYPO",
+        extra: "x",
+      } as never)
+    ).toThrow()
   })
 })

@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ChevronLeft, ChevronRight, CheckCircle } from "@/components/icons"
+import { QuestionReportDialog } from "@/components/question-report-dialog"
 import useSWR, { useSWRConfig } from "swr"
 import { usePracticeItems, usePracticeAnswers } from "@/lib/api/practice-hooks"
 import { saveAnswers, submitPractice, getQuestionById } from "@/lib/api"
@@ -186,11 +187,14 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
           {/* Question Card */}
           <Card className="border-border bg-card shadow-md mb-6">
             <CardContent className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Badge variant="secondary" className="font-semibold">
-                  Q{displayNumber}
-                </Badge>
-                <Badge variant="outline">{currentSection}</Badge>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <Badge variant="secondary" className="font-semibold">
+                    Q{displayNumber}
+                  </Badge>
+                  <Badge variant="outline">{currentSection}</Badge>
+                </div>
+                <QuestionReportDialog questionId={currentItem.question_id} />
               </div>
 
               {questionLoading ? (

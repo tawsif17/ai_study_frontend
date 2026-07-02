@@ -11,6 +11,7 @@ import {
   validateContactSubmitRequest,
   validateLoginRequest,
   validatePracticeGenerateRequest,
+  validateQuestionReportRequest,
   validateQuestionsListRequest,
   validateRegisterRequest,
   validateResendVerificationRequest,
@@ -34,6 +35,8 @@ import type {
   PracticeSummaryResponse,
   QuestionDetail,
   QuestionPart,
+  QuestionReportRequest,
+  QuestionReportResponse,
   QuestionsListRequest,
   QuestionsListResponse,
   RegisterRequest,
@@ -199,6 +202,23 @@ export async function getQuestionById(questionId: number): Promise<QuestionDetai
   }
 
   return response
+}
+
+export async function reportQuestion(
+  questionId: number,
+  data: QuestionReportRequest
+): Promise<QuestionReportResponse> {
+  const trimmedDetails = data.details?.trim()
+  const payload = validateQuestionReportRequest({
+    reason_code: data.reason_code,
+    ...(trimmedDetails ? { details: trimmedDetails } : {}),
+  })
+
+  return apiClient<QuestionReportResponse>(`/questions/${questionId}/reports`, {
+    method: "POST",
+    body: payload,
+    requiresAuth: true,
+  })
 }
 
 // ============================================
