@@ -29,9 +29,9 @@ async function resultsFetcher([, id, section, page, pageSize]: [string, number, 
   return getResults(id, section, page, pageSize)
 }
 
-export function usePracticeSummary(practiceId: number | undefined) {
+export function usePracticeSummary(practiceId: number | undefined, enabled: boolean = true) {
   const { data, error, isLoading, mutate } = useSWR<PracticeSummaryResponse>(
-    practiceId ? ["practice-summary", practiceId] : null,
+    practiceId && enabled ? ["practice-summary", practiceId] : null,
     summaryFetcher
   )
   return {
@@ -42,9 +42,9 @@ export function usePracticeSummary(practiceId: number | undefined) {
   }
 }
 
-export function usePracticeItems(practiceId: number | undefined, section?: Section) {
+export function usePracticeItems(practiceId: number | undefined, section?: Section, enabled: boolean = true) {
   const { data, error, isLoading, mutate } = useSWR<PracticeItem[]>(
-    practiceId ? ["practice-items", practiceId, section] : null,
+    practiceId && enabled ? ["practice-items", practiceId, section] : null,
     itemsFetcher
   )
   return {
@@ -55,9 +55,9 @@ export function usePracticeItems(practiceId: number | undefined, section?: Secti
   }
 }
 
-export function usePracticeAnswers(practiceId: number | undefined) {
+export function usePracticeAnswers(practiceId: number | undefined, enabled: boolean = true) {
   const { data, error, isLoading, mutate } = useSWR<GetAnswersResponse>(
-    practiceId ? ["practice-answers", practiceId] : null,
+    practiceId && enabled ? ["practice-answers", practiceId] : null,
     answersFetcher,
     {
       revalidateOnFocus: false,

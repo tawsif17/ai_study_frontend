@@ -5,7 +5,9 @@ import { notFound, useRouter, useSearchParams } from "next/navigation"
 import { PageShell } from "@/components/page-shell"
 import { PracticeSessionContent } from "@/components/practice-session-content"
 import { PracticeResultsContent } from "@/components/practice-results-content"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import Link from "next/link"
 import { usePracticeSummary } from "@/lib/api/practice-hooks"
 import { useAuth } from "@/lib/auth-context"
 import { useEffect } from "react"
@@ -32,25 +34,37 @@ export default function PracticeSessionPage({
   )
 }
 
-function PracticeSessionWrapper({ practiceId }: { practiceId: number }) {
+export function PracticeSessionWrapper({ practiceId }: { practiceId: number }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const warning = searchParams.get("warning")
   const { isAuthenticated, isLoading: authLoading } = useAuth()
-  const { summary, isLoading, isError } = usePracticeSummary(practiceId)
+  const { summary, isLoading, isError } = usePracticeSummary(practiceId, isAuthenticated)
 
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push("/login")
+      router.push(`/login?next=${encodeURIComponent(`/practice/${practiceId}`)}`)
     }
-  }, [authLoading, isAuthenticated, router])
+  }, [authLoading, isAuthenticated, practiceId, router])
 
   if (authLoading || isLoading) {
     return (
       <div className="container mx-auto px-4 py-12">
         <Skeleton className="h-32 w-full mb-8" />
         <Skeleton className="h-96 w-full" />
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="container mx-auto px-4 py-12 text-center space-y-4">
+        <h1 className="text-xl font-semibold text-foreground mb-2">Please sign in to continue</h1>
+        <p className="text-muted-foreground">Please sign in again to continue practicing.</p>
+        <Button asChild>
+          <Link href={`/login?next=${encodeURIComponent(`/practice/${practiceId}`)}`}>Login</Link>
+        </Button>
       </div>
     )
   }

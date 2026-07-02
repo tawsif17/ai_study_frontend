@@ -30,7 +30,7 @@ export default function SubjectDetailPage({
   )
 }
 
-function SubjectDetailWrapper({ subjectId }: { subjectId: number }) {
+export function SubjectDetailWrapper({ subjectId }: { subjectId: number }) {
   const router = useRouter()
   const { isAuthenticated, isLoading: authLoading } = useAuth()
 
@@ -86,6 +86,15 @@ function SubjectDetailWrapper({ subjectId }: { subjectId: number }) {
         <Button asChild>
           <Link href={`/login?next=${encodeURIComponent(`/subjects/${subjectId}`)}`}>Login</Link>
         </Button>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="container mx-auto px-4 py-12 text-center space-y-4">
+        <h1 className="text-xl font-semibold text-foreground mb-2">Redirecting to login</h1>
+        <p className="text-muted-foreground">Please sign in to continue practicing.</p>
       </div>
     )
   }
