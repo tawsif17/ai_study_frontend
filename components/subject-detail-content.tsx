@@ -180,7 +180,7 @@ export function SubjectDetailContent({ subjectId, subjectName, examTypeId, quest
       {/* Practice Mode Cards Section */}
       <section className="py-8 pb-16 bg-background">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 max-w-5xl mx-auto">
             <PracticeConfigCard
               mode="MCQ"
               subjectId={subjectId}
@@ -206,6 +206,7 @@ export function SubjectDetailContent({ subjectId, subjectName, examTypeId, quest
               iconBgClass={styles.cqIconBg}
               iconTextClass={styles.cqIconText}
               disabled={selectedChapterIds.length === 0 || questionCount === 0}
+              availability="coming-soon"
             />
             <PracticeConfigCard
               mode="MIXED"
@@ -219,6 +220,7 @@ export function SubjectDetailContent({ subjectId, subjectName, examTypeId, quest
               iconBgClass="bg-secondary"
               iconTextClass="text-secondary-foreground"
               disabled={selectedChapterIds.length === 0 || questionCount === 0}
+              availability="coming-soon"
             />
           </div>
         </div>

@@ -200,12 +200,7 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
                   <Skeleton className="h-4 w-5/6" />
                 </div>
               ) : question ? (
-                <>
-                  <p className="text-muted-foreground mb-4">{question.stem_text || "Question text unavailable."}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Question ID: {question.id ?? questionId ?? "N/A"}
-                  </p>
-                </>
+                <p className="text-muted-foreground mb-4">{question.stem_text || "Question text unavailable."}</p>
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Unable to load question details right now.

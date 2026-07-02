@@ -54,9 +54,6 @@ export function PracticeResultsContent({ practiceId, summary }: PracticeResultsC
             <div className="p-6">
               <div className="flex items-center justify-center gap-4 text-sm">
                 <Badge variant="secondary">{summary.mode} Practice</Badge>
-                <span className="text-muted-foreground">
-                  Session #{summary.practice_session_id}
-                </span>
               </div>
             </div>
           </CardContent>
