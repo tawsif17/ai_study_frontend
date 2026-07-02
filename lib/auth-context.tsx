@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react"
+import { useSWRConfig } from "swr"
 import { clearAuthToken, setAuthToken } from "./api/client"
 import {
   getAuthMe,
@@ -25,6 +26,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { mutate } = useSWRConfig()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -100,7 +102,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearAuthToken()
     setUser(null)
     setIsAuthenticated(false)
-  }, [])
+    mutate(
+      (key) =>
+        Array.isArray(key) &&
+        ["subjects", "questions", "practice-summary", "practice-items", "practice-answers", "practice-results"].includes(
+          key[0]
+        ),
+      undefined,
+      { revalidate: false }
+    )
+  }, [mutate])
 
   return (
     <AuthContext.Provider
