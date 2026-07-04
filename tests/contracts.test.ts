@@ -6,6 +6,7 @@ import {
   validatePracticeGenerateRequest,
   validateQuestionReportRequest,
   validateQuestionsListRequest,
+  validateRegisterRequest,
 } from "../lib/api/contracts"
 import { questionReportReasonOptions } from "../lib/api/types"
 import { ApiClientError } from "../lib/api/client"
@@ -29,6 +30,49 @@ describe("matchEntitlementErrorByExactMessage", () => {
 })
 
 describe("contract request validators", () => {
+  it("validates closed beta register payload and password rules", () => {
+    const valid = validateRegisterRequest({
+      email: "student@example.com",
+      password: "Password123",
+      fullName: "Student Name",
+      school: "Example High School",
+      city: "Dhaka",
+      studentClass: 10,
+    })
+
+    expect(valid).toEqual({
+      email: "student@example.com",
+      password: "Password123",
+      fullName: "Student Name",
+      school: "Example High School",
+      city: "Dhaka",
+      studentClass: 10,
+    })
+
+    expect(() =>
+      validateRegisterRequest({
+        email: "student@example.com",
+        password: "password123",
+        fullName: "Student Name",
+        school: "Example High School",
+        city: "Dhaka",
+        studentClass: 10,
+      })
+    ).toThrow("Password must include at least one uppercase letter")
+
+    expect(() =>
+      validateRegisterRequest({
+        email: "student@example.com",
+        password: "Password123",
+        fullName: "Student Name",
+        school: "Example High School",
+        city: "Dhaka",
+        studentClass: 10,
+        inviteCode: "extra",
+      } as never)
+    ).toThrow()
+  })
+
   it("validates questions list required fields", () => {
     const valid = validateQuestionsListRequest({ exam_type_id: 1, subject_id: 2 })
     expect(valid).toEqual({ exam_type_id: 1, subject_id: 2 })

@@ -45,7 +45,7 @@ describe("verify email page", () => {
     await waitFor(() => {
       expect(verifyEmail).toHaveBeenCalledWith({ token: "valid-token" })
     })
-    expect(screen.getByText("Email verified successfully")).toBeInTheDocument()
+    expect(await screen.findByText("Email verified successfully")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Go to login" })).toHaveAttribute("href", "/login")
   })
 })

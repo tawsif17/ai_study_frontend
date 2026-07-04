@@ -10,7 +10,7 @@ import {
   type AuthUser,
   type LoginRequest,
   type RegisterRequest,
-  type RegisterResponse,
+  type RegisterResult,
 } from "./api"
 
 interface AuthContextValue {
@@ -18,7 +18,7 @@ interface AuthContextValue {
   isLoading: boolean
   user: AuthUser | null
   login: (data: LoginRequest) => Promise<void>
-  register: (data: RegisterRequest) => Promise<RegisterResponse>
+  register: (data: RegisterRequest) => Promise<RegisterResult>
   logout: () => void
   refreshUser: () => Promise<void>
 }

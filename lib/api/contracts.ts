@@ -25,7 +25,12 @@ export type EntitlementErrorType = keyof typeof entitlementErrorMessages
 const registerRequestSchema = z
   .object({
     email: z.string().min(1),
-    password: z.string().min(1),
+    password: z
+      .string()
+      .min(8)
+      .regex(/[A-Z]/, "Password must include at least one uppercase letter")
+      .regex(/[a-z]/, "Password must include at least one lowercase letter")
+      .regex(/[0-9]/, "Password must include at least one number"),
     fullName: z.string().min(1),
     school: z.string().min(1),
     city: z.string().min(1),

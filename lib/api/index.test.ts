@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { reportQuestion, resendVerification, submitContact, upgradeToPro, verifyEmail } from "./index"
-import { apiClient } from "./client"
+import { register, reportQuestion, resendVerification, submitContact, upgradeToPro, verifyEmail } from "./index"
+import { apiClient, apiClientWithResponse } from "./client"
 
 vi.mock("./client", () => ({
   apiClient: vi.fn(),
+  apiClientWithResponse: vi.fn(),
 }))
 
 describe("auth API contract calls", () => {
@@ -19,6 +20,38 @@ describe("auth API contract calls", () => {
     expect(apiClient).toHaveBeenCalledWith("/auth/verify-email", {
       method: "POST",
       body: { token: "abc-token" },
+    })
+  })
+
+  it("calls register endpoint with exact closed beta contract payload and preserves status", async () => {
+    vi.mocked(apiClientWithResponse).mockResolvedValueOnce({
+      data: { message: "Registration successful. You can now log in." },
+      status: 201,
+    })
+
+    const response = await register({
+      email: "student@example.com",
+      password: "Password123",
+      fullName: " Student Name ",
+      school: "Example High School",
+      city: "Dhaka",
+      studentClass: 10,
+    })
+
+    expect(response).toEqual({
+      data: { message: "Registration successful. You can now log in." },
+      status: 201,
+    })
+    expect(apiClientWithResponse).toHaveBeenCalledWith("/auth/register", {
+      method: "POST",
+      body: {
+        email: "student@example.com",
+        password: "Password123",
+        fullName: "Student Name",
+        school: "Example High School",
+        city: "Dhaka",
+        studentClass: 10,
+      },
     })
   })
 
