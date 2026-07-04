@@ -3,7 +3,9 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { AlertCircle, CheckCircle2 } from "lucide-react"
 import { PageShell } from "@/components/page-shell"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -41,7 +43,7 @@ export function LoginContent() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(
     searchParams.get("registered") === "true"
-      ? "Registration successful. Please check your email and verify your account before logging in."
+      ? "Registration successful. You can now log in."
       : null
   )
   const [showResend, setShowResend] = useState(false)
@@ -87,15 +89,19 @@ export function LoginContent() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {success && (
-                <div className="rounded-lg border border-success/20 bg-success/10 p-3 text-sm text-success" role="status">
-                  {success}
-                </div>
+                <Alert variant="success" role="status">
+                  <CheckCircle2 aria-hidden="true" />
+                  <AlertTitle>Account ready</AlertTitle>
+                  <AlertDescription>{success}</AlertDescription>
+                </Alert>
               )}
 
               {error && (
-                <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
-                  {error}
-                </div>
+                <Alert variant="destructive" role="alert">
+                  <AlertCircle aria-hidden="true" />
+                  <AlertTitle>Something went wrong</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
 
               <div className="space-y-2">

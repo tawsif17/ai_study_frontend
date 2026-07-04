@@ -50,4 +50,18 @@ describe("login page", () => {
       )
     })
   })
+
+  it("shows closed beta login-ready copy after successful registration", () => {
+    mockGet.mockImplementation((key: string) => {
+      if (key === "registered") return "true"
+      if (key === "email") return "student@example.com"
+      return null
+    })
+
+    render(<LoginPage />)
+
+    const status = screen.getByRole("status")
+    expect(status).toHaveTextContent("Account ready")
+    expect(status).toHaveTextContent("Registration successful. You can now log in.")
+  })
 })

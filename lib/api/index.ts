@@ -6,7 +6,7 @@ export * from "./types"
 export * from "./client"
 export * from "./contracts"
 
-import { apiClient } from "./client"
+import { apiClient, apiClientWithResponse } from "./client"
 import {
   validateContactSubmitRequest,
   validateLoginRequest,
@@ -41,6 +41,7 @@ import type {
   QuestionsListResponse,
   RegisterRequest,
   RegisterResponse,
+  RegisterResult,
   ResendVerificationRequest,
   ResendVerificationResponse,
   UpgradeToProResponse,
@@ -61,7 +62,7 @@ import type {
 // AUTH API
 // ============================================
 
-export async function register(data: RegisterRequest): Promise<RegisterResponse> {
+export async function register(data: RegisterRequest): Promise<RegisterResult> {
   const payload = validateRegisterRequest({
     email: data.email,
     password: data.password,
@@ -71,10 +72,15 @@ export async function register(data: RegisterRequest): Promise<RegisterResponse>
     studentClass: data.studentClass,
   })
 
-  return apiClient<RegisterResponse>("/auth/register", {
+  const response = await apiClientWithResponse<RegisterResponse>("/auth/register", {
     method: "POST",
     body: payload,
   })
+
+  return {
+    data: response.data,
+    status: response.status === 202 ? 202 : 201,
+  }
 }
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {

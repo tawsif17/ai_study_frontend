@@ -39,6 +39,13 @@ export interface RegisterResponse {
   message: string
 }
 
+export type RegisterStatus = 201 | 202
+
+export interface RegisterResult {
+  data: RegisterResponse
+  status: RegisterStatus
+}
+
 export interface LoginRequest {
   email: string
   password: string

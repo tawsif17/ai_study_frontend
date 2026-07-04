@@ -39,6 +39,11 @@ interface RequestOptions {
   includeAuth?: boolean
 }
 
+export interface ApiClientResponse<T> {
+  data: T
+  status: number
+}
+
 function getAuthToken(): string | null {
   if (typeof window === "undefined") return null
   return localStorage.getItem("auth_token")
@@ -62,6 +67,14 @@ export async function apiClient<T>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<T> {
+  const response = await apiClientWithResponse<T>(endpoint, options)
+  return response.data
+}
+
+export async function apiClientWithResponse<T>(
+  endpoint: string,
+  options: RequestOptions = {}
+): Promise<ApiClientResponse<T>> {
   const { method = "GET", body, params, requiresAuth = false, includeAuth = false } = options
 
   // Build URL with query params
@@ -126,7 +139,13 @@ export async function apiClient<T>(
   // Parse response
   const json = await response.json()
   if (json && typeof json === "object" && "success" in json && "data" in json) {
-    return (json as { data: T }).data
+    return {
+      data: (json as { data: T }).data,
+      status: response.status,
+    }
   }
-  return json
+  return {
+    data: json,
+    status: response.status,
+  }
 }

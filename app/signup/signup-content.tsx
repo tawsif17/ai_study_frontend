@@ -3,7 +3,9 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { AlertCircle, MailCheck } from "lucide-react"
 import { PageShell } from "@/components/page-shell"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,6 +21,7 @@ export function SignupContent() {
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -31,10 +34,11 @@ export function SignupContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setSuccess(null)
     setIsLoading(true)
 
     try {
-      await register({
+      const response = await register({
         email: formData.email,
         password: formData.password,
         fullName: formData.name,
@@ -42,6 +46,11 @@ export function SignupContent() {
         city: formData.city,
         studentClass: Number.parseInt(formData.class, 10),
       })
+      if (response.status === 202) {
+        setSuccess(response.data.message)
+        setFormData((current) => ({ ...current, password: "" }))
+        return
+      }
       const params = new URLSearchParams({ registered: "true", email: formData.email })
       router.push(`/login?${params.toString()}`)
     } catch (err) {
@@ -66,10 +75,20 @@ export function SignupContent() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {success && (
+                <Alert variant="success" role="status">
+                  <MailCheck aria-hidden="true" />
+                  <AlertTitle>Request received</AlertTitle>
+                  <AlertDescription>{success}</AlertDescription>
+                </Alert>
+              )}
+
               {error && (
-                <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
-                  {error}
-                </div>
+                <Alert variant="destructive" role="alert">
+                  <AlertCircle aria-hidden="true" />
+                  <AlertTitle>Something went wrong</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
 
               <div className="space-y-2">
