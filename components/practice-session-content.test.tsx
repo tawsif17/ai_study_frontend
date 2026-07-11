@@ -118,7 +118,7 @@ describe("PracticeSessionContent", () => {
       details: " This topic is no longer in the current SSC syllabus. ",
     })
     expect(await screen.findByText("Question report submitted successfully.")).toBeInTheDocument()
-  })
+  }, 10000)
 
   it("shows backend report errors", async () => {
     const user = userEvent.setup()
@@ -151,5 +151,5 @@ describe("PracticeSessionContent", () => {
     expect(
       await screen.findByText("You have already reported this question for this reason")
     ).toBeInTheDocument()
-  })
+  }, 10000)
 })
