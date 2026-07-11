@@ -47,8 +47,7 @@ export function Navbar() {
         </Link>
 
         <div className="hidden md:flex items-center gap-6 lg:gap-8">
-          <NavLink href="/">Home</NavLink>
-          <NavLink href="/subjects">Subjects</NavLink>
+          <NavLink href="/subjects">Practice</NavLink>
           <NavLink href="/how-it-works">How it works</NavLink>
           <NavLink href="/pricing">Pricing</NavLink>
         </div>
@@ -68,7 +67,7 @@ export function Navbar() {
                     <Link href="/login">Login</Link>
                   </Button>
                   <Button size="sm" className="rounded-lg shadow-primary" asChild>
-                    <Link href="/signup">Sign Up</Link>
+                    <Link href="/signup">Start free</Link>
                   </Button>
                 </>
               )}
@@ -118,17 +117,6 @@ function MobileMenu() {
         <div id={menuId} className="absolute left-0 right-0 top-full border-b border-border bg-background/95 p-4 shadow-lg backdrop-blur">
           <div className="flex flex-col gap-4">
             <Link
-              href="/"
-              aria-current={isActive("/") ? "page" : undefined}
-              onClick={() => setIsOpen(false)}
-              className={cn(
-                "text-sm font-medium transition-colors",
-                isActive("/") ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary",
-              )}
-            >
-              Home
-            </Link>
-            <Link
               href="/subjects"
               aria-current={isActive("/subjects") ? "page" : undefined}
               onClick={() => setIsOpen(false)}
@@ -137,7 +125,7 @@ function MobileMenu() {
                 isActive("/subjects") ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary",
               )}
             >
-              Subjects
+              Practice
             </Link>
             <Link
               href="/how-it-works"
@@ -174,7 +162,7 @@ function MobileMenu() {
                       <Link href="/login" onClick={() => setIsOpen(false)}>Login</Link>
                     </Button>
                     <Button size="sm" className="rounded-lg" asChild>
-                      <Link href="/signup" onClick={() => setIsOpen(false)}>Sign Up</Link>
+                      <Link href="/signup" onClick={() => setIsOpen(false)}>Start free</Link>
                     </Button>
                   </>
                 )}

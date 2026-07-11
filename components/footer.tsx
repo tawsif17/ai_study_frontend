@@ -5,7 +5,7 @@ const footerGroups = [
   {
     title: "Product",
     links: [
-      { label: "Subjects", href: "/subjects" },
+      { label: "Practice", href: "/subjects" },
       { label: "Pricing", href: "/pricing" },
       { label: "How it works", href: "/how-it-works" },
     ],
@@ -43,7 +43,7 @@ export function Footer() {
               <BrandLogo className="h-12" />
             </Link>
             <p className="max-w-sm text-sm leading-6 text-muted-foreground">
-              Focused SSC science practice for Higher Math, Physics, and Chemistry.
+              Focused SSC exam practice for General Math, Physics, and Chemistry.
             </p>
           </div>
 

@@ -1,130 +1,56 @@
-"use client"
-
-import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Zap, BookOpen, TrendingUp, ChevronDown, type IconComponent } from "@/components/icons"
-import { cn } from "@/lib/utils"
+import { ListChecks, TrendingUp, Zap, type IconComponent } from "@/components/icons"
 
 interface Feature {
   icon: IconComponent
   title: string
-  shortTitle: string
   description: string
+  tone: string
 }
 
 const features: Feature[] = [
   {
-    icon: Zap,
-    title: "Practice with focus",
-    shortTitle: "Focused practice",
-    description: "Work through structured questions for the subjects currently available.",
+    icon: ListChecks,
+    title: "Topic-wise MCQs",
+    description: "Practice by chapter and concept.",
+    tone: "bg-primary/10 text-primary",
   },
   {
-    icon: BookOpen,
-    title: "Review with clarity",
-    shortTitle: "Clear review",
-    description: "Use explanations to understand mistakes and reinforce core concepts.",
+    icon: Zap,
+    title: "Answer explanations",
+    description: "See why an answer is right or wrong.",
+    tone: "bg-[#dcfae6] text-[#12b76a]",
   },
   {
     icon: TrendingUp,
-    title: "Build study consistency",
-    shortTitle: "Study consistency",
-    description: "Keep practice sessions organized so revision is easier to return to.",
+    title: "Mistake review",
+    description: "Know what to revise next.",
+    tone: "bg-[#fff4e5] text-[#f79009]",
   },
 ]
 
-function MobileFeatureItem({ feature, isOpen, onToggle }: { feature: Feature; isOpen: boolean; onToggle: () => void }) {
-  const Icon = feature.icon
-  
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="w-full text-left"
-      aria-expanded={isOpen}
-    >
-      <div className="flex items-center gap-3 py-2.5">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-          <Icon className="h-4 w-4 text-primary" />
-        </div>
-        <span className="flex-1 text-sm font-medium text-foreground">{feature.shortTitle}</span>
-        <ChevronDown 
-          className={cn(
-            "h-4 w-4 text-muted-foreground transition-transform duration-200",
-            isOpen && "rotate-180"
-          )} 
-        />
-      </div>
-      <div
-        className={cn(
-          "overflow-hidden transition-all duration-200",
-          isOpen ? "max-h-24 opacity-100 pb-2" : "max-h-0 opacity-0"
-        )}
-      >
-        <p className="pl-11 text-xs text-muted-foreground leading-relaxed">
-          {feature.description}
-        </p>
-      </div>
-    </button>
-  )
-}
-
-function DesktopFeatureCard({ feature }: { feature: Feature }) {
-  const Icon = feature.icon
-  
-  return (
-    <Card className="group border-border/80 bg-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg">
-      <CardContent className="p-6 text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 transition-colors group-hover:bg-primary">
-          <Icon className="h-7 w-7 text-primary transition-colors group-hover:text-primary-foreground" />
-        </div>
-        <h3 className="mb-2 text-lg font-semibold text-card-foreground">{feature.title}</h3>
-        <p className="text-sm leading-6 text-muted-foreground">{feature.description}</p>
-      </CardContent>
-    </Card>
-  )
-}
-
 export function FeaturesSection() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null)
-
-  const handleToggle = (index: number) => {
-    setOpenIndex(openIndex === index ? null : index)
-  }
-
   return (
-    <section className="bg-background py-14 md:py-20">
+    <section className="bg-background py-10 md:py-12">
       <div className="container mx-auto px-4">
-        {/* Header - compact on mobile */}
-        <div className="mx-auto mb-8 max-w-2xl text-center md:mb-12">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">Focused study flow</p>
-          <h2 className="mb-3 text-2xl font-bold text-foreground text-balance md:text-3xl">
-            A clearer way to practice
-          </h2>
-          <p className="hidden text-base leading-7 text-muted-foreground md:block">
-            Designed to keep SSC science practice focused and manageable.
-          </p>
-        </div>
+        <div className="grid gap-0 rounded-2xl border border-border bg-card shadow-sm md:grid-cols-3">
+          {features.map((feature) => {
+            const Icon = feature.icon
 
-        {/* Mobile: Compact vertical list */}
-        <div className="md:hidden">
-          <div className="divide-y divide-border rounded-xl border border-border bg-card px-4 shadow-sm">
-            {features.map((feature, index) => (
-              <MobileFeatureItem
-                key={index}
-                feature={feature}
-                isOpen={openIndex === index}
-                onToggle={() => handleToggle(index)}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Desktop: Card grid (unchanged) */}
-        <div className="hidden md:grid md:grid-cols-3 gap-6">
-          {features.map((feature, index) => (
-            <DesktopFeatureCard key={index} feature={feature} />
-          ))}
+            return (
+              <div
+                key={feature.title}
+                className="flex items-center gap-5 p-6 md:p-8 md:[&:not(:last-child)]:border-r md:[&:not(:last-child)]:border-border"
+              >
+                <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-xl ${feature.tone}`}>
+                  <Icon className="h-8 w-8" aria-hidden="true" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-foreground">{feature.title}</h2>
+                  <p className="mt-2 max-w-48 text-sm leading-6 text-muted-foreground">{feature.description}</p>
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
     </section>
