@@ -64,4 +64,35 @@ describe("practice session protected route", () => {
       expect(mockPush).toHaveBeenCalledWith("/login?next=%2Fpractice%2F9")
     })
   })
+
+  it("renders the results view after the authoritative summary is submitted", () => {
+    vi.mocked(useAuth).mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      user: null,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
+    })
+    vi.mocked(usePracticeSummary).mockReturnValue({
+      summary: {
+        practice_session_id: 9,
+        exam_type_id: 1,
+        subject_id: 5,
+        mode: "MCQ",
+        attempt_status: "SUBMITTED",
+        mcq_total: 10,
+        cq_total: 0,
+      },
+      isLoading: false,
+      isError: undefined,
+      mutate: vi.fn(),
+    })
+
+    render(<PracticeSessionWrapper practiceId={9} />)
+
+    expect(screen.getByText("Practice results")).toBeInTheDocument()
+    expect(screen.queryByText("Practice content")).not.toBeInTheDocument()
+  })
 })
