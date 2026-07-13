@@ -46,14 +46,14 @@ export function Navbar() {
           <BrandLogo className="h-16 sm:h-20" priority />
         </Link>
 
-        <div className="hidden md:flex items-center gap-6 lg:gap-8">
+        <div className="hidden lg:flex items-center gap-8">
           <NavLink href="/subjects">Practice</NavLink>
           <NavLink href="/how-it-works">How it works</NavLink>
           <NavLink href="/pricing">Pricing</NavLink>
         </div>
 
         {/* Auth Buttons - Hidden on mobile */}
-        <div className="hidden md:flex items-center gap-2 lg:gap-3">
+        <div className="hidden lg:flex items-center gap-3">
           {!isLoading && (
             <>
               {isAuthenticated ? (
@@ -100,7 +100,7 @@ function MobileMenu() {
   const menuId = "mobile-navigation"
 
   return (
-    <div className="md:hidden">
+    <div className="lg:hidden">
       <Button
         variant="ghost"
         size="icon"
