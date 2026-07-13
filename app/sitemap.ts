@@ -13,7 +13,6 @@ const publicRoutes = [
   "/faq",
   "/privacy",
   "/terms",
-  "/refund-policy",
   "/data-protection",
   "/ai-disclaimer",
   "/data-deletion",

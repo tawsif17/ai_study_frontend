@@ -24,7 +24,7 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
       href={href}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "relative rounded-full px-3 py-2 text-sm font-medium transition-colors",
+        "relative inline-flex min-h-11 items-center rounded-full px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
         isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary",
       )}
     >
@@ -42,7 +42,7 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="container mx-auto flex h-20 items-center justify-between px-2 sm:h-24 sm:px-3">
         {/* Logo */}
-        <Link href="/" className="-ml-1 flex items-center sm:-ml-3" aria-label="Shikkha Buddy home">
+        <Link href="/" className="-ml-1 flex items-center rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:-ml-3" aria-label="Shikkha Buddy home">
           <BrandLogo className="h-16 sm:h-20" priority />
         </Link>
 
@@ -57,16 +57,16 @@ export function Navbar() {
           {!isLoading && (
             <>
               {isAuthenticated ? (
-                <Button variant="ghost" size="sm" onClick={logout} className="gap-2">
+                <Button variant="ghost" size="sm" onClick={logout} className="min-h-11 gap-2">
                   <LogOut className="h-4 w-4" />
                   Logout
                 </Button>
               ) : (
                 <>
-                  <Button variant="ghost" size="sm" asChild>
+                  <Button variant="ghost" size="sm" className="min-h-11" asChild>
                     <Link href="/login">Login</Link>
                   </Button>
-                  <Button size="sm" className="rounded-lg shadow-primary" asChild>
+                  <Button size="sm" className="min-h-11 rounded-lg shadow-primary" asChild>
                     <Link href="/signup">Start free</Link>
                   </Button>
                 </>
@@ -104,6 +104,7 @@ function MobileMenu() {
       <Button
         variant="ghost"
         size="icon"
+        className="size-11"
         type="button"
         aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
         aria-expanded={isOpen}
@@ -115,13 +116,13 @@ function MobileMenu() {
 
       {isOpen && (
         <div id={menuId} className="absolute left-0 right-0 top-full border-b border-border bg-background/95 p-4 shadow-lg backdrop-blur">
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
             <Link
               href="/subjects"
               aria-current={isActive("/subjects") ? "page" : undefined}
               onClick={() => setIsOpen(false)}
               className={cn(
-                "text-sm font-medium transition-colors",
+                "flex min-h-11 items-center rounded-md px-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                 isActive("/subjects") ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary",
               )}
             >
@@ -132,7 +133,7 @@ function MobileMenu() {
               aria-current={isActive("/how-it-works") ? "page" : undefined}
               onClick={() => setIsOpen(false)}
               className={cn(
-                "text-sm font-medium transition-colors",
+                "flex min-h-11 items-center rounded-md px-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                 isActive("/how-it-works") ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary",
               )}
             >
@@ -143,7 +144,7 @@ function MobileMenu() {
               aria-current={isActive("/pricing") ? "page" : undefined}
               onClick={() => setIsOpen(false)}
               className={cn(
-                "text-sm font-medium transition-colors",
+                "flex min-h-11 items-center rounded-md px-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                 isActive("/pricing") ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary",
               )}
             >
@@ -152,16 +153,16 @@ function MobileMenu() {
             {!isLoading && (
               <div className="flex flex-col gap-2 pt-2 border-t border-border">
                 {isAuthenticated ? (
-                  <Button variant="ghost" size="sm" className="justify-start gap-2" onClick={handleLogout}>
+                  <Button variant="ghost" size="sm" className="min-h-11 justify-start gap-2" onClick={handleLogout}>
                     <LogOut className="h-4 w-4" aria-hidden="true" />
                     Logout
                   </Button>
                 ) : (
                   <>
-                    <Button variant="ghost" size="sm" className="justify-start" asChild>
+                    <Button variant="ghost" size="sm" className="min-h-11 justify-start" asChild>
                       <Link href="/login" onClick={() => setIsOpen(false)}>Login</Link>
                     </Button>
-                    <Button size="sm" className="rounded-lg" asChild>
+                    <Button size="sm" className="min-h-11 rounded-lg" asChild>
                       <Link href="/signup" onClick={() => setIsOpen(false)}>Start free</Link>
                     </Button>
                   </>
