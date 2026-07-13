@@ -24,9 +24,9 @@ export function Footer() {
   return (
     <footer className="border-t border-border bg-muted/40">
       <div className="container mx-auto px-4 py-10 md:py-12">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-[1.5fr_1fr_1fr]">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)]">
           {/* Logo & Description */}
-          <div className="md:col-span-2">
+          <div className="sm:col-span-2 md:col-span-1">
             <Link href="/" className="mb-4 inline-flex items-center rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50" aria-label="Shikkha Buddy home">
               <BrandLogo className="h-12" />
             </Link>
@@ -54,7 +54,7 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="mt-8 pt-8 border-t border-border text-center">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} Shikkha Buddy. All rights reserved.
+            &copy; 2026 Shikkha Buddy. All rights reserved.
           </p>
         </div>
       </div>

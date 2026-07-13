@@ -28,7 +28,6 @@ const sections = [
       "Questions not loading or practice sessions not starting.",
       "A possible mistake in a question, option, answer, or explanation.",
       "Questions about Free and Pro access in the current beta release.",
-      "Requests related to account or data deletion.",
     ],
   },
   {
