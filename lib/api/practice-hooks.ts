@@ -5,7 +5,9 @@ import {
   getPracticeSummary,
   getPracticeItems,
   getAnswers,
+  getCompleteResults,
   getResults,
+  type CompleteResultsResponse,
   type PracticeSummaryResponse,
   type PracticeItem,
   type GetAnswersResponse,
@@ -27,6 +29,10 @@ async function answersFetcher([, id]: [string, number]): Promise<GetAnswersRespo
 
 async function resultsFetcher([, id, section, page, pageSize]: [string, number, Section, number, number]): Promise<ResultsResponse> {
   return getResults(id, section, page, pageSize)
+}
+
+async function completeResultsFetcher([, id, section]: [string, number, Section]): Promise<CompleteResultsResponse> {
+  return getCompleteResults(id, section)
 }
 
 export function usePracticeSummary(practiceId: number | undefined, enabled: boolean = true) {
@@ -82,6 +88,25 @@ export function usePracticeResults(
     practiceId && enabled ? ["practice-results", practiceId, section, page, pageSize] : null,
     resultsFetcher
   )
+  return {
+    results: data,
+    isLoading,
+    isError: error,
+    mutate,
+  }
+}
+
+export function useCompletePracticeResults(
+  practiceId: number | undefined,
+  section: Section = "MCQ",
+  enabled: boolean = true
+) {
+  const { data, error, isLoading, mutate } = useSWR<CompleteResultsResponse>(
+    practiceId && enabled ? ["practice-results", practiceId, section, "complete"] : null,
+    completeResultsFetcher,
+    { revalidateOnFocus: false }
+  )
+
   return {
     results: data,
     isLoading,

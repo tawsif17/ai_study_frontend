@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { getPracticeItems, getProgressDashboard, register, reportQuestion, resendVerification, submitContact, upgradeToPro, verifyEmail } from "./index"
+import { getCompleteResults, getPracticeItems, getProgressDashboard, register, reportQuestion, resendVerification, submitContact, upgradeToPro, verifyEmail } from "./index"
 import { apiClient, apiClientWithResponse } from "./client"
 
 vi.mock("./client", () => ({
@@ -239,5 +239,174 @@ describe("practice items pagination", () => {
       .mockRejectedValueOnce(new Error("Page 2 unavailable"))
 
     await expect(getPracticeItems(12, "MCQ")).rejects.toThrow("Page 2 unavailable")
+  })
+})
+
+describe("complete practice results pagination", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  const resultItem = (number: number) => ({
+    section_order_no: number,
+    order_no: number,
+    practice_item_id: 100 + number,
+    question: {
+      id: 200 + number,
+      question_type: "MCQ" as const,
+      stem_text: `Question ${number}`,
+      explanation: null,
+      difficulty: 1,
+      source: null,
+      language: "en" as const,
+    },
+    user_answer: { selected_option_label: "A" },
+    mcq: {
+      correct_option_label: "A",
+      is_correct: true,
+      options: [{ label: "A", option_text: "Answer" }],
+    },
+    media: [],
+  })
+
+  const page = (pageNumber: number, total: number, items: ReturnType<typeof resultItem>[]) => ({
+    practice_session_id: 12,
+    section: "MCQ" as const,
+    page: pageNumber,
+    page_size: 20,
+    total_in_section: total,
+    items,
+  })
+
+  it("loads a complete single-page result set with the largest supported page size", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce(page(1, 2, [resultItem(2), resultItem(1)]))
+
+    await expect(getCompleteResults(12)).resolves.toMatchObject({
+      total_in_section: 2,
+      items: [resultItem(1), resultItem(2)],
+    })
+    expect(apiClient).toHaveBeenCalledWith("/practice/12/results", {
+      params: { section: "MCQ", page: 1, page_size: 20 },
+      requiresAuth: true,
+    })
+  })
+
+  it("returns a valid empty complete result set", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce(page(1, 0, []))
+
+    await expect(getCompleteResults(12)).resolves.toMatchObject({
+      total_in_section: 0,
+      items: [],
+    })
+    expect(apiClient).toHaveBeenCalledTimes(1)
+  })
+
+  it("propagates a first-page failure without exposing result data", async () => {
+    vi.mocked(apiClient).mockRejectedValueOnce(new Error("Results unavailable"))
+
+    await expect(getCompleteResults(12)).rejects.toThrow("Results unavailable")
+    expect(apiClient).toHaveBeenCalledTimes(1)
+  })
+
+  it("calculates and loads every remaining page before exposing ordered results", async () => {
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce(page(1, 41, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))))
+      .mockResolvedValueOnce(page(2, 41, Array.from({ length: 20 }, (_, index) => resultItem(index + 21)).reverse()))
+      .mockResolvedValueOnce(page(3, 41, [resultItem(41)]))
+
+    const result = await getCompleteResults(12, "MCQ")
+
+    expect(result.items.map((item) => item.section_order_no)).toEqual(
+      Array.from({ length: 41 }, (_, index) => index + 1)
+    )
+    expect(apiClient).toHaveBeenCalledTimes(3)
+  })
+
+  it("loads exactly one remaining page for a 25-question session", async () => {
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce(page(1, 25, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))))
+      .mockResolvedValueOnce(page(2, 25, Array.from({ length: 5 }, (_, index) => resultItem(index + 21))))
+
+    await expect(getCompleteResults(12)).resolves.toMatchObject({ total_in_section: 25 })
+    expect(apiClient).toHaveBeenNthCalledWith(1, "/practice/12/results", {
+      params: { section: "MCQ", page: 1, page_size: 20 },
+      requiresAuth: true,
+    })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/practice/12/results", {
+      params: { section: "MCQ", page: 2, page_size: 20 },
+      requiresAuth: true,
+    })
+    expect(apiClient).toHaveBeenCalledTimes(2)
+  })
+
+  it("rejects duplicate question numbers instead of silently merging them", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce(page(1, 2, [resultItem(1), { ...resultItem(2), section_order_no: 1 }]))
+
+    await expect(getCompleteResults(12)).rejects.toThrow("duplicate question numbers")
+  })
+
+  it("rejects an incomplete merged result so no partial score can be shown", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce(page(1, 2, [resultItem(1)]))
+
+    await expect(getCompleteResults(12)).rejects.toThrow("response is incomplete")
+  })
+
+  it("rejects a missing later-page item instead of returning a partial session", async () => {
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce(page(1, 21, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))))
+      .mockResolvedValueOnce(page(2, 21, []))
+
+    await expect(getCompleteResults(12)).rejects.toThrow("response is incomplete")
+  })
+
+  it("rejects a gap in question numbering even when the item count matches", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce(page(1, 2, [resultItem(1), resultItem(3)]))
+
+    await expect(getCompleteResults(12)).rejects.toThrow("response is incomplete")
+  })
+
+  it("rejects an inconsistent first-page session, section, or total before loading more pages", async () => {
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce({ ...page(1, 21, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))), practice_session_id: 99 })
+
+    await expect(getCompleteResults(12)).rejects.toThrow("response is inconsistent")
+    expect(apiClient).toHaveBeenCalledTimes(1)
+
+    vi.mocked(apiClient).mockReset()
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce({ ...page(1, 20, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))), total_in_section: -1 })
+
+    await expect(getCompleteResults(12)).rejects.toThrow("response is inconsistent")
+    expect(apiClient).toHaveBeenCalledTimes(1)
+
+    vi.mocked(apiClient).mockReset()
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce({ ...page(1, 51, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))) })
+
+    await expect(getCompleteResults(12)).rejects.toThrow("response is inconsistent")
+    expect(apiClient).toHaveBeenCalledTimes(1)
+
+    vi.mocked(apiClient).mockReset()
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce({ ...page(1, 21, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))), page_size: 21 })
+
+    await expect(getCompleteResults(12)).rejects.toThrow("response is inconsistent")
+    expect(apiClient).toHaveBeenCalledTimes(1)
+  })
+
+  it("rejects an inconsistent total reported by a later page", async () => {
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce(page(1, 21, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))))
+      .mockResolvedValueOnce(page(2, 22, [resultItem(21)]))
+
+    await expect(getCompleteResults(12)).rejects.toThrow("response is inconsistent")
+  })
+
+  it("propagates a later-page failure and never returns a partial result", async () => {
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce(page(1, 21, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))))
+      .mockRejectedValueOnce(new Error("Page 2 unavailable"))
+
+    await expect(getCompleteResults(12)).rejects.toThrow("Page 2 unavailable")
   })
 })

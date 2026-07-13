@@ -374,22 +374,22 @@ export type QuestionDetail = McqQuestionDetail | CqQuestionDetail
 export interface QuestionData {
   id: number
   question_type: "MCQ" | "CQ"
-  stem_text: string
-  explanation: string
-  difficulty: number
-  source: string
+  stem_text: string | null
+  explanation: string | null
+  difficulty: number | null
+  source: string | null
   language: Language
 }
 
 export interface McqResultData {
-  correct_option_label: string
-  is_correct: boolean
+  correct_option_label: string | null
+  is_correct: boolean | null
   options: McqOption[]
 }
 
 export interface UserAnswerData {
-  selected_option_label?: string
-  cq_text?: string
+  selected_option_label?: string | null
+  cq_text?: string | null
 }
 
 export interface ResultItem {
@@ -410,6 +410,11 @@ export interface ResultsResponse {
   total_in_section: number
   items: ResultItem[]
 }
+
+export type CompleteResultsResponse = Pick<
+  ResultsResponse,
+  "practice_session_id" | "section" | "total_in_section" | "items"
+>
 
 export interface ResultsJumpResponse {
   item: ResultItem

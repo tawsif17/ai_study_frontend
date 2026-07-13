@@ -23,6 +23,7 @@ import type {
   ChaptersResponse,
   ContactSubmitRequest,
   ContactSubmitResponse,
+  CompleteResultsResponse,
   ExamType,
   GetAnswersResponse,
   LoginRequest,
@@ -361,6 +362,86 @@ export async function getResults(
     },
     requiresAuth: true,
   })
+}
+
+export async function getCompleteResults(
+  practiceId: number,
+  section: Section = "MCQ"
+): Promise<CompleteResultsResponse> {
+  const pageSize = 20
+  // The existing practice contract accepts at most 50 MCQs per session. Keep
+  // this client-side check so malformed metadata cannot trigger unbounded
+  // pagination before a learner sees a score.
+  const maxMcqResults = 50
+  const firstPage = await getResults(practiceId, section, 1, pageSize)
+
+  if (
+    firstPage.practice_session_id !== practiceId ||
+    firstPage.section !== section ||
+    firstPage.page !== 1 ||
+    !Number.isSafeInteger(firstPage.total_in_section) ||
+    firstPage.total_in_section < 0 ||
+    firstPage.total_in_section > maxMcqResults ||
+    !Number.isSafeInteger(firstPage.page_size) ||
+    firstPage.page_size < 1 ||
+    firstPage.page_size > pageSize
+  ) {
+    throw new Error("The complete results response is inconsistent. Please retry.")
+  }
+
+  const responsePageSize = firstPage.page_size
+  const totalPages = Math.max(1, Math.ceil(firstPage.total_in_section / responsePageSize))
+  const remainingPages = await Promise.all(
+    Array.from({ length: totalPages - 1 }, (_, index) =>
+      getResults(practiceId, section, index + 2, pageSize)
+    )
+  )
+  const pages = [firstPage, ...remainingPages]
+
+  for (const [index, page] of pages.entries()) {
+    if (
+      page.practice_session_id !== firstPage.practice_session_id ||
+      page.section !== firstPage.section ||
+      page.total_in_section !== firstPage.total_in_section ||
+      page.page !== index + 1
+    ) {
+      throw new Error("The complete results response is inconsistent. Please retry.")
+    }
+  }
+
+  const items = pages
+    .flatMap((page) => page.items)
+    .sort((left, right) =>
+      left.section_order_no - right.section_order_no || left.order_no - right.order_no
+    )
+  const questionNumbers = new Set<number>()
+
+  for (const item of items) {
+    if (!Number.isInteger(item.section_order_no) || item.section_order_no < 1) {
+      throw new Error("The complete results response contains an invalid question number.")
+    }
+    if (questionNumbers.has(item.section_order_no)) {
+      throw new Error("The complete results response contains duplicate question numbers.")
+    }
+    questionNumbers.add(item.section_order_no)
+  }
+
+  if (items.length !== firstPage.total_in_section) {
+    throw new Error("The complete results response is incomplete. Please retry.")
+  }
+
+  for (let questionNumber = 1; questionNumber <= firstPage.total_in_section; questionNumber += 1) {
+    if (!questionNumbers.has(questionNumber)) {
+      throw new Error("The complete results response is incomplete. Please retry.")
+    }
+  }
+
+  return {
+    practice_session_id: firstPage.practice_session_id,
+    section: firstPage.section,
+    total_in_section: firstPage.total_in_section,
+    items,
+  }
 }
 
 export async function jumpToResult(
