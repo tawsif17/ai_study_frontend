@@ -20,7 +20,7 @@ interface AuthContextValue {
   login: (data: LoginRequest) => Promise<void>
   register: (data: RegisterRequest) => Promise<RegisterResult>
   logout: () => void
-  refreshUser: () => Promise<void>
+  refreshUser: () => Promise<AuthUser | null>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -36,10 +36,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await getAuthMe()
       setUser(response.user)
       setIsAuthenticated(true)
+      return response.user
     } catch {
       clearAuthToken()
       setUser(null)
       setIsAuthenticated(false)
+      return null
     }
   }, [])
 

@@ -15,7 +15,7 @@ export function BrandLogo({ className, priority = false }: BrandLogoProps) {
       height={4096}
       priority={priority}
       unoptimized
-      className={cn("h-10 w-auto", className)}
+      className={cn("h-10 w-40 object-cover object-center", className)}
     />
   )
 }

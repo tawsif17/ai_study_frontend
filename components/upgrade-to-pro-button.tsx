@@ -10,7 +10,7 @@ import { useAuth } from "@/lib/auth-context"
 const DEFAULT_NEXT_PATH = "/subjects"
 
 function normalizeNextPath(value: string | null): string {
-  if (typeof value === "string" && value.startsWith("/")) {
+  if (typeof value === "string" && value.startsWith("/") && !value.startsWith("//")) {
     return value
   }
   return DEFAULT_NEXT_PATH
@@ -22,31 +22,58 @@ export function UpgradeToProButton() {
   const { isAuthenticated, isLoading, user, refreshUser } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isUnavailable, setIsUnavailable] = useState(false)
 
   const nextPath = useMemo(() => normalizeNextPath(searchParams.get("next")), [searchParams])
   const loginRedirect = `/login?next=${encodeURIComponent(`/pricing?next=${encodeURIComponent(nextPath)}`)}`
+  const isAlreadyActive = user?.plan_tier === "pro"
+  const isVerified = Boolean(user?.email_verified_at)
+  const isUnverified = isAuthenticated && !isLoading && !isAlreadyActive && !isVerified
 
   const handleUpgrade = async () => {
     setError(null)
+    setIsUnavailable(false)
 
     if (!isAuthenticated) {
       router.push(loginRedirect)
       return
     }
 
-    if (user?.plan_tier === "pro") {
+    if (isAlreadyActive) {
       router.push(nextPath)
+      return
+    }
+
+    if (isUnverified) {
       return
     }
 
     setIsSubmitting(true)
     try {
-      await upgradeToPro()
-      await refreshUser()
+      const activation = await upgradeToPro()
+      if (activation.plan_tier !== "pro") {
+        setError("We could not confirm Beta Pro for this account. Please try again.")
+        return
+      }
+
+      const refreshedUser = await refreshUser()
+      if (!refreshedUser) {
+        router.push(loginRedirect)
+        return
+      }
+
+      if (refreshedUser.plan_tier !== "pro") {
+        setError("We could not confirm Beta Pro for this account. Please try again.")
+        return
+      }
+
+      sessionStorage.setItem("beta-pro-activation-confirmed", nextPath)
       router.push(`/pricing/success?next=${encodeURIComponent(nextPath)}`)
     } catch (err) {
       if (err instanceof ApiClientError && err.status === 401) {
         router.push(loginRedirect)
+      } else if (err instanceof ApiClientError && (err.status === 404 || err.status >= 500)) {
+        setIsUnavailable(true)
       } else {
         setError(formatApiError(err))
       }
@@ -56,22 +83,42 @@ export function UpgradeToProButton() {
   }
 
   const label = isLoading
-    ? "Loading..."
-    : user?.plan_tier === "pro"
-      ? "Continue with Pro"
-      : isSubmitting
-        ? "Upgrading..."
-        : "Upgrade to Pro"
+    ? "Loading beta access..."
+    : isAlreadyActive
+      ? "Continue with Beta Pro"
+      : isUnverified
+        ? "Verify your email"
+        : isSubmitting
+          ? "Activating Beta Pro..."
+          : "Activate Beta Pro"
+
+  const helperText = isLoading
+    ? "Checking your beta access."
+    : isAlreadyActive
+      ? "Beta Pro is already active for this account."
+      : isUnverified
+        ? "Verify your email before activating Beta Pro."
+        : "No trial, subscription, renewal or automatic billing."
 
   return (
-    <>
-      <Button className="w-full" onClick={handleUpgrade} disabled={isLoading || isSubmitting}>
+    <div>
+      <Button
+        aria-describedby="beta-pro-helper"
+        className="min-h-11 w-full"
+        onClick={handleUpgrade}
+        disabled={isLoading || isSubmitting || isUnverified || isUnavailable}
+      >
         {label}
       </Button>
-      <p className="text-[10px] md:text-xs text-muted-foreground text-center mt-2">
-        Beta upgrade uses the account flow available in this release. No online payment step is shown here.
+      <p id="beta-pro-helper" className="mt-2 text-center text-xs leading-5 text-muted-foreground" role="status">
+        {helperText}
       </p>
-      {error && <p className="text-[10px] md:text-xs text-destructive text-center mt-2">{error}</p>}
-    </>
+      {isUnavailable && (
+        <p className="mt-2 text-center text-xs text-destructive" role="alert">
+          Beta Pro activation is unavailable right now. Please try again later.
+        </p>
+      )}
+      {error && <p className="mt-2 text-center text-xs text-destructive" role="alert">{error}</p>}
+    </div>
   )
 }

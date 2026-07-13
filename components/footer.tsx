@@ -3,14 +3,6 @@ import { BrandLogo } from "@/components/brand-logo"
 
 const footerGroups = [
   {
-    title: "Product",
-    links: [
-      { label: "Practice", href: "/subjects" },
-      { label: "Pricing", href: "/pricing" },
-      { label: "How it works", href: "/how-it-works" },
-    ],
-  },
-  {
     title: "Company",
     links: [
       { label: "About", href: "/about" },
@@ -24,9 +16,6 @@ const footerGroups = [
     links: [
       { label: "Privacy", href: "/privacy" },
       { label: "Terms", href: "/terms" },
-      { label: "Data Protection", href: "/data-protection" },
-      { label: "AI Disclaimer", href: "/ai-disclaimer" },
-      { label: "Data Deletion", href: "/data-deletion" },
     ],
   },
 ]
@@ -35,7 +24,7 @@ export function Footer() {
   return (
     <footer className="border-t border-border bg-muted/40">
       <div className="container mx-auto px-4 py-10 md:py-12">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-5">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-[1.5fr_1fr_1fr]">
           {/* Logo & Description */}
           <div className="md:col-span-2">
             <Link href="/" className="mb-4 inline-flex items-center rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50" aria-label="Shikkha Buddy home">

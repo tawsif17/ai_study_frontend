@@ -1,155 +1,156 @@
-import { PageShell } from "@/components/page-shell"
-import { Breadcrumb } from "@/components/breadcrumb"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Check, Sparkles, Zap } from "@/components/icons"
-import { UpgradeToProButton } from "@/components/upgrade-to-pro-button"
 import Link from "next/link"
 import { Suspense } from "react"
+import { PageShell } from "@/components/page-shell"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ArrowRight, BookOpen, Check, CheckCircle, Sparkles, Target, Zap } from "@/components/icons"
+import { UpgradeToProButton } from "@/components/upgrade-to-pro-button"
 
-const freePlan = {
-  name: "Free",
-  price: "0",
-  description: "Start with limited MCQ practice.",
-  features: [
-    "Daily limited questions (10-15 per day)",
-    "MCQ practice only",
-    "Basic explanations",
-    "1 subject access",
-    "Progress saved automatically",
-  ],
-  cta: "Start Free",
-  helperText: "No credit card required.",
-}
+const subjects = "General Math, Physics & Chemistry"
 
-const proPlan = {
-  name: "Pro",
-  price: "499",
-  period: " / month",
-  badge: "Beta access",
-  description: "More practice access for students who want broader revision.",
-  features: [
-    "Unlimited questions",
-    "MCQ, CQ & Mixed Mode",
-    "Detailed explanations",
-    "All available subjects",
-    "Mixed practice sessions",
-  ],
-  plannedFeatures: [
-    "Weak area analysis",
-    "Progress tracking",
-    "Bookmark & revision mode",
-    "Faster question generation",
-  ],
-  helperText: "Listed pricing is for the planned paid Pro plan. This beta release upgrades through the account flow without an online payment step.",
-}
+const freeFeatures = [
+  "Daily MCQ practice",
+  subjects,
+  "Answer explanations",
+  "Results saved",
+]
+
+const betaProFeatures = [
+  { label: "More MCQ practice" },
+  { label: "Board-only practice", availability: "Available now" },
+  { label: "Weak Area Analysis", availability: "Available now" },
+  { label: subjects },
+  { label: "Results and revision tools" },
+]
+
+const comparisonRows = [
+  { feature: "Free MCQ practice", free: "Available now", betaPro: "Available now" },
+  { feature: "Board-only practice", free: "Not included", betaPro: "Available now" },
+  { feature: "Weak Area Analysis", free: "Not included", betaPro: "Available now" },
+  { feature: "CQ & Mixed Practice", free: "Coming soon", betaPro: "Coming soon" },
+  { feature: "No payment during beta", free: "Included", betaPro: "Included" },
+]
 
 function UpgradeToProButtonFallback() {
   return (
     <>
-      <Button className="w-full" disabled>
-        Upgrade to Pro
+      <Button className="min-h-11 w-full" disabled>
+        Loading beta access...
       </Button>
-      <p className="text-[10px] md:text-xs text-muted-foreground text-center mt-2">
-        Beta upgrade uses the account flow available in this release.
-      </p>
+      <p className="mt-2 text-center text-xs text-muted-foreground">Checking your beta access.</p>
     </>
+  )
+}
+
+function AvailabilityBadge({ children }: { children: string }) {
+  return (
+    <Badge className="border-0 bg-success/10 px-2 py-1 text-success" variant="secondary">
+      <CheckCircle aria-hidden="true" className="size-3" />
+      {children}
+    </Badge>
+  )
+}
+
+function ComparisonValue({ value }: { value: string }) {
+  if (value === "Available now") {
+    return <AvailabilityBadge>{value}</AvailabilityBadge>
+  }
+
+  if (value === "Coming soon") {
+    return <Badge className="border-0 bg-muted px-2 py-1 text-muted-foreground" variant="secondary">{value}</Badge>
+  }
+
+  if (value === "Not included") {
+    return <span className="text-muted-foreground" aria-label="Not included">—</span>
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1.5 text-success">
+      <CheckCircle aria-hidden="true" className="size-4" />
+      <span>{value}</span>
+    </span>
   )
 }
 
 export function PricingContent() {
   return (
     <PageShell>
-      <section className="border-b border-border bg-[linear-gradient(180deg,rgba(19,117,201,0.08),rgba(255,255,255,0))]">
-        <div className="container mx-auto px-4 py-10 md:py-16">
-          <div className="max-w-2xl mx-auto">
-            <div className="mb-4 md:mb-6">
-              <Breadcrumb items={[{ label: "Pricing" }]} />
-            </div>
-            <div className="text-center">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">Plans</p>
-              <h1 className="mb-3 text-3xl font-bold text-foreground text-balance md:mb-4 md:text-4xl lg:text-5xl">
-                Simple pricing for focused SSC practice
-              </h1>
-              <p className="text-base md:text-lg text-muted-foreground leading-relaxed text-pretty">
-                Start free. Upgrade when you&apos;re ready to go further.
-              </p>
-            </div>
+      <section className="bg-[linear-gradient(180deg,rgba(19,117,201,0.08),rgba(255,255,255,0))]">
+        <div className="container mx-auto px-4 pb-9 pt-9 md:pb-12 md:pt-12">
+          <div className="mx-auto max-w-4xl text-center">
+            <Badge className="border-0 bg-primary/10 px-3 py-1 text-primary" variant="secondary">Simple beta access</Badge>
+            <h1 className="mx-auto mt-4 max-w-3xl text-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl">
+              Start free. Activate Beta Pro when revision needs more focus.
+            </h1>
+            <p className="mx-auto mt-4 max-w-2xl text-pretty text-base leading-7 text-muted-foreground md:text-lg">
+              Practise free SSC MCQs now. Verified beta users can activate Beta Pro for Board-only practice and Weak Area Analysis, both available now.
+            </p>
+            <ul className="mx-auto mt-6 flex max-w-3xl flex-col items-center justify-center gap-3 text-sm font-medium text-foreground sm:flex-row sm:gap-0">
+              {[
+                "MCQ available now",
+                "No payment during beta",
+                "Pro features available now",
+              ].map((item, index) => (
+                <li key={item} className="flex items-center gap-2 sm:px-5 sm:[&:not(:last-child)]:border-r sm:[&:not(:last-child)]:border-border">
+                  {index === 1 ? <CheckCircle aria-hidden="true" className="size-5 text-primary" /> : index === 2 ? <Sparkles aria-hidden="true" className="size-5 text-primary" /> : <CheckCircle aria-hidden="true" className="size-5 text-success" />}
+                  {item}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
 
-      <section className="container mx-auto px-4 py-10 md:py-16">
-        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-5 md:grid-cols-2 md:gap-8">
-          <Card className="relative flex flex-col border-border/80 shadow-sm">
-            <CardHeader className="text-center pb-3 md:pb-4">
-              <div className="mx-auto mb-3 md:mb-4 flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl bg-muted">
-                <Zap className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground" />
+      <section className="container mx-auto px-4 pb-10 md:pb-14">
+        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
+          <Card className="flex flex-col border-border/90 py-7 shadow-sm">
+            <CardHeader className="items-center px-7 pb-4 text-center">
+              <div className="mb-2 flex size-14 items-center justify-center rounded-2xl bg-muted text-primary">
+                <Zap aria-hidden="true" className="size-7" />
               </div>
-              <CardTitle className="text-lg md:text-xl">{freePlan.name}</CardTitle>
-              <p className="text-xs md:text-sm text-muted-foreground">{freePlan.description}</p>
+              <CardTitle className="text-2xl">Free</CardTitle>
+              <p className="mt-2 text-3xl font-bold text-foreground">Tk 0</p>
+              <p className="text-sm text-muted-foreground">Focused MCQ practice</p>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col">
-              <div className="text-center mb-4 md:mb-6">
-                <span className="text-3xl md:text-4xl font-bold text-foreground">Tk {freePlan.price}</span>
-              </div>
-              <ul className="space-y-2 md:space-y-3 mb-4 md:mb-6 flex-1">
-                {freePlan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2 text-xs md:text-sm">
-                    <Check className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                    <span className="text-muted-foreground">{feature}</span>
+            <CardContent className="flex flex-1 flex-col px-7">
+              <ul className="mb-7 flex-1 space-y-4 border-t border-border pt-6 text-sm text-muted-foreground">
+                {freeFeatures.map((feature) => (
+                  <li key={feature} className="flex items-start gap-3">
+                    <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-success" />
+                    {feature}
                   </li>
                 ))}
               </ul>
-              <Button className="w-full rounded-lg border-primary/20 bg-transparent" variant="outline" asChild>
-                <Link href="/subjects">{freePlan.cta}</Link>
+              <Button asChild className="min-h-11 w-full" variant="outline">
+                <Link href="/subjects">Start free</Link>
               </Button>
-              <p className="text-[10px] md:text-xs text-muted-foreground text-center mt-2">{freePlan.helperText}</p>
+              <p className="mt-3 text-center text-xs text-muted-foreground">No credit card required.</p>
             </CardContent>
           </Card>
 
-          <Card className="relative flex flex-col border-primary shadow-xl shadow-primary/10 md:scale-[1.03]">
-            <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-xs md:-top-3">
-              {proPlan.badge}
-            </Badge>
-            <CardHeader className="text-center pb-3 md:pb-4 pt-6">
-              <div className="mx-auto mb-3 md:mb-4 flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl bg-primary/10">
-                <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+          <Card className="relative flex flex-col border-primary py-7 shadow-lg shadow-primary/10">
+            <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1" variant="default">Best for focused revision</Badge>
+            <CardHeader className="items-center px-7 pb-4 pt-8 text-center">
+              <div className="mb-2 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Sparkles aria-hidden="true" className="size-7" />
               </div>
-              <CardTitle className="text-lg md:text-xl">{proPlan.name}</CardTitle>
-              <p className="text-xs md:text-sm text-muted-foreground">{proPlan.description}</p>
+              <CardTitle className="text-2xl">Beta Pro</CardTitle>
+              <p className="mt-2 font-semibold text-primary">No payment during beta</p>
+              <p className="text-sm text-muted-foreground">Optional access for verified beta users</p>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col">
-              <div className="text-center mb-4 md:mb-6">
-                <span className="text-3xl md:text-4xl font-bold text-foreground">Tk {proPlan.price}</span>
-                <span className="text-sm md:text-base text-muted-foreground">{proPlan.period}</span>
-                <p className="mt-2 text-[10px] md:text-xs text-muted-foreground">{proPlan.helperText}</p>
-              </div>
-              <div className="mb-4 md:mb-6 flex-1 space-y-4">
-                <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Available today</p>
-                  <ul className="space-y-2 md:space-y-3">
-                {proPlan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2 text-xs md:text-sm">
-                    <Check className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                    <span className="text-muted-foreground">{feature}</span>
+            <CardContent className="flex flex-1 flex-col px-7">
+              <ul className="mb-7 flex-1 space-y-4 border-t border-border pt-6 text-sm text-muted-foreground">
+                {betaProFeatures.map(({ label, availability }) => (
+                  <li key={label} className="flex items-start gap-3">
+                    <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-success" />
+                    <span className="flex flex-1 flex-wrap items-center justify-between gap-2">
+                      <span>{label}</span>
+                      {availability && <AvailabilityBadge>{availability}</AvailabilityBadge>}
+                    </span>
                   </li>
                 ))}
-                  </ul>
-                </div>
-                <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Planned</p>
-                  <ul className="space-y-2 md:space-y-3">
-                    {proPlan.plannedFeatures.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2 text-xs md:text-sm">
-                        <Check className="h-4 w-4 text-muted-foreground/60 shrink-0 mt-0.5" />
-                        <span className="text-muted-foreground">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
+              </ul>
               <Suspense fallback={<UpgradeToProButtonFallback />}>
                 <UpgradeToProButton />
               </Suspense>
@@ -158,16 +159,67 @@ export function PricingContent() {
         </div>
       </section>
 
-      <section className="border-t border-border bg-muted/40">
-        <div className="container mx-auto px-4 py-8 md:py-12">
-          <div className="max-w-xl mx-auto text-center">
-            <h2 className="text-lg md:text-xl font-semibold text-foreground mb-2">Have questions?</h2>
-            <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-4">
-              We&apos;re here to help you choose the right plan for your learning journey.
+      <section className="container mx-auto px-4 pb-10 md:pb-14">
+        <div className="mx-auto grid max-w-5xl items-center gap-7 rounded-2xl border border-primary/15 bg-primary/5 p-6 md:grid-cols-[1fr_1.15fr] md:p-8">
+          <div>
+            <div className="flex flex-wrap gap-2">
+              <Badge className="border-0 bg-primary/10 text-primary" variant="secondary">Pro feature</Badge>
+              <AvailabilityBadge>Available now</AvailabilityBadge>
+            </div>
+            <h2 className="mt-4 text-balance text-2xl font-bold tracking-tight text-foreground md:text-3xl">Turn completed practice into a clearer next step</h2>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              Weak Area Analysis uses submitted MCQ performance to highlight chapters that may need more practice. It does not predict exam results or guarantee improvement.
             </p>
-            <Button variant="outline" className="rounded-lg border-primary/20 bg-background" asChild>
-              <Link href="/contact">Contact Support</Link>
-            </Button>
+          </div>
+          <div className="rounded-xl border border-primary/25 bg-background p-4 shadow-sm">
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4" aria-hidden="true">
+              <div className="mb-4 h-2 w-3/5 rounded-full bg-primary/20" />
+              <div className="flex items-end gap-2">
+                <div className="size-14 rounded-full border-8 border-primary border-r-primary/20" />
+                <div className="flex flex-1 flex-col gap-2">
+                  <span className="h-2 w-4/5 rounded-full bg-primary/25" />
+                  <span className="h-2 w-3/5 rounded-full bg-primary/20" />
+                  <span className="h-2 w-2/3 rounded-full bg-primary/15" />
+                </div>
+                <div className="flex h-14 items-end gap-1">
+                  {["h-5", "h-9", "h-12", "h-7"].map((height) => <span key={height} className={`w-2 rounded-t bg-primary/50 ${height}`} />)}
+                </div>
+              </div>
+            </div>
+            <ul className="mt-4 grid grid-cols-3 divide-x divide-border text-center text-xs font-medium text-foreground">
+              <li className="flex flex-col items-center gap-1 px-2"><BookOpen aria-hidden="true" className="size-5 text-primary" />Subject-led insights</li>
+              <li className="flex flex-col items-center gap-1 px-2"><Target aria-hidden="true" className="size-5 text-primary" />Chapter performance</li>
+              <li className="flex flex-col items-center gap-1 px-2"><ArrowRight aria-hidden="true" className="size-5 text-primary" />Recommended next practice</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section className="container mx-auto px-4 pb-12 md:pb-16">
+        <div className="mx-auto max-w-5xl overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+          <div className="border-b border-border px-5 py-4">
+            <h2 className="text-lg font-semibold text-foreground">Beta access at a glance</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] text-left text-sm">
+              <caption className="sr-only">Comparison of Free and Beta Pro access during beta</caption>
+              <thead className="bg-muted/50 text-foreground">
+                <tr>
+                  <th scope="col" className="px-5 py-3 font-semibold">Feature</th>
+                  <th scope="col" className="px-5 py-3 font-semibold">Free</th>
+                  <th scope="col" className="px-5 py-3 font-semibold">Beta Pro</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {comparisonRows.map((row) => (
+                  <tr key={row.feature}>
+                    <th scope="row" className="px-5 py-3 font-medium text-foreground">{row.feature}</th>
+                    <td className="px-5 py-3"><ComparisonValue value={row.free} /></td>
+                    <td className="px-5 py-3"><ComparisonValue value={row.betaPro} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
