@@ -261,6 +261,65 @@ describe("PracticeSessionContent", () => {
     expect(reloadAnswers).toHaveBeenCalledTimes(1)
   })
 
+  it("exposes a retryable error when the complete question set cannot load", async () => {
+    const reloadItems = vi.fn().mockResolvedValue(undefined)
+    vi.mocked(usePracticeItems).mockReturnValue({
+      items: undefined,
+      isLoading: false,
+      isError: new Error("Later page unavailable"),
+      mutate: reloadItems,
+    })
+
+    renderSession()
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Unable to load practice questions")
+    expect(screen.getByRole("alert")).toHaveTextContent("complete question set")
+    await userEvent.click(screen.getByRole("button", { name: "Retry loading questions" }))
+    expect(reloadItems).toHaveBeenCalledTimes(1)
+  })
+
+  it("exposes all 25 questions and preserves an answer across the former page boundary", async () => {
+    const items = Array.from({ length: 25 }, (_, index) => ({
+      section_order_no: index + 1,
+      order_no: index + 1,
+      practice_item_id: index + 1,
+      question_id: index + 101,
+    }))
+    vi.mocked(usePracticeItems).mockReturnValue({
+      items,
+      isLoading: false,
+      isError: undefined,
+      mutate: vi.fn(),
+    })
+
+    render(
+      <PracticeSessionContent
+        practiceId={99}
+        summary={{
+          practice_session_id: 99,
+          exam_type_id: 1,
+          subject_id: 5,
+          mode: "MCQ",
+          attempt_status: "IN_PROGRESS",
+          mcq_total: 25,
+          cq_total: 0,
+        }}
+      />
+    )
+
+    const user = userEvent.setup()
+    expect(screen.getByText("0 of 25 answered")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Go to question 25" })).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "B5" }))
+    await user.click(screen.getByRole("button", { name: "Go to question 21" }))
+    expect(screen.getByText("Q21")).toBeInTheDocument()
+    expect(screen.getByText("1 of 25 answered")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Go to question 1" }))
+    expect(screen.getByRole("button", { name: "B5" })).toHaveAttribute("aria-pressed", "true")
+  })
+
   it("shows a persistent failure, preserves the local answer, and retries explicitly", async () => {
     const user = userEvent.setup()
     vi.mocked(saveAnswers)

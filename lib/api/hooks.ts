@@ -3,6 +3,7 @@
 import useSWR from "swr"
 import {
   getExamTypes,
+  getProgressDashboard,
   getQuestions,
   getSubjectChapters,
   getSubjects,
@@ -11,10 +12,30 @@ import {
   type QuestionListItem,
   type QuestionsListRequest,
   type Subject,
+  type ProgressDashboardResponse,
 } from "./index"
 
 async function examTypesFetcher(): Promise<ExamType[]> {
   return getExamTypes()
+}
+
+async function progressDashboardFetcher(): Promise<ProgressDashboardResponse> {
+  return getProgressDashboard()
+}
+
+export function useProgressDashboard(enabled: boolean = true) {
+  const { data, error, isLoading, mutate } = useSWR<ProgressDashboardResponse>(
+    enabled ? ["progress-dashboard"] : null,
+    progressDashboardFetcher,
+    { revalidateOnFocus: false }
+  )
+
+  return {
+    dashboard: data,
+    isLoading,
+    isError: error,
+    mutate,
+  }
 }
 
 async function subjectsFetcher([, examType]: [string, string | undefined]): Promise<Subject[]> {

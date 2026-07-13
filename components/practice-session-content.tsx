@@ -41,7 +41,12 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
   const [currentSection, setCurrentSection] = useState<"MCQ" | "CQ">(
     summary.mode === "CQ" ? "CQ" : hasMcq ? "MCQ" : "CQ"
   )
-  const { items, isLoading: itemsLoading } = usePracticeItems(practiceId, currentSection)
+  const {
+    items,
+    isLoading: itemsLoading,
+    isError: itemsError,
+    mutate: reloadItems,
+  } = usePracticeItems(practiceId, currentSection)
   const {
     answers: savedAnswers,
     isLoading: answersLoading,
@@ -179,6 +184,26 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
     questionId ? ["question-detail", questionId] : null,
     () => getQuestionById(questionId!)
   )
+
+  if (itemsError) {
+    return (
+      <div className="container mx-auto px-4 py-12 text-center" role="alert">
+        <h1 className="text-xl font-semibold text-foreground mb-2">Unable to load practice questions</h1>
+        <p className="text-muted-foreground mb-5">
+          We couldn&apos;t load the complete question set. Retry before starting this practice session.
+        </p>
+        <Button
+          type="button"
+          className="min-h-11"
+          onClick={() => {
+            void reloadItems().catch(() => undefined)
+          }}
+        >
+          Retry loading questions
+        </Button>
+      </div>
+    )
+  }
 
   if (itemsLoading || !items || answersLoading) {
     return (

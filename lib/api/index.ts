@@ -30,6 +30,8 @@ import type {
   McqOption,
   PracticeGenerateRequest,
   PracticeGenerateResponse,
+  PracticeItemsResponse,
+  ProgressDashboardResponse,
   PracticeItem,
   PracticeMode,
   PracticeSummaryResponse,
@@ -243,6 +245,12 @@ export async function generatePractice(
   })
 }
 
+export async function getProgressDashboard(): Promise<ProgressDashboardResponse> {
+  return apiClient<ProgressDashboardResponse>("/profile/progress-dashboard", {
+    requiresAuth: true,
+  })
+}
+
 export async function getPracticeSummary(
   practiceId: number
 ): Promise<PracticeSummaryResponse> {
@@ -281,11 +289,38 @@ export async function getPracticeItems(
   practiceId: number,
   section?: Section
 ): Promise<PracticeItem[]> {
-  const response = await apiClient<PracticeItem[] | { items: PracticeItem[] }>(`/practice/${practiceId}/items`, {
-    params: section ? { section } : undefined,
+  const pageSize = 20
+  const getPage = (page: number) => apiClient<PracticeItemsResponse>(`/practice/${practiceId}/items`, {
+    params: section ? { section, page, page_size: pageSize } : undefined,
     requiresAuth: true,
   })
-  return Array.isArray(response) ? response : response.items
+
+  const firstResponse = await getPage(1)
+  if (Array.isArray(firstResponse)) return normalizePracticeItems(firstResponse)
+
+  const responsePageSize = Number.isInteger(firstResponse.page_size) && firstResponse.page_size > 0
+    ? firstResponse.page_size
+    : pageSize
+  const totalPages = Math.max(1, Math.ceil(firstResponse.total_in_section / responsePageSize))
+  const remainingPages = await Promise.all(
+    Array.from({ length: totalPages - 1 }, (_, index) => getPage(index + 2))
+  )
+  const items = [
+    ...firstResponse.items,
+    ...remainingPages.flatMap((response) => Array.isArray(response) ? response : response.items),
+  ]
+
+  return normalizePracticeItems(items)
+}
+
+function normalizePracticeItems(items: PracticeItem[]): PracticeItem[] {
+  const uniqueItems = new Map<number, PracticeItem>()
+  for (const item of items) {
+    if (!uniqueItems.has(item.practice_item_id)) uniqueItems.set(item.practice_item_id, item)
+  }
+  return Array.from(uniqueItems.values()).sort(
+    (left, right) => left.section_order_no - right.section_order_no || left.order_no - right.order_no
+  )
 }
 
 export async function saveAnswers(

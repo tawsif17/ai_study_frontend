@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { register, reportQuestion, resendVerification, submitContact, upgradeToPro, verifyEmail } from "./index"
+import { getPracticeItems, getProgressDashboard, register, reportQuestion, resendVerification, submitContact, upgradeToPro, verifyEmail } from "./index"
 import { apiClient, apiClientWithResponse } from "./client"
 
 vi.mock("./client", () => ({
@@ -152,5 +152,92 @@ describe("auth API contract calls", () => {
       },
       requiresAuth: true,
     })
+  })
+})
+
+describe("progress dashboard API contract", () => {
+  it("uses the exact authenticated endpoint and preserves the unwrapped contract", async () => {
+    const dashboard = {
+      message: null,
+      proficiency: { score: 68, trend_vs_last_week: 6 },
+      weakness_ranking: [],
+      recommendation: null,
+    }
+    vi.mocked(apiClient).mockResolvedValueOnce(dashboard)
+
+    await expect(getProgressDashboard()).resolves.toEqual(dashboard)
+    expect(apiClient).toHaveBeenCalledWith("/profile/progress-dashboard", {
+      requiresAuth: true,
+    })
+  })
+})
+
+describe("practice items pagination", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  const item = (number: number) => ({
+    practice_item_id: number,
+    question_id: 100 + number,
+    order_no: number,
+    section_order_no: number,
+  })
+
+  it("loads, combines, and orders every page in a 25-question session", async () => {
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce({
+        practice_session_id: 12,
+        section: "MCQ",
+        page: 1,
+        page_size: 20,
+        total_in_section: 25,
+        items: Array.from({ length: 20 }, (_, index) => item(index + 1)),
+      })
+      .mockResolvedValueOnce({
+        practice_session_id: 12,
+        section: "MCQ",
+        page: 2,
+        page_size: 20,
+        total_in_section: 25,
+        items: Array.from({ length: 5 }, (_, index) => item(index + 21)).reverse(),
+      })
+
+    const result = await getPracticeItems(12, "MCQ")
+
+    expect(result).toHaveLength(25)
+    expect(result.map(({ section_order_no }) => section_order_no)).toEqual(
+      Array.from({ length: 25 }, (_, index) => index + 1)
+    )
+    expect(apiClient).toHaveBeenNthCalledWith(1, "/practice/12/items", {
+      params: { section: "MCQ", page: 1, page_size: 20 },
+      requiresAuth: true,
+    })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/practice/12/items", {
+      params: { section: "MCQ", page: 2, page_size: 20 },
+      requiresAuth: true,
+    })
+  })
+
+  it("preserves a legacy array response while removing duplicate items", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce([item(2), item(1), item(2)])
+
+    await expect(getPracticeItems(12, "MCQ")).resolves.toEqual([item(1), item(2)])
+    expect(apiClient).toHaveBeenCalledTimes(1)
+  })
+
+  it("rejects the full load when a later page fails", async () => {
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce({
+        practice_session_id: 12,
+        section: "MCQ",
+        page: 1,
+        page_size: 20,
+        total_in_section: 25,
+        items: Array.from({ length: 20 }, (_, index) => item(index + 1)),
+      })
+      .mockRejectedValueOnce(new Error("Page 2 unavailable"))
+
+    await expect(getPracticeItems(12, "MCQ")).rejects.toThrow("Page 2 unavailable")
   })
 })

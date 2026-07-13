@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mutate(
       (key) =>
         Array.isArray(key) &&
-        ["subjects", "questions", "practice-summary", "practice-items", "practice-answers", "practice-results"].includes(
+        ["subjects", "questions", "practice-summary", "practice-items", "practice-answers", "practice-results", "progress-dashboard"].includes(
           key[0]
         ),
       undefined,

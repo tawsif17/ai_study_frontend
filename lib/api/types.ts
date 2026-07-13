@@ -223,6 +223,37 @@ export interface PracticeGenerateResponse {
   }
 }
 
+// ============================================
+// PROGRESS DASHBOARD TYPES
+// ============================================
+
+export interface ProgressProficiency {
+  score: number
+  trend_vs_last_week: number | null
+}
+
+export interface WeaknessRankingEntry {
+  subject_id: number
+  subject_name: string
+  chapter_id: number
+  chapter_name: string
+  accuracy: number
+  questions_attempted: number
+  message: string | null
+}
+
+export interface ProgressRecommendation {
+  label: string
+  generate_payload: PracticeGenerateRequest
+}
+
+export interface ProgressDashboardResponse {
+  message: string | null
+  proficiency: ProgressProficiency | null
+  weakness_ranking: WeaknessRankingEntry[]
+  recommendation: ProgressRecommendation | null
+}
+
 export interface PracticeSummaryResponse {
   practice_session_id: number
   exam_type_id: number
@@ -240,7 +271,16 @@ export interface PracticeItem {
   question_id: number
 }
 
-export type PracticeItemsResponse = PracticeItem[]
+export interface PracticeItemsPageResponse {
+  practice_session_id: number
+  section: Section
+  page: number
+  page_size: number
+  total_in_section: number
+  items: PracticeItem[]
+}
+
+export type PracticeItemsResponse = PracticeItem[] | PracticeItemsPageResponse
 
 // ============================================
 // ANSWER TYPES
