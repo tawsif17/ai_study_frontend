@@ -3,15 +3,15 @@ import { PricingContent } from "./pricing-content"
 
 export const metadata: Metadata = {
   title: "Pricing | Shikkha Buddy",
-  description: "Compare Shikkha Buddy free and pro options for focused SSC science practice.",
+  description: "Compare Free and Beta Pro access for focused SSC practice.",
   openGraph: {
     title: "Pricing | Shikkha Buddy",
-    description: "Compare Shikkha Buddy free and pro options for focused SSC science practice.",
+    description: "Compare Free and Beta Pro access for focused SSC practice.",
   },
   twitter: {
     card: "summary",
     title: "Pricing | Shikkha Buddy",
-    description: "Compare Shikkha Buddy free and pro options for focused SSC science practice.",
+    description: "Compare Free and Beta Pro access for focused SSC practice.",
   },
 }
 

@@ -9,13 +9,13 @@ interface BrandLogoProps {
 export function BrandLogo({ className, priority = false }: BrandLogoProps) {
   return (
     <Image
-      src="/shikkha-buddy-max.svg"
+      src="/shikkha-buddy-logo.svg"
       alt="Shikkha Buddy"
-      width={4096}
-      height={4096}
+      width={877}
+      height={136}
       priority={priority}
       unoptimized
-      className={cn("h-10 w-auto", className)}
+      className={cn("h-9 w-auto shrink-0", className)}
     />
   )
 }

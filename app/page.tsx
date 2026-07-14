@@ -1,125 +1,326 @@
 import type { Metadata } from "next"
-import { PageShell } from "@/components/page-shell"
-import { HeroSection } from "@/components/hero-section"
-import { FeaturesSection } from "@/components/features-section"
-import { ModeCard } from "@/components/mode-card"
-import { SubjectCard } from "@/components/subject-card"
-import { CheckCircle, FileText, Shuffle, Calculator, Atom, FlaskConical } from "@/components/icons"
+import Link from "next/link"
 import { AuthGatedLink } from "@/components/auth-gated-link"
+import { FeaturesSection } from "@/components/features-section"
+import { HeroSection } from "@/components/hero-section"
+import {
+  Atom,
+  BookOpen,
+  Calculator,
+  CheckCircle,
+  ChevronRight,
+  FlaskConical,
+  Target,
+  Zap,
+  type IconComponent,
+} from "@/components/icons"
+import { PageShell } from "@/components/page-shell"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 export const metadata: Metadata = {
-  title: "SSC Science Practice | Shikkha Buddy",
+  title: "SSC MCQ Practice | Shikkha Buddy",
   description:
-    "Practice SSC Higher Math, Physics and Chemistry with guided MCQ, CQ, and mixed question sessions.",
+    "Practice SSC exam MCQs for General Math, Physics, and Chemistry with answer explanations and mistake review.",
   openGraph: {
-    title: "SSC Science Practice | Shikkha Buddy",
+    title: "SSC MCQ Practice | Shikkha Buddy",
     description:
-      "Practice SSC Higher Math, Physics and Chemistry with guided MCQ, CQ, and mixed question sessions.",
+      "Practice SSC exam MCQs for General Math, Physics, and Chemistry with answer explanations and mistake review.",
   },
   twitter: {
     card: "summary",
-    title: "SSC Science Practice | Shikkha Buddy",
+    title: "SSC MCQ Practice | Shikkha Buddy",
     description:
-      "Practice SSC Higher Math, Physics and Chemistry with guided MCQ, CQ, and mixed question sessions.",
+      "Practice SSC exam MCQs for General Math, Physics, and Chemistry with answer explanations and mistake review.",
   },
 }
+
+const freePracticeBenefits = ["Topic-wise practice", "Answer explanations", "Mistake review"]
+
+const subjects: Array<{
+  title: string
+  description: string
+  icon: IconComponent
+  tone: string
+}> = [
+  {
+    title: "General Math",
+    description: "Algebra, Geometry, Arithmetic, Mensuration",
+    icon: Calculator,
+    tone: "from-[#7c6df2] to-[#5266d8]",
+  },
+  {
+    title: "Physics",
+    description: "Light, Motion, Force, Electricity, Waves",
+    icon: Atom,
+    tone: "from-[#57c785] to-[#12964f]",
+  },
+  {
+    title: "Chemistry",
+    description: "Structure, Bonding, Reactions, Acids & Bases",
+    icon: FlaskConical,
+    tone: "from-[#ff9f43] to-[#f76707]",
+  },
+]
+
+const steps: Array<{
+  title: string
+  description: string
+  icon: IconComponent
+}> = [
+  {
+    title: "Choose a subject",
+    description: "Pick the subject and topic you want to practice.",
+    icon: BookOpen,
+  },
+  {
+    title: "Practice focused MCQs",
+    description: "Answer MCQs shaped by board patterns and get instant feedback.",
+    icon: Target,
+  },
+  {
+    title: "Review and revise",
+    description: "Check your mistakes and improve step by step.",
+    icon: Zap,
+  },
+]
 
 export default function HomePage() {
   return (
     <PageShell>
-      {/* Hero Section */}
       <HeroSection />
-
-      {/* Features Section */}
       <FeaturesSection />
-
-      {/* Practice Modes Section */}
-      <section className="border-y border-border bg-muted/30 py-16 md:py-20">
-        <div className="container mx-auto px-4">
-          <div className="mx-auto mb-10 max-w-2xl text-center md:mb-12">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">Practice modes</p>
-            <h2 className="mb-3 text-2xl font-bold text-foreground text-balance md:text-3xl">
-              Choose Your Practice Mode
-            </h2>
-            <p className="mx-auto leading-7 text-muted-foreground">
-              Choose a format that fits the topic and your study goal.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
-            <ModeCard
-              icon={CheckCircle}
-              title="MCQ Practice"
-              description="Multiple choice questions with instant feedback to test your knowledge quickly."
-              href="/subjects"
-            />
-            <ModeCard
-              icon={FileText}
-              title="CQ Practice"
-              description="Creative questions with detailed explanations to develop deeper understanding."
-              href="/subjects"
-            />
-            <ModeCard
-              icon={Shuffle}
-              title="Mixed Mode"
-              description="Practice MCQ and CQ together when you want a broader review."
-              href="/subjects"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Subjects Section */}
-      <section className="bg-background py-16 md:py-20">
-        <div className="container mx-auto px-4">
-          <div className="mx-auto mb-10 max-w-2xl text-center md:mb-12">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">Available subjects</p>
-            <h2 className="mb-3 text-2xl font-bold text-foreground text-balance md:text-3xl">
-              SSC Science Subjects
-            </h2>
-            <p className="mx-auto leading-7 text-muted-foreground">
-              Focused practice paths for the subjects currently available.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
-            <SubjectCard
-              icon={Calculator}
-              title="Higher Math"
-              description="Practice algebra, geometry, trigonometry, statistics, and related problem types."
-              color="bg-blue-500"
-            />
-            <SubjectCard
-              icon={Atom}
-              title="Physics"
-              description="Review mechanics, light, sound, electricity, and magnetism through targeted practice."
-              color="bg-teal-500"
-            />
-            <SubjectCard
-              icon={FlaskConical}
-              title="Chemistry"
-              description="Practice organic, inorganic, and physical chemistry topics with question-based review."
-              color="bg-emerald-500"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="bg-background px-4 py-16 md:py-20">
-        <div className="container mx-auto rounded-2xl border border-primary/15 bg-primary/5 px-6 py-10 text-center shadow-sm md:px-10 md:py-12">
-          <h2 className="mb-3 text-2xl font-bold text-foreground text-balance md:text-3xl">
-            Ready to Start Practicing?
-          </h2>
-          <p className="mx-auto mb-7 max-w-2xl leading-7 text-muted-foreground">
-            Start with a focused SSC science practice flow and build consistency over time.
-          </p>
-          <AuthGatedLink
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-7 text-sm font-medium text-primary-foreground shadow-primary transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            href="/subjects"
-          >
-            Get Started Free
-          </AuthGatedLink>
-        </div>
-      </section>
+      <StartPracticingSection />
+      <SubjectsSection />
+      <HowItWorksSection />
+      <FinalCtaSection />
     </PageShell>
+  )
+}
+
+function StartPracticingSection() {
+  return (
+    <section className="bg-background py-8 md:py-12" aria-labelledby="start-practicing-heading">
+      <div className="container mx-auto px-4">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 id="start-practicing-heading" className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+            Start practicing
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground md:text-base">
+            Begin with free MCQ practice. Activate beta Pro access later only if board-only sets and pro features help you revise.
+          </p>
+        </div>
+
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1.05fr_1fr]">
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm md:p-8">
+            <div className="flex flex-wrap items-center gap-3">
+              <h3 className="text-2xl font-bold text-foreground md:text-3xl">Free MCQ practice</h3>
+              <Badge className="border-transparent bg-[#dcfae6] text-[#079455] hover:bg-[#dcfae6]">
+                Available now
+              </Badge>
+            </div>
+            <p className="mt-5 max-w-xl text-sm leading-7 text-muted-foreground md:text-base">
+              AI-generated MCQs based on past board-question patterns, with past board questions mixed in.
+            </p>
+
+            <div className="my-7 border-t border-border" />
+
+            <ul className="space-y-3">
+              {freePracticeBenefits.map((benefit) => (
+                <li key={benefit} className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
+                  <CheckCircle className="h-5 w-5 shrink-0 text-[#12b76a]" aria-hidden="true" />
+                  {benefit}
+                </li>
+              ))}
+            </ul>
+
+            <Button className="mt-8 h-14 w-full rounded-lg text-base shadow-primary" asChild>
+              <AuthGatedLink href="/subjects">Start free practice</AuthGatedLink>
+            </Button>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm md:p-8">
+            <h3 className="text-base font-bold text-foreground">More practice options</h3>
+            <div className="mt-5 space-y-4">
+              <Link
+                href="/pricing"
+                className="group flex items-center justify-between gap-4 rounded-xl border border-[#ffd89a] bg-[#fffaf2] p-5 transition-colors hover:border-[#f79009] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="Board-only practice, Pro option, opens pricing"
+              >
+                <div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h4 className="text-base font-bold text-foreground">Board-only practice</h4>
+                    <Badge className="border-transparent bg-[#fff2cc] text-[#dc6803] hover:bg-[#fff2cc]">Pro</Badge>
+                  </div>
+                  <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
+                    Practice only past board questions when you want stricter exam revision.
+                  </p>
+                </div>
+                <ChevronRight className="h-6 w-6 shrink-0 text-foreground transition-transform group-hover:translate-x-0.5" />
+              </Link>
+
+              <DisabledPracticeOption
+                title="CQ Practice"
+                description="Full creative-question practice is planned."
+              />
+              <DisabledPracticeOption
+                title="Mixed Practice"
+                description="MCQ + CQ mixed sets are planned."
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function DisabledPracticeOption({ title, description }: { title: string; description: string }) {
+  return (
+    <div
+      className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/40 p-5 text-muted-foreground"
+      aria-disabled="true"
+    >
+      <div>
+        <div className="flex flex-wrap items-center gap-3">
+          <h4 className="text-base font-bold text-foreground">{title}</h4>
+          <Badge variant="outline" className="bg-muted text-muted-foreground">
+            Coming soon
+          </Badge>
+        </div>
+        <p className="mt-3 max-w-md text-sm leading-6">{description}</p>
+      </div>
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border" aria-hidden="true">
+        <span className="relative h-4 w-4 rounded-sm border-2 border-current">
+          <span className="absolute -left-0.5 -top-2 h-3 w-5 rounded-t-full border-2 border-b-0 border-current" />
+        </span>
+      </span>
+    </div>
+  )
+}
+
+function SubjectsSection() {
+  return (
+    <section className="bg-background py-10 md:py-14" aria-labelledby="subjects-heading">
+      <div className="container mx-auto px-4">
+        <h2 id="subjects-heading" className="text-center text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+          Practice by subject
+        </h2>
+
+        <div className="mt-8 grid gap-6 md:grid-cols-3">
+          {subjects.map((subject) => (
+            <SubjectPreviewCard key={subject.title} subject={subject} />
+          ))}
+        </div>
+
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          More SSC subjects will be added as practice content becomes ready.
+        </p>
+      </div>
+    </section>
+  )
+}
+
+function SubjectPreviewCard({ subject }: { subject: (typeof subjects)[number] }) {
+  const Icon = subject.icon
+
+  return (
+    <article className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="flex items-start gap-5">
+        <div className={`flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${subject.tone}`}>
+          <Icon className="h-10 w-10 text-white" aria-hidden="true" />
+        </div>
+        <div>
+          <Badge className="border-transparent bg-primary/10 text-primary hover:bg-primary/10">SSC</Badge>
+          <h3 className="mt-3 text-lg font-bold text-foreground">{subject.title}</h3>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">{subject.description}</p>
+        </div>
+      </div>
+
+      <div className="my-6 border-t border-border" />
+
+      <p className="flex items-center gap-3 text-sm text-muted-foreground">
+        <CheckCircle className="h-5 w-5 shrink-0 text-[#12b76a]" aria-hidden="true" />
+        MCQ practice available
+      </p>
+
+      <AuthGatedLink
+        href="/subjects"
+        className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-lg border border-primary bg-background px-5 text-sm font-bold text-primary transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      >
+        View topics
+      </AuthGatedLink>
+    </article>
+  )
+}
+
+function HowItWorksSection() {
+  return (
+    <section className="bg-background py-8 md:py-12" aria-labelledby="how-it-works-heading">
+      <div className="container mx-auto px-4">
+        <h2 id="how-it-works-heading" className="text-center text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+          How it works
+        </h2>
+        <ol className="mt-8 grid gap-7 md:grid-cols-3">
+          {steps.map((step, index) => {
+            const Icon = step.icon
+
+            return (
+              <li key={step.title} className="relative text-center">
+                <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                  {index + 1}
+                </div>
+                <div className="mx-auto mt-3 flex h-12 w-12 items-center justify-center rounded-full border border-primary/20 bg-background text-primary shadow-sm">
+                  <Icon className="h-6 w-6" aria-hidden="true" />
+                </div>
+                <h3 className="mt-4 text-sm font-bold text-foreground">{step.title}</h3>
+                <p className="mx-auto mt-2 max-w-60 text-xs leading-6 text-muted-foreground">{step.description}</p>
+              </li>
+            )
+          })}
+        </ol>
+      </div>
+    </section>
+  )
+}
+
+function FinalCtaSection() {
+  return (
+    <section className="bg-background px-4 py-8 md:py-12">
+      <div className="container mx-auto">
+        <div className="grid items-center gap-6 rounded-2xl border border-primary/15 bg-primary/5 p-6 shadow-sm md:grid-cols-[0.28fr_1fr] md:p-8">
+          <div className="mx-auto w-40 md:w-48" aria-hidden="true">
+            <svg viewBox="0 0 180 120" className="h-auto w-full">
+              <defs>
+                <linearGradient id="bookCover" x1="0" x2="1" y1="0" y2="1">
+                  <stop stopColor="#e6f0ff" />
+                  <stop offset="1" stopColor="#b9d6ff" />
+                </linearGradient>
+              </defs>
+              <path d="M36 82c20-13 37-14 54-3v26c-18-10-35-10-54 1V82Z" fill="url(#bookCover)" stroke="#1375c9" strokeWidth="3" />
+              <path d="M90 79c17-11 34-10 54 3v24c-19-11-36-11-54-1V79Z" fill="#eef6ff" stroke="#1375c9" strokeWidth="3" />
+              <path d="M90 79v27" stroke="#1375c9" strokeLinecap="round" strokeWidth="3" />
+              <path d="M47 89c11-5 22-6 33-2M100 87c12-4 23-3 34 3" stroke="#7aaef0" strokeLinecap="round" strokeWidth="3" />
+              <path d="M38 50v-9M38 41h9M136 48v-8M136 40h8M70 32v-7M70 25h7" stroke="#9ec5ff" strokeLinecap="round" strokeWidth="3" />
+              <circle cx="58" cy="45" r="3" fill="#9ec5ff" />
+              <circle cx="122" cy="61" r="3" fill="#9ec5ff" />
+            </svg>
+          </div>
+          <div className="text-center md:text-left">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+              Start your first SSC practice session today
+            </h2>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground md:text-base">
+              Try free MCQ practice now. Activate beta Pro access later only if you want board-only sets and other pro features
+              designed to make your practice smarter.
+            </p>
+            <Button className="mt-5 h-11 w-full rounded-lg px-10 shadow-primary sm:w-auto" asChild>
+              <AuthGatedLink href="/subjects">Start free</AuthGatedLink>
+            </Button>
+            <p className="mt-2 text-xs text-muted-foreground">No credit card required.</p>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }

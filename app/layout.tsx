@@ -27,9 +27,14 @@ export const metadata: Metadata = {
       "Practice SSC Higher Math, Physics and Chemistry with guided question sessions, explanations, and a focused study flow.",
   },
   icons: {
-    icon: "/favicon_48.png",
-    shortcut: "/favicon_48.png",
-    apple: "/favicon_48.png",
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon_48.png", sizes: "48x48", type: "image/png" },
+      { url: "/favicon_32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon_16.png", sizes: "16x16", type: "image/png" },
+    ],
+    shortcut: "/favicon_32.png",
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },
 }
 

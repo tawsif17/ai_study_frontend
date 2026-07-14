@@ -79,7 +79,7 @@ export function QuestionReportDialog({ questionId }: QuestionReportDialogProps) 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button type="button" size="sm" variant="ghost" className="h-8 px-2 text-xs">
+        <Button type="button" size="sm" variant="ghost" className="min-h-11 px-2 text-xs">
           Report Question
         </Button>
       </DialogTrigger>
@@ -136,7 +136,7 @@ export function QuestionReportDialog({ questionId }: QuestionReportDialogProps) 
           )}
 
           {successMessage && (
-            <p role="status" className="text-sm text-success">
+            <p role="status" className="text-sm text-emerald-700">
               {successMessage}
             </p>
           )}

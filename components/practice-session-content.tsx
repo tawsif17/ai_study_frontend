@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -8,11 +8,24 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ChevronLeft, ChevronRight, CheckCircle } from "@/components/icons"
 import { QuestionReportDialog } from "@/components/question-report-dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import useSWR, { useSWRConfig } from "swr"
 import { usePracticeItems, usePracticeAnswers } from "@/lib/api/practice-hooks"
-import { saveAnswers, submitPractice, getQuestionById } from "@/lib/api"
-import type { PracticeSummaryResponse, AnswerPayload, QuestionDetail } from "@/lib/api/types"
-import { formatApiError } from "@/lib/api/client"
+import { submitPractice, getQuestionById } from "@/lib/api"
+import type { PracticeSummaryResponse, QuestionDetail } from "@/lib/api/types"
+import { ApiClientError, formatApiError } from "@/lib/api/client"
+import { PracticeAnswerSaveQueueError } from "@/lib/practice-answer-save-queue"
+import { usePracticeAnswerSaveQueue } from "@/hooks/use-practice-answer-save-queue"
+import { useUnsavedNavigationGuard } from "@/hooks/use-unsaved-navigation-guard"
 import { cn } from "@/lib/utils"
 
 interface PracticeSessionContentProps {
@@ -28,14 +41,46 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
   const [currentSection, setCurrentSection] = useState<"MCQ" | "CQ">(
     summary.mode === "CQ" ? "CQ" : hasMcq ? "MCQ" : "CQ"
   )
-  const { items, isLoading: itemsLoading } = usePracticeItems(practiceId, currentSection)
-  const { answers: savedAnswers, mutate: mutateAnswers } = usePracticeAnswers(practiceId)
-  
+  const {
+    items,
+    isLoading: itemsLoading,
+    isError: itemsError,
+    mutate: reloadItems,
+  } = usePracticeItems(practiceId, currentSection)
+  const {
+    answers: savedAnswers,
+    isLoading: answersLoading,
+    isError: answersError,
+    mutate: reloadAnswers,
+  } = usePracticeAnswers(practiceId)
+
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [localAnswers, setLocalAnswers] = useState<Map<number, string>>(new Map()) // practice_item_id -> answer
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
+  const [submissionAccepted, setSubmissionAccepted] = useState(false)
+  const [resultsTransitionError, setResultsTransitionError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const submitInFlightRef = useRef(false)
+  const mountedRef = useRef(true)
+  const saveStatusRef = useRef<HTMLDivElement>(null)
+
+  const {
+    answers: localAnswers,
+    status: saveStatus,
+    saveError,
+    hasUnsavedWork,
+    setAnswer,
+    retry,
+    flush,
+  } = usePracticeAnswerSaveQueue({ practiceId, savedAnswers })
+  const interactionLocked = isSubmitting || submissionAccepted
+  const navigationGuard = useUnsavedNavigationGuard(hasUnsavedWork || isSubmitting)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
 
   useEffect(() => {
     if (!items || items.length === 0) return
@@ -46,60 +91,89 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
     setCurrentIndex(0)
   }, [currentSection])
 
-  // Initialize local answers from server
-  useEffect(() => {
-    if (savedAnswers) {
-      const answerMap = new Map<number, string>()
-      for (const ans of savedAnswers) {
-        if (ans.answer_type === "MCQ" && ans.selected_option_label) {
-          answerMap.set(ans.practice_item_id, ans.selected_option_label)
-        } else if (ans.answer_type === "CQ" && ans.cq_text) {
-          answerMap.set(ans.practice_item_id, ans.cq_text)
-        }
-      }
-      setLocalAnswers(answerMap)
-    }
-  }, [savedAnswers])
-
-  const saveCurrentAnswer = useCallback(async (itemId: number, answer: string, type: "MCQ" | "CQ") => {
-    setIsSaving(true)
-    try {
-      const payload: AnswerPayload = type === "MCQ"
+  const handleAnswerSelect = useCallback((itemId: number, answer: string, type: "MCQ" | "CQ") => {
+    if (interactionLocked) return
+    setAnswer(
+      type === "MCQ"
         ? { practice_item_id: itemId, answer_type: "MCQ", selected_option_label: answer }
         : { practice_item_id: itemId, answer_type: "CQ", cq_text: answer }
-      
-      await saveAnswers(practiceId, { answers: [payload] })
-      mutateAnswers()
-    } catch (error) {
-      console.error("Failed to save answer:", error)
-    } finally {
-      setIsSaving(false)
-    }
-  }, [practiceId, mutateAnswers])
+    )
+  }, [interactionLocked, setAnswer])
 
-  const handleAnswerSelect = useCallback((itemId: number, answer: string, type: "MCQ" | "CQ") => {
-    setLocalAnswers((prev) => {
-      const next = new Map(prev)
-      next.set(itemId, answer)
-      return next
-    })
-    // Save to server
-    saveCurrentAnswer(itemId, answer, type)
-  }, [saveCurrentAnswer])
+  const focusSaveStatus = useCallback(() => {
+    const focus = () => saveStatusRef.current?.focus()
+    if (typeof requestAnimationFrame === "function") requestAnimationFrame(focus)
+    else focus()
+  }, [])
+
+  const handleRetry = useCallback(() => {
+    setSubmitError(null)
+    retry()
+  }, [retry])
 
   const handleSubmit = async () => {
-    if (isSubmitting) return
+    if (submitInFlightRef.current) return
+    submitInFlightRef.current = true
     setIsSubmitting(true)
     setSubmitError(null)
+    setResultsTransitionError(null)
+    let submissionCompleted = false
+
+    const transitionToResults = async () => {
+      submissionCompleted = true
+      if (mountedRef.current) setSubmissionAccepted(true)
+
+      try {
+        await mutate(["practice-summary", practiceId])
+        if (mountedRef.current) router.refresh()
+      } catch {
+        if (mountedRef.current) {
+          setIsSubmitting(false)
+          setResultsTransitionError(
+            "Your practice was submitted, but the results could not be loaded. Retry loading your results."
+          )
+        }
+      }
+    }
+
     try {
+      await flush()
       await submitPractice(practiceId)
-      await mutate(["practice-summary", practiceId])
-      router.refresh()
+      await transitionToResults()
     } catch (error) {
-      console.error("Failed to submit:", error)
-      setSubmitError(formatApiError(error))
+      if (error instanceof ApiClientError && error.status === 409) {
+        await transitionToResults()
+      } else if (mountedRef.current) {
+        if (error instanceof PracticeAnswerSaveQueueError) {
+          setSubmitError("Your latest answer is not saved yet. Retry saving before you submit.")
+          focusSaveStatus()
+        } else {
+          setSubmitError(formatApiError(error))
+        }
+      }
     } finally {
-      setIsSubmitting(false)
+      if (!submissionCompleted) {
+        submitInFlightRef.current = false
+        if (mountedRef.current) setIsSubmitting(false)
+      }
+    }
+  }
+
+  const handleResultsRetry = async () => {
+    if (!submissionAccepted || isSubmitting) return
+    setIsSubmitting(true)
+    setResultsTransitionError(null)
+
+    try {
+      await mutate(["practice-summary", practiceId])
+      if (mountedRef.current) router.refresh()
+    } catch {
+      if (mountedRef.current) {
+        setIsSubmitting(false)
+        setResultsTransitionError(
+          "Your practice was submitted, but the results could not be loaded. Retry loading your results."
+        )
+      }
     }
   }
 
@@ -111,11 +185,51 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
     () => getQuestionById(questionId!)
   )
 
-  if (itemsLoading || !items) {
+  if (itemsError) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-12 text-center" role="alert">
+        <h1 className="text-xl font-semibold text-foreground mb-2">Unable to load practice questions</h1>
+        <p className="text-muted-foreground mb-5">
+          We couldn&apos;t load the complete question set. Retry before starting this practice session.
+        </p>
+        <Button
+          type="button"
+          className="min-h-11"
+          onClick={() => {
+            void reloadItems().catch(() => undefined)
+          }}
+        >
+          Retry loading questions
+        </Button>
+      </div>
+    )
+  }
+
+  if (itemsLoading || !items || answersLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8" role="status" aria-label="Loading practice session">
         <Skeleton className="h-32 w-full mb-8" />
         <Skeleton className="h-96 w-full" />
+      </div>
+    )
+  }
+
+  if (answersError) {
+    return (
+      <div className="container mx-auto px-4 py-12 text-center" role="alert">
+        <h1 className="text-xl font-semibold text-foreground mb-2">Unable to load saved answers</h1>
+        <p className="text-muted-foreground mb-5">
+          Your previous answers could not be loaded. Retry before continuing this practice session.
+        </p>
+        <Button
+          type="button"
+          className="min-h-11"
+          onClick={() => {
+            void reloadAnswers().catch(() => undefined)
+          }}
+        >
+          Retry loading answers
+        </Button>
       </div>
     )
   }
@@ -132,9 +246,21 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
   }
 
   const totalItems = items.length
-  const answeredCount = localAnswers.size
+  const visibleItemIds = new Set(items.map((item) => item.practice_item_id))
+  const answeredCount = Array.from(localAnswers.keys()).filter((itemId) => visibleItemIds.has(itemId)).length
   const isLastItem = currentIndex === totalItems - 1
   const displayNumber = currentItem.section_order_no ?? currentIndex + 1
+  const progressPercent = totalItems === 0
+    ? 0
+    : Math.min(100, Math.max(0, (answeredCount / totalItems) * 100))
+  const passiveSaveStatus =
+    saveStatus === "saving"
+      ? "Saving..."
+      : saveStatus === "retrying"
+        ? "Retrying..."
+        : saveStatus === "saved"
+          ? "Saved"
+          : null
 
   return (
     <div className="container mx-auto px-4 py-8 pb-32 lg:pb-8">
@@ -176,7 +302,7 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
         <div className="h-2 bg-muted rounded-full overflow-hidden">
           <div
             className="h-full bg-primary rounded-full transition-all duration-300"
-            style={{ width: `${(answeredCount / totalItems) * 100}%` }}
+            style={{ width: `${progressPercent}%` }}
           />
         </div>
       </div>
@@ -218,11 +344,15 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
                     const isSelected = localAnswers.get(currentItem.practice_item_id) === opt.label
                     return (
                       <button
+                        type="button"
                         key={opt.label}
                         onClick={() => handleAnswerSelect(currentItem.practice_item_id, opt.label, "MCQ")}
+                        disabled={interactionLocked}
+                        aria-pressed={isSelected}
                         className={cn(
                           "w-full p-4 rounded-xl border-2 text-left transition-all duration-200",
                           "hover:border-primary/50 hover:bg-primary/5",
+                          "disabled:cursor-not-allowed disabled:opacity-60",
                           isSelected && "border-primary bg-primary/10",
                           !isSelected && "border-border bg-background"
                         )}
@@ -254,8 +384,10 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
                   <textarea
                     className="w-full min-h-[200px] p-4 rounded-xl border border-border bg-background text-foreground resize-y"
                     placeholder="Write your answer here..."
+                    aria-label="Your answer"
                     value={localAnswers.get(currentItem.practice_item_id) || ""}
                     onChange={(e) => handleAnswerSelect(currentItem.practice_item_id, e.target.value, "CQ")}
+                    disabled={interactionLocked}
                   />
                   {question && question.question_type !== "MCQ" && question.parts && question.parts.length > 0 && (
                     <div className="mt-4 space-y-2">
@@ -284,14 +416,55 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
 
           {/* Navigation */}
           {submitError && (
-            <p className="text-xs text-destructive text-center mb-3">{submitError}</p>
+            <p className="mb-3 text-center text-sm text-destructive" role="alert">{submitError}</p>
           )}
+          {resultsTransitionError && (
+            <div className="mb-3 text-center text-sm text-destructive" role="alert">
+              <p>{resultsTransitionError}</p>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-3 min-h-11 bg-background"
+                onClick={() => void handleResultsRetry()}
+                disabled={isSubmitting}
+              >
+                Retry loading results
+              </Button>
+            </div>
+          )}
+          <div
+            ref={saveStatusRef}
+            className="mb-4 min-h-11 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm"
+            tabIndex={-1}
+            aria-busy={saveStatus === "saving" || saveStatus === "retrying"}
+          >
+            {saveStatus === "failed" ? (
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" role="alert">
+                <p className="text-destructive">
+                  Save failed. {formatApiError(saveError)} Your latest answer is still shown here.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11 shrink-0 bg-background"
+                  onClick={handleRetry}
+                  disabled={interactionLocked}
+                >
+                  Retry saving
+                </Button>
+              </div>
+            ) : (
+              <p className="text-muted-foreground" role="status" aria-live="polite" aria-atomic="true">
+                {passiveSaveStatus ?? "Answers save automatically after you select them."}
+              </p>
+            )}
+          </div>
           <div className="flex items-center justify-between">
             <Button
               variant="outline"
               onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-              disabled={currentIndex === 0}
-              className="gap-2 bg-transparent"
+              disabled={currentIndex === 0 || interactionLocked}
+              className="min-h-11 gap-2 bg-transparent"
             >
               <ChevronLeft className="h-4 w-4" />
               Previous
@@ -300,16 +473,25 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
             {isLastItem ? (
               <Button
                 onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="gap-2 bg-success hover:bg-success/90"
+                disabled={interactionLocked}
+                className="min-h-11 gap-2 bg-success hover:bg-success/90"
               >
                 <CheckCircle className="h-4 w-4" />
-                {isSubmitting ? "Submitting..." : "Submit"}
+                {submissionAccepted
+                  ? isSubmitting
+                    ? "Loading results..."
+                    : "Submitted"
+                  : isSubmitting && hasUnsavedWork
+                    ? "Saving answers..."
+                    : isSubmitting
+                      ? "Submitting..."
+                      : "Submit"}
               </Button>
             ) : (
               <Button
                 onClick={() => setCurrentIndex((i) => Math.min(totalItems - 1, i + 1))}
-                className="gap-2"
+                disabled={interactionLocked}
+                className="min-h-11 gap-2"
               >
                 Next
                 <ChevronRight className="h-4 w-4" />
@@ -333,13 +515,18 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
                 const isCurrent = idx === currentIndex
                 return (
                   <button
+                    type="button"
                     key={item.practice_item_id}
                     onClick={() => setCurrentIndex(idx)}
+                    disabled={interactionLocked}
+                    aria-label={`Go to question ${item.section_order_no ?? idx + 1}`}
+                    aria-current={isCurrent ? "step" : undefined}
                     className={cn(
-                      "w-9 h-9 rounded-full text-sm font-medium transition-all duration-200",
+                      "h-11 w-11 rounded-full text-sm font-medium transition-all duration-200",
                       isCurrent && "ring-2 ring-primary ring-offset-2",
                       isAnswered && "bg-primary text-primary-foreground",
-                      !isAnswered && "bg-muted text-muted-foreground"
+                      !isAnswered && "bg-muted text-muted-foreground",
+                      "disabled:cursor-not-allowed disabled:opacity-60"
                     )}
                   >
                     {item.section_order_no ?? idx + 1}
@@ -348,12 +535,39 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
               })}
             </div>
             
-            {isSaving && (
-              <p className="text-xs text-muted-foreground mt-4 text-center">Saving...</p>
-            )}
           </div>
         </aside>
       </div>
+
+      <AlertDialog
+        open={navigationGuard.isNavigationConfirmationOpen}
+        onOpenChange={(open) => {
+          if (!open) navigationGuard.stay()
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave before your answer is saved?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your latest answer has not finished saving. Stay on this page and retry, or leave and risk losing it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className="min-h-11"
+              onClick={() => {
+                navigationGuard.stay()
+                focusSaveStatus()
+              }}
+            >
+              Stay and retry
+            </AlertDialogCancel>
+            <AlertDialogAction className="min-h-11" onClick={navigationGuard.leave}>
+              Leave without saving
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

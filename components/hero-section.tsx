@@ -1,95 +1,133 @@
-import { Button } from "@/components/ui/button"
-import { ArrowRight, BookOpen, CheckCircle, FileText, Play, Target } from "@/components/icons"
 import Link from "next/link"
 import { AuthGatedLink } from "@/components/auth-gated-link"
+import { ArrowRight, BookOpen, CheckCircle, CheckCircle2 } from "@/components/icons"
+import { Button } from "@/components/ui/button"
+
+const answerOptions = [
+  { label: "A", text: "Reflection" },
+  { label: "B", text: "Refraction", correct: true },
+  { label: "C", text: "Dispersion" },
+  { label: "D", text: "Diffusion" },
+]
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden border-b border-border bg-[linear-gradient(180deg,rgba(19,117,201,0.08),rgba(255,255,255,0)_68%)] py-12 sm:py-16 md:py-24">
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_15%,rgba(19,117,201,0.12),transparent_30%),radial-gradient(circle_at_80%_20%,rgba(20,184,166,0.12),transparent_28%)]" />
-      <div className="absolute inset-x-0 bottom-0 -z-10 h-24 bg-gradient-to-t from-background to-transparent" />
-
-      <div className="container mx-auto grid items-center gap-10 px-4 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
-        <div className="mx-auto max-w-3xl text-center lg:mx-0 lg:text-left">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-            <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
-            SSC science practice for Bangladesh
+    <section className="relative overflow-hidden border-b border-border bg-[radial-gradient(circle_at_85%_8%,rgba(19,117,201,0.10),transparent_28%),linear-gradient(180deg,rgba(19,117,201,0.05),rgba(255,255,255,0)_62%)] py-10 sm:py-14 lg:py-16">
+      <div className="container mx-auto grid items-center gap-10 px-4 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+        <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:text-left">
+          <div className="mb-6 inline-flex items-center rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
+            SSC MCQ practice available now
           </div>
-          <h1 className="mb-4 text-3xl font-bold leading-tight tracking-tight text-foreground text-balance sm:text-5xl lg:text-6xl">
-            Practice smarter for SSC science.
+          <h1 className="text-4xl font-bold leading-tight tracking-tight text-foreground text-balance sm:text-5xl lg:text-6xl">
+            Practice smarter for SSC exams
           </h1>
-          <p className="mx-auto mb-4 max-w-2xl text-base leading-7 text-muted-foreground text-pretty sm:text-lg lg:mx-0">
-            Guided practice, explanations, and mock-style sessions for focused Higher Math, Physics, and Chemistry
-            preparation.
+          <p className="mt-6 max-w-xl text-base leading-8 text-muted-foreground sm:text-lg lg:mx-0">
+            Answer focused SSC exam MCQs, review mistakes, and keep your next revision step clear.
           </p>
-          <p className="mb-7 text-sm text-muted-foreground/80">
-            Start free, choose a subject, and build revision sessions around what you need to practice next.
-          </p>
-          <div className="flex flex-col items-stretch gap-3 px-2 sm:flex-row sm:items-center sm:justify-center sm:px-0 lg:justify-start">
-            <Button size="lg" className="h-11 gap-2 rounded-lg px-6 shadow-primary" asChild>
-              <AuthGatedLink href="/subjects">
-                Start practicing free
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </AuthGatedLink>
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
+            <Button size="lg" className="h-14 rounded-lg px-9 text-base shadow-primary" asChild>
+              <AuthGatedLink href="/subjects">Start free</AuthGatedLink>
             </Button>
-            <Button size="lg" variant="outline" className="h-11 gap-2 rounded-lg border-primary/20 bg-background/80 px-6" asChild>
-              <Link href="/how-it-works">
-                <Play className="h-4 w-4" aria-hidden="true" />
-                See how it works
-              </Link>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-14 rounded-lg border-primary bg-background px-9 text-base font-semibold text-primary hover:bg-primary/5"
+              asChild
+            >
+              <Link href="/how-it-works">See how it works</Link>
             </Button>
           </div>
-          <div className="mt-6 flex flex-wrap justify-center gap-2 text-xs text-muted-foreground lg:justify-start">
-            {["MCQ", "CQ", "Mixed practice"].map((item) => (
-              <span key={item} className="rounded-full border border-border bg-background/80 px-3 py-1">
-                {item}
+          <div className="mt-11 grid gap-4 text-left text-xs font-medium text-muted-foreground sm:grid-cols-3">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="h-6 w-6 shrink-0 text-[#12b76a]" aria-hidden="true" />
+              <span>MCQ available now</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <BookOpen className="h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
+              <span>Past paper questions mixed in</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded border-2 border-[#6d5dfc] text-[#6d5dfc]"
+                aria-hidden="true"
+              >
+                <span className="h-2.5 w-3.5 rounded-sm border border-current" />
               </span>
-            ))}
+              <span>No credit card</span>
+            </div>
           </div>
         </div>
 
-        <div className="mx-auto w-full max-w-md lg:max-w-none">
-          <div className="rounded-2xl border border-border/80 bg-card/95 p-4 shadow-xl shadow-primary/10 backdrop-blur">
-            <div className="rounded-xl border border-border bg-muted/30 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-medium uppercase text-muted-foreground">Today&apos;s focus</p>
-                  <h2 className="mt-1 text-lg font-semibold text-foreground">Physics: Light</h2>
+        <div className="mx-auto w-full max-w-xl">
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-[0_18px_60px_rgba(15,23,42,0.10)]">
+            <div className="flex items-center justify-between gap-4 border-b border-border pb-5">
+              <h2 className="text-base font-bold text-foreground">MCQ practice preview</h2>
+              <div className="flex items-center gap-5 text-sm font-semibold text-muted-foreground">
+                <span>3 / 10</span>
+                <span className="flex flex-col gap-1" aria-hidden="true">
+                  <span className="h-1 w-1 rounded-full bg-current" />
+                  <span className="h-1 w-1 rounded-full bg-current" />
+                  <span className="h-1 w-1 rounded-full bg-current" />
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+              <span className="rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
+                Physics - Light
+              </span>
+              <span className="rounded-lg bg-[#dcfae6] px-3 py-1.5 text-sm font-semibold text-[#079455]">
+                Board-style MCQ
+              </span>
+            </div>
+
+            <p className="mt-5 text-base font-semibold leading-7 text-foreground">
+              A ray of light bends when it enters water because its speed changes. What is this called?
+            </p>
+
+            <div className="mt-5 space-y-3" aria-label="Static MCQ answer preview">
+              {answerOptions.map((option) => (
+                <div
+                  key={option.label}
+                  className={
+                    option.correct
+                      ? "flex items-center gap-4 rounded-lg border border-[#84e0a5] bg-[#ecfdf3] px-4 py-3 text-[#079455]"
+                      : "flex items-center gap-4 rounded-lg border border-border bg-background px-4 py-3 text-muted-foreground"
+                  }
+                >
+                  <span
+                    className={
+                      option.correct
+                        ? "flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#12b76a] text-sm font-bold text-white"
+                        : "flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-bold text-foreground"
+                    }
+                  >
+                    {option.label}
+                  </span>
+                  <span className="text-sm font-semibold">{option.text}</span>
                 </div>
-                <div className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">SSC</div>
-              </div>
+              ))}
+            </div>
 
-              <div className="mt-5 space-y-3">
-                {[
-                  { icon: CheckCircle, title: "MCQ practice", text: "Quick concept checks" },
-                  { icon: FileText, title: "CQ review", text: "Structured written practice" },
-                  { icon: Target, title: "Mistake review", text: "Return to weak topics" },
-                ].map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <div key={item.title} className="flex items-center gap-3 rounded-lg border border-border bg-background p-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                        <Icon className="h-5 w-5 text-primary" aria-hidden="true" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                        <p className="text-xs text-muted-foreground">{item.text}</p>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+            <div className="mt-5 flex items-center gap-3 rounded-lg border border-[#84e0a5] bg-[#ecfdf3] px-4 py-4 text-sm font-semibold text-[#079455]">
+              <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden="true" />
+              <span>Correct. Review: Refraction</span>
+            </div>
 
-              <div className="mt-5 rounded-lg bg-primary px-4 py-3 text-primary-foreground">
-                <p className="text-sm font-semibold">Next step</p>
-                <p className="mt-1 text-xs text-primary-foreground/85">
-                  Choose a subject and start with a focused practice session.
-                </p>
-              </div>
+            <div className="mt-6 flex flex-col gap-3 text-sm font-semibold text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+              <span className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" aria-hidden="true" />
+                Bookmark
+              </span>
+              <Link href="/subjects" className="inline-flex items-center gap-2 text-primary hover:underline">
+                Try 5 more MCQs
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
             </div>
           </div>
         </div>
       </div>
+
     </section>
   )
 }
