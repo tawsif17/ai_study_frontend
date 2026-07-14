@@ -31,7 +31,7 @@ const populated: ProgressDashboardResponse = {
   weakness_ranking: [
     { subject_id: 7, subject_name: "Physics", chapter_id: 11, chapter_name: "Light", accuracy: 42, questions_attempted: 12, message: null },
     { subject_id: 8, subject_name: "Chemistry", chapter_id: 12, chapter_name: "Atomic Structure", accuracy: 55, questions_attempted: 9, message: null },
-    { subject_id: 9, subject_name: "Mathematics", chapter_id: 13, chapter_name: "Geometry", accuracy: 67, questions_attempted: 3, message: "Need more practice to judge this area" },
+    { subject_id: 9, subject_name: "Higher Math", chapter_id: 13, chapter_name: "Geometry", accuracy: 67, questions_attempted: 3, message: "Need more practice to judge this area" },
     { subject_id: 10, subject_name: "Biology", chapter_id: 14, chapter_name: "Cells", accuracy: 20, questions_attempted: 10, message: null },
   ],
   recommendation: { label: "Recommended: 25 MCQs from Light", generate_payload: payload },
@@ -55,16 +55,16 @@ describe("WeakAreasContent", () => {
     expect(screen.getByText("12 questions")).toBeInTheDocument()
     expect(screen.getByText("42%")).toBeInTheDocument()
     expect(screen.getByText("+6 points vs last week")).toBeInTheDocument()
-    expect(screen.getAllByText("General Math")).toHaveLength(2)
-    expect(screen.queryByText("Mathematics")).not.toBeInTheDocument()
-    expect(screen.queryByText("Biology")).not.toBeInTheDocument()
+    expect(screen.getAllByText("Higher Math")).toHaveLength(2)
+    expect(screen.queryByText("General Math")).not.toBeInTheDocument()
+    expect(screen.getAllByText("Biology")).toHaveLength(2)
     expect(screen.queryByText(/^(CQ|Mixed)$/)).not.toBeInTheDocument()
     expect(screen.queryByText("Refund Policy")).not.toBeInTheDocument()
   })
 
   it("filters locally and exposes low-data wording", () => {
     render(<WeakAreasContent />)
-    fireEvent.click(screen.getByRole("tab", { name: "General Math" }))
+    fireEvent.click(screen.getByRole("tab", { name: "Higher Math" }))
     expect(screen.getByText("Geometry")).toBeInTheDocument()
     expect(screen.getByText("More practice needed")).toBeInTheDocument()
     expect(screen.getByText("Need more practice to judge this area")).toBeInTheDocument()
@@ -75,15 +75,15 @@ describe("WeakAreasContent", () => {
   it("supports automatic keyboard tab activation and selected-state announcement", () => {
     render(<WeakAreasContent />)
     const allTab = screen.getByRole("tab", { name: "All subjects" })
-    const generalMathTab = screen.getByRole("tab", { name: "General Math" })
+    const physicsTab = screen.getByRole("tab", { name: "Physics" })
     allTab.focus()
     fireEvent.keyDown(allTab, { key: "ArrowRight" })
-    expect(generalMathTab).toHaveFocus()
-    expect(generalMathTab).toHaveAttribute("aria-selected", "true")
-    expect(screen.getByText("Geometry")).toBeInTheDocument()
-    fireEvent.keyDown(generalMathTab, { key: "End" })
-    expect(screen.getByRole("tab", { name: "Chemistry" })).toHaveAttribute("aria-selected", "true")
-    expect(screen.getByText("Atomic Structure")).toBeInTheDocument()
+    expect(physicsTab).toHaveFocus()
+    expect(physicsTab).toHaveAttribute("aria-selected", "true")
+    expect(screen.getByText("Light")).toBeInTheDocument()
+    fireEvent.keyDown(physicsTab, { key: "End" })
+    expect(screen.getByRole("tab", { name: "Biology" })).toHaveAttribute("aria-selected", "true")
+    expect(screen.getByText("Cells")).toBeInTheDocument()
   })
 
   it("keeps recommendation before filters in mobile screen-reader order and exposes safe row actions", () => {
@@ -94,13 +94,11 @@ describe("WeakAreasContent", () => {
     expect(screen.getByRole("link", { name: "Practise Light" })).toHaveAttribute("href", "/subjects/7")
   })
 
-  it("shows and recovers from a subject-specific empty state", () => {
-    mockDashboard({ dashboard: { ...populated, weakness_ranking: populated.weakness_ranking.filter((item) => item.subject_name !== "Chemistry") } })
+  it("renders the no-submitted-data state when no ranked subjects are returned", () => {
+    mockDashboard({ dashboard: { message: "Not enough data yet", proficiency: null, weakness_ranking: [], recommendation: null } })
     render(<WeakAreasContent />)
-    fireEvent.click(screen.getByRole("tab", { name: "Chemistry" }))
-    expect(screen.getByRole("heading", { name: "No assessed chapters for Chemistry" })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole("button", { name: "Show all subjects" }))
-    expect(screen.getByText("Light")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Your weak areas will appear here" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Choose a subject" })).toHaveAttribute("href", "/subjects")
   })
 
   it.each([
@@ -114,13 +112,6 @@ describe("WeakAreasContent", () => {
     expect(screen.getByText(label)).toBeInTheDocument()
   })
 
-  it("renders the no-submitted-data state", () => {
-    mockDashboard({ dashboard: { message: "Not enough data yet", proficiency: null, weakness_ranking: [], recommendation: null } })
-    render(<WeakAreasContent />)
-    expect(screen.getByRole("heading", { name: "Your weak areas will appear here" })).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Choose a subject" })).toHaveAttribute("href", "/subjects")
-  })
-
   it("keeps rankings useful when recommendation is unavailable", () => {
     mockDashboard({ dashboard: { ...populated, recommendation: null } })
     render(<WeakAreasContent />)
@@ -128,13 +119,13 @@ describe("WeakAreasContent", () => {
     expect(screen.getByRole("heading", { name: "Choose your next practice" })).toBeInTheDocument()
   })
 
-  it("does not expose a recommendation for an unsupported subject", () => {
+  it("does not expose a recommendation without a matching ranked subject", () => {
     mockDashboard({
       dashboard: {
         ...populated,
         recommendation: {
           label: "Recommended: 25 MCQs from Cells",
-          generate_payload: { ...payload, subject_id: 10 },
+          generate_payload: { ...payload, subject_id: 999 },
         },
       },
     })
@@ -161,7 +152,7 @@ describe("WeakAreasContent", () => {
     const physicsTab = screen.getByRole("tab", { name: "Physics" })
     expect(physicsTab).toHaveAttribute("aria-controls", "weak-areas-panel")
     fireEvent.click(physicsTab)
-    expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", "weak-areas-tab-physics")
+    expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", "weak-areas-tab-7")
   })
 
   it("retries an API error", () => {

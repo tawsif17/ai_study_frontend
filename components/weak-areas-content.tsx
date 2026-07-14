@@ -26,34 +26,21 @@ import { cn } from "@/lib/utils"
 const RETURN_PATH = "/dashboard/weak-areas"
 
 const subjectOptions = [
-  { key: "all", label: "All subjects", icon: BookOpen },
-  { key: "general-math", label: "General Math", icon: Calculator },
-  { key: "physics", label: "Physics", icon: Atom },
-  { key: "chemistry", label: "Chemistry", icon: FlaskConical },
+  { key: "all", label: "All subjects" },
 ] as const
 
-type SubjectKey = (typeof subjectOptions)[number]["key"]
-
-const supportedSubjectAliases: Record<Exclude<SubjectKey, "all">, readonly string[]> = {
-  "general-math": ["general math", "mathematics"],
-  physics: ["physics"],
-  chemistry: ["chemistry"],
-}
+type SubjectFilterKey = "all" | number
 
 function normalizeSubjectName(name: string) {
   return name.trim().toLowerCase()
 }
 
-function getSupportedSubjectKey(name: string): Exclude<SubjectKey, "all"> | null {
+function SubjectIcon({ name, className }: { name: string; className?: string }) {
   const normalizedName = normalizeSubjectName(name)
-  const match = Object.entries(supportedSubjectAliases).find(([, aliases]) =>
-    aliases.includes(normalizedName)
-  )
-  return (match?.[0] as Exclude<SubjectKey, "all"> | undefined) ?? null
-}
-
-function isSupportedEntry(entry: WeaknessRankingEntry) {
-  return getSupportedSubjectKey(entry.subject_name) !== null
+  if (normalizedName.includes("math")) return <Calculator className={className} aria-hidden="true" />
+  if (normalizedName === "physics") return <Atom className={className} aria-hidden="true" />
+  if (normalizedName === "chemistry") return <FlaskConical className={className} aria-hidden="true" />
+  return <BookOpen className={className} aria-hidden="true" />
 }
 
 function clampPercent(value: number) {
@@ -70,7 +57,7 @@ export function WeakAreasContent() {
   const router = useRouter()
   const { isAuthenticated, isLoading: authLoading } = useAuth()
   const { dashboard, isLoading, isError, mutate } = useProgressDashboard(isAuthenticated)
-  const [selectedSubject, setSelectedSubject] = useState<SubjectKey>("all")
+  const [selectedSubject, setSelectedSubject] = useState<SubjectFilterKey>("all")
   const [isStarting, setIsStarting] = useState(false)
   const [generationError, setGenerationError] = useState<string | null>(null)
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
@@ -83,48 +70,48 @@ export function WeakAreasContent() {
     }
   }, [authLoading, isAuthenticated, router, unauthorized])
 
-  const supportedRanking = useMemo(
-    () => dashboard?.weakness_ranking.filter(isSupportedEntry) ?? [],
+  const ranking = useMemo(
+    () => dashboard?.weakness_ranking ?? [],
     [dashboard]
   )
 
-  const subjectIds = useMemo(() => {
-    const ids = new Map<Exclude<SubjectKey, "all">, Set<number>>()
-    for (const key of Object.keys(supportedSubjectAliases) as Array<Exclude<SubjectKey, "all">>) {
-      ids.set(key, new Set())
+  const subjectFilters = useMemo(() => {
+    const subjects = new Map<number, { key: number; label: string }>()
+    for (const entry of ranking) {
+      if (!subjects.has(entry.subject_id)) {
+        subjects.set(entry.subject_id, {
+          key: entry.subject_id,
+          label: entry.subject_name,
+        })
+      }
     }
-    for (const entry of supportedRanking) {
-      const key = getSupportedSubjectKey(entry.subject_name)
-      if (key) ids.get(key)?.add(entry.subject_id)
-    }
-    return ids
-  }, [supportedRanking])
+    return [...subjectOptions, ...subjects.values()]
+  }, [ranking])
 
   const visibleRanking = useMemo(() => {
-    if (selectedSubject === "all") return supportedRanking
-    const ids = subjectIds.get(selectedSubject)
-    return supportedRanking.filter((entry) => ids?.has(entry.subject_id))
-  }, [selectedSubject, subjectIds, supportedRanking])
+    if (selectedSubject === "all") return ranking
+    return ranking.filter((entry) => entry.subject_id === selectedSubject)
+  }, [selectedSubject, ranking])
 
   const supportedRecommendation = useMemo(() => {
     const recommendation = dashboard?.recommendation
     if (!recommendation) return null
-    return supportedRanking.some(
+    return ranking.some(
       (entry) => entry.subject_id === recommendation.generate_payload.subject_id
     )
       ? recommendation
       : null
-  }, [dashboard, supportedRanking])
+  }, [dashboard, ranking])
 
   const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     let nextIndex: number | null = null
-    if (event.key === "ArrowRight" || event.key === "ArrowDown") nextIndex = (index + 1) % subjectOptions.length
-    if (event.key === "ArrowLeft" || event.key === "ArrowUp") nextIndex = (index - 1 + subjectOptions.length) % subjectOptions.length
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") nextIndex = (index + 1) % subjectFilters.length
+    if (event.key === "ArrowLeft" || event.key === "ArrowUp") nextIndex = (index - 1 + subjectFilters.length) % subjectFilters.length
     if (event.key === "Home") nextIndex = 0
-    if (event.key === "End") nextIndex = subjectOptions.length - 1
+    if (event.key === "End") nextIndex = subjectFilters.length - 1
     if (nextIndex === null) return
     event.preventDefault()
-    setSelectedSubject(subjectOptions[nextIndex].key)
+    setSelectedSubject(subjectFilters[nextIndex].key)
     tabRefs.current[nextIndex]?.focus()
   }
 
@@ -172,7 +159,7 @@ export function WeakAreasContent() {
     )
   }
 
-  const noData = dashboard.proficiency === null && supportedRanking.length === 0 && supportedRecommendation === null
+  const noData = dashboard.proficiency === null && ranking.length === 0 && supportedRecommendation === null
 
   if (noData) {
     return (
@@ -221,7 +208,7 @@ export function WeakAreasContent() {
             <p className="mt-1 text-sm leading-6 text-muted-foreground">Filter by subject or review all ranked chapters.</p>
 
             <div className="mt-5 grid grid-cols-2 gap-1 rounded-xl border border-primary/20 bg-card p-1 sm:grid-cols-4" role="tablist" aria-label="Filter chapters by subject">
-              {subjectOptions.map((subject, index) => (
+              {subjectFilters.map((subject, index) => (
                 <button
                   key={subject.key}
                   ref={(node) => { tabRefs.current[index] = node }}
@@ -250,7 +237,7 @@ export function WeakAreasContent() {
               {visibleRanking.length ? <ChapterList entries={visibleRanking} /> : (
                 <div className="rounded-xl border border-border bg-card px-5 py-10 text-center">
                   <BookOpen className="mx-auto h-8 w-8 text-primary" aria-hidden="true" />
-                  <h3 className="mt-3 text-lg font-semibold text-foreground">No assessed chapters for {subjectOptions.find((item) => item.key === selectedSubject)?.label}</h3>
+                  <h3 className="mt-3 text-lg font-semibold text-foreground">No assessed chapters for {subjectFilters.find((item) => item.key === selectedSubject)?.label}</h3>
                   <p className="mt-2 text-sm text-muted-foreground">Complete and submit more MCQ practice for this subject, or return to all ranked chapters.</p>
                   <Button variant="outline" className="mt-5" onClick={() => setSelectedSubject("all")}>Show all subjects</Button>
                 </div>
@@ -302,17 +289,14 @@ function ChapterList({ entries }: { entries: WeaknessRankingEntry[] }) {
 }
 
 function ChapterRow({ entry }: { entry: WeaknessRankingEntry }) {
-  const subjectKey = getSupportedSubjectKey(entry.subject_name)
-  const option = subjectOptions.find((subject) => subject.key === subjectKey)
-  const Icon = option?.icon ?? BookOpen
   const lowData = Boolean(entry.message)
   const safeAccuracy = clampPercent(entry.accuracy)
   const attemptCount = normalizeAttemptCount(entry.questions_attempted)
   return (
     <li className="grid gap-4 px-4 py-5 md:grid-cols-[1.15fr_1.25fr_0.8fr_1.35fr_0.55fr] md:items-center md:px-5 md:py-4">
       <div className="flex min-w-0 items-center gap-3">
-        <Icon className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-        <span className="truncate text-sm font-semibold text-foreground">{option?.label ?? entry.subject_name}</span>
+        <SubjectIcon name={entry.subject_name} className="h-5 w-5 shrink-0 text-primary" />
+        <span className="truncate text-sm font-semibold text-foreground">{entry.subject_name}</span>
       </div>
       <div>
         <p className="text-sm font-semibold text-foreground md:font-medium">{entry.chapter_name}</p>

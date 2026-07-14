@@ -246,9 +246,13 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
   }
 
   const totalItems = items.length
-  const answeredCount = localAnswers.size
+  const visibleItemIds = new Set(items.map((item) => item.practice_item_id))
+  const answeredCount = Array.from(localAnswers.keys()).filter((itemId) => visibleItemIds.has(itemId)).length
   const isLastItem = currentIndex === totalItems - 1
   const displayNumber = currentItem.section_order_no ?? currentIndex + 1
+  const progressPercent = totalItems === 0
+    ? 0
+    : Math.min(100, Math.max(0, (answeredCount / totalItems) * 100))
   const passiveSaveStatus =
     saveStatus === "saving"
       ? "Saving..."
@@ -298,7 +302,7 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
         <div className="h-2 bg-muted rounded-full overflow-hidden">
           <div
             className="h-full bg-primary rounded-full transition-all duration-300"
-            style={{ width: `${(answeredCount / totalItems) * 100}%` }}
+            style={{ width: `${progressPercent}%` }}
           />
         </div>
       </div>
