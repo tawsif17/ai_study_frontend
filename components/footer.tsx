@@ -28,7 +28,7 @@ export function Footer() {
           {/* Logo & Description */}
           <div className="sm:col-span-2 md:col-span-1">
             <Link href="/" className="mb-4 inline-flex items-center rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50" aria-label="Shikkha Buddy home">
-              <BrandLogo className="h-12" />
+              <BrandLogo className="h-9" />
             </Link>
             <p className="max-w-sm text-sm leading-6 text-muted-foreground">
               Focused SSC exam practice for General Math, Physics, and Chemistry.

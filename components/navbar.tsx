@@ -43,7 +43,7 @@ export function Navbar() {
       <div className="container mx-auto flex h-20 items-center justify-between px-2 sm:h-24 sm:px-3">
         {/* Logo */}
         <Link href="/" className="-ml-1 flex items-center rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:-ml-3" aria-label="Shikkha Buddy home">
-          <BrandLogo className="h-16 sm:h-20" priority />
+          <BrandLogo className="h-9 sm:h-10" priority />
         </Link>
 
         <div className="hidden lg:flex items-center gap-8">
