@@ -280,7 +280,7 @@ export interface PracticeItemsPageResponse {
   items: PracticeItem[]
 }
 
-export type PracticeItemsResponse = PracticeItem[] | PracticeItemsPageResponse
+export type PracticeItemsResponse = PracticeItemsPageResponse
 
 // ============================================
 // ANSWER TYPES

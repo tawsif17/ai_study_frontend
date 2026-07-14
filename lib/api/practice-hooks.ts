@@ -19,7 +19,7 @@ async function summaryFetcher([, id]: [string, number]): Promise<PracticeSummary
   return getPracticeSummary(id)
 }
 
-async function itemsFetcher([, id, section]: [string, number, Section | undefined]): Promise<PracticeItem[]> {
+async function itemsFetcher([, id, section]: [string, number, Section]): Promise<PracticeItem[]> {
   return getPracticeItems(id, section)
 }
 
@@ -48,7 +48,7 @@ export function usePracticeSummary(practiceId: number | undefined, enabled: bool
   }
 }
 
-export function usePracticeItems(practiceId: number | undefined, section?: Section, enabled: boolean = true) {
+export function usePracticeItems(practiceId: number | undefined, section: Section, enabled: boolean = true) {
   const { data, error, isLoading, mutate } = useSWR<PracticeItem[]>(
     practiceId && enabled ? ["practice-items", practiceId, section] : null,
     itemsFetcher

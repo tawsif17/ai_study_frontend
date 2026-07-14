@@ -288,16 +288,15 @@ export async function getPracticeSummary(
 
 export async function getPracticeItems(
   practiceId: number,
-  section?: Section
+  section: Section
 ): Promise<PracticeItem[]> {
   const pageSize = 20
   const getPage = (page: number) => apiClient<PracticeItemsResponse>(`/practice/${practiceId}/items`, {
-    params: section ? { section, page, page_size: pageSize } : undefined,
+    params: { section, page, page_size: pageSize },
     requiresAuth: true,
   })
 
   const firstResponse = await getPage(1)
-  if (Array.isArray(firstResponse)) return normalizePracticeItems(firstResponse)
 
   const responsePageSize = Number.isInteger(firstResponse.page_size) && firstResponse.page_size > 0
     ? firstResponse.page_size
@@ -308,7 +307,7 @@ export async function getPracticeItems(
   )
   const items = [
     ...firstResponse.items,
-    ...remainingPages.flatMap((response) => Array.isArray(response) ? response : response.items),
+    ...remainingPages.flatMap((response) => response.items),
   ]
 
   return normalizePracticeItems(items)

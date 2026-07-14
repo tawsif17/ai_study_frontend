@@ -320,6 +320,58 @@ describe("PracticeSessionContent", () => {
     expect(screen.getByRole("button", { name: "B5" })).toHaveAttribute("aria-pressed", "true")
   })
 
+  it("counts only visible-section answers for mixed-session progress", () => {
+    vi.mocked(usePracticeItems).mockReturnValue({
+      items: Array.from({ length: 5 }, (_, index) => ({
+        section_order_no: index + 1,
+        order_no: index + 1,
+        practice_item_id: index + 1,
+        question_id: index + 101,
+      })),
+      isLoading: false,
+      isError: undefined,
+      mutate: vi.fn(),
+    })
+    vi.mocked(usePracticeAnswers).mockReturnValue({
+      answers: [
+        {
+          practice_item_id: 101,
+          answer_type: "CQ",
+          selected_option_label: null,
+          cq_text: "Saved CQ answer",
+          updated_at: "2026-07-14T00:00:00.000Z",
+        },
+        {
+          practice_item_id: 102,
+          answer_type: "CQ",
+          selected_option_label: null,
+          cq_text: "Another saved CQ answer",
+          updated_at: "2026-07-14T00:00:00.000Z",
+        },
+      ],
+      isLoading: false,
+      isError: undefined,
+      mutate: vi.fn(),
+    })
+
+    render(
+      <PracticeSessionContent
+        practiceId={99}
+        summary={{
+          practice_session_id: 99,
+          exam_type_id: 1,
+          subject_id: 5,
+          mode: "MIXED",
+          attempt_status: "IN_PROGRESS",
+          mcq_total: 5,
+          cq_total: 2,
+        }}
+      />
+    )
+
+    expect(screen.getByText("0 of 5 answered")).toBeInTheDocument()
+  })
+
   it("shows a persistent failure, preserves the local answer, and retries explicitly", async () => {
     const user = userEvent.setup()
     vi.mocked(saveAnswers)

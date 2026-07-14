@@ -219,11 +219,22 @@ describe("practice items pagination", () => {
     })
   })
 
-  it("preserves a legacy array response while removing duplicate items", async () => {
-    vi.mocked(apiClient).mockResolvedValueOnce([item(2), item(1), item(2)])
+  it("normalizes duplicate items from the paginated contract response", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce({
+      practice_session_id: 12,
+      section: "MCQ",
+      page: 1,
+      page_size: 20,
+      total_in_section: 3,
+      items: [item(2), item(1), item(2)],
+    })
 
     await expect(getPracticeItems(12, "MCQ")).resolves.toEqual([item(1), item(2)])
     expect(apiClient).toHaveBeenCalledTimes(1)
+    expect(apiClient).toHaveBeenCalledWith("/practice/12/items", {
+      params: { section: "MCQ", page: 1, page_size: 20 },
+      requiresAuth: true,
+    })
   })
 
   it("rejects the full load when a later page fails", async () => {

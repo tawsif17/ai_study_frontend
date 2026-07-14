@@ -18,7 +18,6 @@ const freeFeatures = [
 
 const betaProFeatures = [
   { label: "More MCQ practice" },
-  { label: "Board-only practice", availability: "Available now" },
   { label: "Weak Area Analysis", availability: "Available now" },
   { label: subjects },
   { label: "Results and revision tools" },
@@ -26,7 +25,6 @@ const betaProFeatures = [
 
 const comparisonRows = [
   { feature: "Free MCQ practice", free: "Available now", betaPro: "Available now" },
-  { feature: "Board-only practice", free: "Not included", betaPro: "Available now" },
   { feature: "Weak Area Analysis", free: "Not included", betaPro: "Available now" },
   { feature: "CQ & Mixed Practice", free: "Coming soon", betaPro: "Coming soon" },
   { feature: "No payment during beta", free: "Included", betaPro: "Included" },
@@ -84,7 +82,7 @@ export function PricingContent() {
               Start free. Activate Beta Pro when revision needs more focus.
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-pretty text-base leading-7 text-muted-foreground md:text-lg">
-              Practise free SSC MCQs now. Verified beta users can activate Beta Pro for Board-only practice and Weak Area Analysis, both available now.
+              Practise free SSC MCQs now. Verified beta users can activate Beta Pro for Weak Area Analysis and more focused revision tools.
             </p>
             <ul className="mx-auto mt-6 flex max-w-3xl flex-col items-center justify-center gap-3 text-sm font-medium text-foreground sm:flex-row sm:gap-0">
               {[
