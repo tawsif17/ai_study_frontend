@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { AuthGatedLink } from "@/components/auth-gated-link"
+import type { BetaSubjectKey } from "@/lib/beta-subjects"
 import { FeaturesSection } from "@/components/features-section"
 import { HeroSection } from "@/components/hero-section"
 import {
@@ -38,24 +39,28 @@ export const metadata: Metadata = {
 const freePracticeBenefits = ["Topic-wise practice", "Answer explanations", "Mistake review"]
 
 const subjects: Array<{
+  key: BetaSubjectKey
   title: string
   description: string
   icon: IconComponent
   tone: string
 }> = [
   {
+    key: "general-math",
     title: "General Math",
     description: "Algebra, Geometry, Arithmetic, Mensuration",
     icon: Calculator,
     tone: "from-[#7c6df2] to-[#5266d8]",
   },
   {
+    key: "physics",
     title: "Physics",
     description: "Light, Motion, Force, Electricity, Waves",
     icon: Atom,
     tone: "from-[#57c785] to-[#12964f]",
   },
   {
+    key: "chemistry",
     title: "Chemistry",
     description: "Structure, Bonding, Reactions, Acids & Bases",
     icon: FlaskConical,
@@ -223,6 +228,7 @@ function SubjectsSection() {
 
 function SubjectPreviewCard({ subject }: { subject: (typeof subjects)[number] }) {
   const Icon = subject.icon
+  const destination = `/subjects?subject=${subject.key}`
 
   return (
     <article className="rounded-2xl border border-border bg-card p-6 shadow-sm">
@@ -244,12 +250,9 @@ function SubjectPreviewCard({ subject }: { subject: (typeof subjects)[number] })
         MCQ practice available
       </p>
 
-      <AuthGatedLink
-        href="/subjects"
-        className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-lg border border-primary bg-background px-5 text-sm font-bold text-primary transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-      >
-        View topics
-      </AuthGatedLink>
+      <Button className="mt-6 h-13 w-full rounded-lg text-base shadow-primary" asChild>
+        <AuthGatedLink href={destination}>Start Practice</AuthGatedLink>
+      </Button>
     </article>
   )
 }
@@ -262,15 +265,12 @@ function HowItWorksSection() {
           How it works
         </h2>
         <ol className="mt-8 grid gap-7 md:grid-cols-3">
-          {steps.map((step, index) => {
+          {steps.map((step) => {
             const Icon = step.icon
 
             return (
               <li key={step.title} className="relative text-center">
-                <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                  {index + 1}
-                </div>
-                <div className="mx-auto mt-3 flex h-12 w-12 items-center justify-center rounded-full border border-primary/20 bg-background text-primary shadow-sm">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-primary/20 bg-background text-primary shadow-sm">
                   <Icon className="h-6 w-6" aria-hidden="true" />
                 </div>
                 <h3 className="mt-4 text-sm font-bold text-foreground">{step.title}</h3>

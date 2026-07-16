@@ -53,6 +53,12 @@ describe("homepage final UI", () => {
       "href",
       "/pricing"
     )
+
+    const subjectStartLinks = screen.getAllByRole("link", { name: "Start Practice" })
+    expect(subjectStartLinks).toHaveLength(3)
+    expect(subjectStartLinks[0]).toHaveAttribute("href", "/login?next=%2Fsubjects%3Fsubject%3Dgeneral-math")
+    expect(subjectStartLinks[1]).toHaveAttribute("href", "/login?next=%2Fsubjects%3Fsubject%3Dphysics")
+    expect(subjectStartLinks[2]).toHaveAttribute("href", "/login?next=%2Fsubjects%3Fsubject%3Dchemistry")
   })
 
   it("renders static availability, disabled future modes, subjects, and hidden social links", () => {
