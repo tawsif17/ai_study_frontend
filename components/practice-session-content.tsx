@@ -506,10 +506,10 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
         </div>
 
         {/* Sidebar */}
-        <aside className="hidden lg:block w-48 shrink-0">
+        <aside className="hidden lg:block w-60 shrink-0">
           <div className="sticky top-24 bg-card border border-border rounded-2xl p-4 shadow-sm">
             <h3 className="text-sm font-semibold text-card-foreground mb-4">Questions</h3>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-4 gap-3">
               {items.map((item, idx) => {
                 const isAnswered = localAnswers.has(item.practice_item_id)
                 const isCurrent = idx === currentIndex
