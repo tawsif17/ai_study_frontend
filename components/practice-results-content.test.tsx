@@ -172,6 +172,8 @@ describe("PracticeResultsContent", () => {
     render(<PracticeResultsContent practiceId={42} summary={summary} />)
 
     expect(screen.getByRole("button", { name: "Question 2, needs review, selected" })).toHaveAttribute("aria-current", "true")
+    expect(screen.getByRole("navigation", { name: "Result questions" })).toHaveClass("grid-cols-1")
+    expect(screen.getByRole("button", { name: "Question 2, needs review, selected" })).toHaveClass("w-full", "justify-between")
     expect(screen.getByText("Reviewed 1 of 2")).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Question 2 of 3" })).toBeInTheDocument()
   })

@@ -110,6 +110,16 @@ function StatusIcon({ status, className }: { status: ResultStatus; className?: s
   return <AlertCircle className={cn("text-amber-600", className)} aria-hidden="true" />
 }
 
+function NavigatorStatusIcon({ status, className }: { status: ResultStatus; className?: string }) {
+  if (status === "correct") {
+    return <CheckCircle2 className={cn("text-emerald-700", className)} aria-hidden="true" />
+  }
+  if (status === "unanswered") {
+    return <span className={cn("inline-flex items-center justify-center rounded-full border-2 border-muted-foreground text-muted-foreground", className)} aria-hidden="true">âˆ’</span>
+  }
+  return <span className={cn("rounded-full bg-amber-500", className)} aria-hidden="true" />
+}
+
 export function PracticeResultsContent({ practiceId, summary }: PracticeResultsContentProps) {
   const router = useRouter()
   const { results, isLoading, isError, mutate } = useCompletePracticeResults(practiceId, "MCQ", true)
@@ -388,7 +398,7 @@ function QuestionNavigator({
     <aside className="rounded-2xl border border-primary/15 bg-card p-5 shadow-sm" aria-labelledby="question-navigator-heading">
       <h2 id="question-navigator-heading" className="text-lg font-bold text-foreground">Questions</h2>
       <p className="mt-1 text-sm text-muted-foreground">Choose a question to review.</p>
-      <nav className="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10 xl:grid-cols-2" aria-label="Result questions">
+      <nav className="mt-4 grid grid-cols-1 gap-2" aria-label="Result questions">
         {items.map((item, index) => {
           const status = getResultStatus(item)
           const selected = index === currentIndex
@@ -400,12 +410,12 @@ function QuestionNavigator({
               aria-current={selected ? "true" : undefined}
               aria-label={`Question ${item.section_order_no}, ${statusCopy(status).toLowerCase()}${selected ? ", selected" : ""}`}
               className={cn(
-                "flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg border bg-background px-2 text-base font-semibold text-foreground transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none",
+                "flex min-h-11 w-full items-center justify-between rounded-lg border bg-background px-4 text-base font-semibold text-foreground transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none",
                 selected ? "border-primary ring-1 ring-primary" : "border-border hover:border-primary/50"
               )}
             >
               <span>{item.section_order_no}</span>
-              <StatusIcon status={status} className="size-5 shrink-0" />
+              <NavigatorStatusIcon status={status} className={status === "incorrect" ? "size-2.5 shrink-0" : "size-5 shrink-0"} />
             </button>
           )
         })}
@@ -414,7 +424,7 @@ function QuestionNavigator({
       <div className="mt-4 space-y-2 border-t border-border pt-4 text-xs text-muted-foreground" aria-label="Question status legend">
         {(["correct", "incorrect", "unanswered"] as const).map((status) => (
           <div key={status} className="flex items-center gap-2">
-            <StatusIcon status={status} className="size-4 shrink-0" />
+            <NavigatorStatusIcon status={status} className={status === "incorrect" ? "size-2.5 shrink-0" : "size-4 shrink-0"} />
             <span>{statusCopy(status)}</span>
           </div>
         ))}
