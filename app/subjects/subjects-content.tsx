@@ -59,7 +59,7 @@ export function SubjectsContent({ selectedSubjectValue = null }: { selectedSubje
   return (
     <PageShell>
       <section className="border-b border-border bg-[linear-gradient(180deg,rgba(19,117,201,0.06),rgba(255,255,255,0)_72%)]">
-        <div className="container mx-auto px-4 py-7 md:py-4 lg:px-14">
+        <div className="container mx-auto px-4 py-8 md:py-10 lg:px-14">
           <div className="max-w-3xl">
             <div className="inline-flex rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
               MCQ practice available now
@@ -75,13 +75,13 @@ export function SubjectsContent({ selectedSubjectValue = null }: { selectedSubje
         </div>
       </section>
 
-      <section className="bg-background py-7 md:py-0" aria-labelledby="available-subjects-heading">
+      <section className="bg-background py-8 md:py-10" aria-labelledby="available-subjects-heading">
         <div className="container mx-auto px-4 lg:px-14">
           <h2 id="available-subjects-heading" className="text-2xl font-bold text-foreground">
             Available subjects
           </h2>
 
-          <div className="mt-0">
+          <div className="mt-4 md:mt-5">
             {isCatalogLoading ? (
               <SubjectGridSkeleton />
             ) : isUnauthorized ? (
@@ -153,7 +153,7 @@ function SubjectGridSkeleton() {
 
 function NewHereStrip() {
   return (
-    <aside className="mt-3 flex flex-col gap-4 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:flex-row sm:items-center sm:justify-between">
+    <aside className="mt-4 flex flex-col gap-4 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-4">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-primary/10 bg-primary/10 text-primary">
           <CircleHelp className="h-7 w-7" aria-hidden="true" />
