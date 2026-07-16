@@ -49,6 +49,7 @@ describe("homepage final UI", () => {
       "href",
       "/login?next=%2Fsubjects"
     )
+    expect(screen.getByRole("link", { name: "Continue practicing" })).toHaveAttribute("href", "/subjects")
     expect(screen.getByRole("link", { name: "Board-only MCQ sets, Pro option, opens pricing" })).toHaveAttribute(
       "href",
       "/pricing"

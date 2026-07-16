@@ -120,7 +120,7 @@ export function HeroSection() {
                 Bookmark
               </span>
               <Link href="/subjects" className="inline-flex items-center gap-2 text-primary hover:underline">
-                Try 5 more MCQs
+                Continue practicing
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             </div>
