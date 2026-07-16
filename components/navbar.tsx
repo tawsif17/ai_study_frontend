@@ -47,9 +47,11 @@ export function Navbar() {
         </Link>
 
         <div className="hidden lg:flex items-center gap-8">
+          <NavLink href="/">Home</NavLink>
           <NavLink href="/subjects">Practice</NavLink>
           <NavLink href="/how-it-works">How it works</NavLink>
           <NavLink href="/pricing">Pricing</NavLink>
+          <NavLink href="/profile">Profile</NavLink>
         </div>
 
         {/* Auth Buttons - Hidden on mobile */}
@@ -118,6 +120,17 @@ function MobileMenu() {
         <div id={menuId} className="absolute left-0 right-0 top-full border-b border-border bg-background/95 p-4 shadow-lg backdrop-blur">
           <div className="flex flex-col gap-1">
             <Link
+              href="/"
+              aria-current={isActive("/") ? "page" : undefined}
+              onClick={() => setIsOpen(false)}
+              className={cn(
+                "flex min-h-11 items-center rounded-md px-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                isActive("/") ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary",
+              )}
+            >
+              Home
+            </Link>
+            <Link
               href="/subjects"
               aria-current={isActive("/subjects") ? "page" : undefined}
               onClick={() => setIsOpen(false)}
@@ -149,6 +162,17 @@ function MobileMenu() {
               )}
             >
               Pricing
+            </Link>
+            <Link
+              href="/profile"
+              aria-current={isActive("/profile") ? "page" : undefined}
+              onClick={() => setIsOpen(false)}
+              className={cn(
+                "flex min-h-11 items-center rounded-md px-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                isActive("/profile") ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary",
+              )}
+            >
+              Profile
             </Link>
             {!isLoading && (
               <div className="flex flex-col gap-2 pt-2 border-t border-border">
