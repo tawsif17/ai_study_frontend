@@ -17,6 +17,7 @@ import {
 import { PageShell } from "@/components/page-shell"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { AuthAwareStartFreeButton } from "./auth-aware-start-free-button"
 import {
   Table,
   TableBody,
@@ -128,9 +129,7 @@ export default function HowItWorksPage() {
               Pick a subject, choose a chapter, answer focused MCQs, and review what to revise next.
             </p>
             <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
-              <Button className="h-11 rounded-lg px-8 text-base shadow-primary" asChild>
-                <Link href="/signup">Start free</Link>
-              </Button>
+              <AuthAwareStartFreeButton className="h-11 rounded-lg px-8 text-base shadow-primary" />
               <Button variant="outline" className="h-11 rounded-lg border-primary px-8 text-base text-primary hover:bg-primary/5" asChild>
                 <Link href="/subjects">Choose a subject</Link>
               </Button>
@@ -267,9 +266,7 @@ export default function HowItWorksPage() {
             <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
               Start with one subject and one chapter. You can upgrade later only if board-only sets and pro tools help you revise.
             </p>
-            <Button className="mt-4 h-11 rounded-lg px-6 shadow-primary" asChild>
-              <Link href="/signup">Start free</Link>
-            </Button>
+            <AuthAwareStartFreeButton className="mt-4 h-11 rounded-lg px-6 shadow-primary" />
             <p className="mt-2 text-xs text-muted-foreground">No credit card required.</p>
           </div>
         </div>

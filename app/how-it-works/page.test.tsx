@@ -1,6 +1,7 @@
-import { render, screen } from "@testing-library/react"
-import { describe, expect, it, vi } from "vitest"
+import { render, screen, within } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import HowItWorksPage from "./page"
+import { useAuth } from "@/lib/auth-context"
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/how-it-works",
@@ -16,18 +17,27 @@ vi.mock("@/components/brand-logo", async () => {
 })
 
 vi.mock("@/lib/auth-context", () => ({
-  useAuth: () => ({
-    isAuthenticated: false,
-    isLoading: false,
+  useAuth: vi.fn(),
+}))
+
+function mockAuth(isAuthenticated: boolean, isLoading = false) {
+  vi.mocked(useAuth).mockReturnValue({
+    isAuthenticated,
+    isLoading,
     user: null,
     login: vi.fn(),
     register: vi.fn(),
     logout: vi.fn(),
     refreshUser: vi.fn(),
-  }),
-}))
+  })
+}
 
 describe("how it works final UI", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockAuth(false)
+  })
+
   it("renders the static beta journey and its CTA destinations", () => {
     render(<HowItWorksPage />)
 
@@ -38,9 +48,37 @@ describe("how it works final UI", () => {
     expect(screen.getByRole("heading", { name: "After practice" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Try the flow in a free MCQ session" })).toBeInTheDocument()
 
-    expect(screen.getAllByRole("link", { name: "Start free" })[0]).toHaveAttribute("href", "/signup")
+    const page = within(screen.getByRole("main"))
+    expect(page.getAllByRole("link", { name: "Start free" })).toHaveLength(2)
+    page.getAllByRole("link", { name: "Start free" }).forEach((link) => {
+      expect(link).toHaveAttribute("href", "/login?next=%2Fsubjects")
+    })
     expect(screen.getByRole("link", { name: "Choose a subject" })).toHaveAttribute("href", "/subjects")
     expect(screen.getByRole("link", { name: "Board-only sets, Pro option, opens pricing" })).toHaveAttribute("href", "/pricing")
+  })
+
+  it("sends authenticated users from both Start free CTAs to subjects", () => {
+    mockAuth(true)
+    render(<HowItWorksPage />)
+
+    const startFreeLinks = within(screen.getByRole("main")).getAllByRole("link", { name: "Start free" })
+    expect(startFreeLinks).toHaveLength(2)
+    startFreeLinks.forEach((link) => {
+      expect(link).toHaveAttribute("href", "/subjects")
+    })
+  })
+
+  it("prevents navigation until authentication has finished loading", () => {
+    mockAuth(false, true)
+    render(<HowItWorksPage />)
+
+    const page = within(screen.getByRole("main"))
+    expect(page.queryByRole("link", { name: "Start free" })).not.toBeInTheDocument()
+    const loadingActions = page.getAllByRole("button", { name: "Start free" })
+    expect(loadingActions).toHaveLength(2)
+    loadingActions.forEach((button) => {
+      expect(button).toBeDisabled()
+    })
   })
 
   it("renders the approved static availability and accessible MCQ example", () => {
