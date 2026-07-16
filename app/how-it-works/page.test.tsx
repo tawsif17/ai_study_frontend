@@ -55,6 +55,7 @@ describe("how it works final UI", () => {
     })
     expect(screen.getByRole("link", { name: "Choose a subject" })).toHaveAttribute("href", "/subjects")
     expect(screen.getByRole("link", { name: "Board-only sets, Pro option, opens pricing" })).toHaveAttribute("href", "/pricing")
+    expect(screen.getByRole("link", { name: "Weak Area Analysis, Pro option, opens pricing" })).toHaveAttribute("href", "/pricing")
   })
 
   it("sends authenticated users from both Start free CTAs to subjects", () => {
@@ -85,6 +86,8 @@ describe("how it works final UI", () => {
     render(<HowItWorksPage />)
 
     expect(screen.getAllByText("Coming soon")).toHaveLength(2)
+    expect(screen.getByText("Weak Area Analysis")).toBeInTheDocument()
+    expect(screen.getByText("Identifying chapters that need more practice")).toBeInTheDocument()
     expect(screen.getByText("Correct. Review: Refraction")).toBeInTheDocument()
     expect(screen.getByRole("table", { name: /current shikkha buddy practice availability/i })).toBeInTheDocument()
     expect(screen.queryByText("Higher Math")).not.toBeInTheDocument()

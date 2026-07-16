@@ -43,31 +43,26 @@ export const metadata: Metadata = {
 }
 
 const journeySteps: Array<{
-  number: number
   title: string
   description: string
   icon: LucideIcon
 }> = [
   {
-    number: 1,
     title: "Choose subject",
     description: "Pick the subject and topic you want to practice.",
     icon: BookOpen,
   },
   {
-    number: 2,
     title: "Choose chapter",
     description: "Select a chapter for the session.",
     icon: NotebookTabs,
   },
   {
-    number: 3,
     title: "Practice MCQs",
     description: "Answer focused questions based on exam-style patterns.",
     icon: Target,
   },
   {
-    number: 4,
     title: "Review mistakes",
     description: "Use explanations to plan the next revision.",
     icon: CircleCheck,
@@ -109,6 +104,7 @@ const availabilityRows = [
   { type: "CQ Practice", status: "Coming soon", bestFor: "Full creative-question practice", tone: "coming" },
   { type: "Mixed Practice", status: "Coming soon", bestFor: "MCQ + CQ practice sets", tone: "coming" },
   { type: "Board-only sets", status: "Pro", bestFor: "Stricter exam revision", tone: "pro" },
+  { type: "Weak Area Analysis", status: "Pro", bestFor: "Identifying chapters that need more practice", tone: "pro" },
 ] as const
 
 const reviewPoints = ["See correct answers", "Review missed questions", "Practice again by chapter"]
@@ -155,17 +151,14 @@ export default function HowItWorksPage() {
               const isLast = index === journeySteps.length - 1
 
               return (
-                <li key={step.number} className="relative px-3 text-center">
+                <li key={step.title} className="relative px-3 text-center">
                   {!isLast && (
                     <ArrowRight
                       className="absolute right-[-14px] top-12 hidden h-5 w-5 text-primary/60 md:block"
                       aria-hidden="true"
                     />
                   )}
-                  <span className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                    {step.number}
-                  </span>
-                  <div className="mx-auto mt-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/5 text-primary">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary/5 text-primary">
                     <Icon className="h-7 w-7" aria-hidden="true" />
                   </div>
                   <h3 className="mt-3 text-sm font-bold text-foreground">{step.title}</h3>
@@ -221,7 +214,7 @@ export default function HowItWorksPage() {
               {availabilityRows.map((row) => (
                 <TableRow key={row.type}>
                   <TableCell className="font-medium text-foreground">{row.type}</TableCell>
-                  <TableCell><AvailabilityStatus tone={row.tone} label={row.status} /></TableCell>
+                  <TableCell><AvailabilityStatus type={row.type} tone={row.tone} label={row.status} /></TableCell>
                   <TableCell className="text-muted-foreground">{row.bestFor}</TableCell>
                 </TableRow>
               ))}
@@ -334,7 +327,7 @@ function QuestionPreview() {
   )
 }
 
-function AvailabilityStatus({ tone, label }: { tone: (typeof availabilityRows)[number]["tone"]; label: string }) {
+function AvailabilityStatus({ type, tone, label }: { type: string; tone: (typeof availabilityRows)[number]["tone"]; label: string }) {
   if (tone === "available") {
     return <Badge className="border-transparent bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/10">{label}</Badge>
   }
@@ -342,7 +335,7 @@ function AvailabilityStatus({ tone, label }: { tone: (typeof availabilityRows)[n
   if (tone === "pro") {
     return (
       <Badge asChild className="border-transparent bg-orange-500/10 text-orange-600 hover:bg-orange-500/10">
-        <Link href="/pricing" aria-label="Board-only sets, Pro option, opens pricing">{label}</Link>
+        <Link href="/pricing" aria-label={`${type}, Pro option, opens pricing`}>{label}</Link>
       </Badge>
     )
   }
