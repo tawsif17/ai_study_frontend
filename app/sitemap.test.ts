@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest"
 import sitemap from "./sitemap"
 
 describe("sitemap", () => {
-  it("does not publish retired beta policy routes", () => {
+  it("publishes the approved policy routes without retired beta policy routes", () => {
     const routes = sitemap().map((entry) => new URL(entry.url).pathname)
 
+    expect(routes).toEqual(expect.arrayContaining(["/privacy", "/terms", "/cookies"]))
     expect(routes).not.toEqual(expect.arrayContaining(["/data-protection", "/ai-disclaimer", "/data-deletion", "/refund-policy"]))
   })
 

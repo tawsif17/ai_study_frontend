@@ -41,7 +41,7 @@ describe("FAQ page", () => {
     expect(screen.queryByText(/Refund Policy/i)).not.toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "How is my data used?" }))
-    expect(screen.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute("href", "/privacy")
+    expect(screen.getAllByRole("link", { name: "Privacy Policy" }).some((link) => link.getAttribute("href") === "/privacy")).toBe(true)
 
     await user.click(screen.getByRole("button", { name: "How do I contact support?" }))
     expect(screen.getByRole("link", { name: "Contact page" })).toHaveAttribute("href", "/contact")
