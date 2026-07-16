@@ -33,7 +33,7 @@ const frequentlyAsked: FAQItem[] = [
     value: "beta-pro",
     question: "What is Beta Pro?",
     answer:
-      "Beta Pro is optional access for verified beta users. It is intended to include Board-only practice and does not create a paid subscription.",
+      "Beta Pro is optional access for verified beta users. It includes Board-only MCQ sets and Weak Area Analysis and does not create a paid subscription.",
   },
   {
     value: "beta-payment",
@@ -43,9 +43,9 @@ const frequentlyAsked: FAQItem[] = [
   },
   {
     value: "board-only",
-    question: "How does Board-only practice work?",
+    question: "How do Board-only MCQ sets work?",
     answer:
-      "Board-only practice is intended to be available through Beta Pro. Its availability will depend on the completed beta integration.",
+      "Board-only MCQ sets are available through Beta Pro for focused past-board-question revision.",
   },
 ]
 

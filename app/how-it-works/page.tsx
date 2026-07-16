@@ -103,7 +103,7 @@ const availabilityRows = [
   { type: "MCQ Practice", status: "Available now", bestFor: "Focused chapter revision", tone: "available" },
   { type: "CQ Practice", status: "Coming soon", bestFor: "Full creative-question practice", tone: "coming" },
   { type: "Mixed Practice", status: "Coming soon", bestFor: "MCQ + CQ practice sets", tone: "coming" },
-  { type: "Board-only sets", status: "Pro", bestFor: "Stricter exam revision", tone: "pro" },
+  { type: "Board-only MCQ sets", status: "Pro", bestFor: "Stricter exam revision", tone: "pro" },
   { type: "Weak Area Analysis", status: "Pro", bestFor: "Identifying chapters that need more practice", tone: "pro" },
 ] as const
 
@@ -125,8 +125,7 @@ export default function HowItWorksPage() {
               Pick a subject, choose a chapter, answer focused MCQs, and review what to revise next.
             </p>
             <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
-              <AuthAwareStartFreeButton className="h-11 rounded-lg px-8 text-base shadow-primary" />
-              <Button variant="outline" className="h-11 rounded-lg border-primary px-8 text-base text-primary hover:bg-primary/5" asChild>
+              <Button className="h-11 rounded-lg px-8 text-base shadow-primary" asChild>
                 <Link href="/subjects">Choose a subject</Link>
               </Button>
             </div>
@@ -257,7 +256,7 @@ export default function HowItWorksPage() {
           <div className="text-center sm:text-left">
             <h2 className="text-xl font-bold text-foreground">Try the flow in a free MCQ session</h2>
             <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-              Start with one subject and one chapter. You can upgrade later only if board-only sets and pro tools help you revise.
+              Start with one subject and one chapter. Beta Pro adds Board-only MCQ sets and Weak Area Analysis when you need more focused revision.
             </p>
             <AuthAwareStartFreeButton className="mt-4 h-11 rounded-lg px-6 shadow-primary" />
             <p className="mt-2 text-xs text-muted-foreground">No credit card required.</p>

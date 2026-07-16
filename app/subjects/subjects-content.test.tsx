@@ -67,6 +67,7 @@ describe("practice page final UI", () => {
     expect(screen.getByRole("heading", { name: "Chemistry" })).toBeInTheDocument()
     expect(screen.queryByText("Higher Math")).not.toBeInTheDocument()
     expect(screen.getAllByText("MCQ practice available")).toHaveLength(3)
+    expect(screen.getByText(/Beta Pro includes Board-only MCQ sets and Weak Area Analysis/)).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "How practice works" })).toHaveAttribute("href", "/how-it-works")
 
     expect(screen.getAllByRole("link", { name: "Start Practice" })[0]).toHaveAttribute(

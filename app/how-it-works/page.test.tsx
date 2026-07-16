@@ -49,21 +49,21 @@ describe("how it works final UI", () => {
     expect(screen.getByRole("heading", { name: "Try the flow in a free MCQ session" })).toBeInTheDocument()
 
     const page = within(screen.getByRole("main"))
-    expect(page.getAllByRole("link", { name: "Start free" })).toHaveLength(2)
+    expect(page.getAllByRole("link", { name: "Start free" })).toHaveLength(1)
     page.getAllByRole("link", { name: "Start free" }).forEach((link) => {
       expect(link).toHaveAttribute("href", "/login?next=%2Fsubjects")
     })
     expect(screen.getByRole("link", { name: "Choose a subject" })).toHaveAttribute("href", "/subjects")
-    expect(screen.getByRole("link", { name: "Board-only sets, Pro option, opens pricing" })).toHaveAttribute("href", "/pricing")
+    expect(screen.getByRole("link", { name: "Board-only MCQ sets, Pro option, opens pricing" })).toHaveAttribute("href", "/pricing")
     expect(screen.getByRole("link", { name: "Weak Area Analysis, Pro option, opens pricing" })).toHaveAttribute("href", "/pricing")
   })
 
-  it("sends authenticated users from both Start free CTAs to subjects", () => {
+  it("sends authenticated users from the Start free CTA to subjects", () => {
     mockAuth(true)
     render(<HowItWorksPage />)
 
     const startFreeLinks = within(screen.getByRole("main")).getAllByRole("link", { name: "Start free" })
-    expect(startFreeLinks).toHaveLength(2)
+    expect(startFreeLinks).toHaveLength(1)
     startFreeLinks.forEach((link) => {
       expect(link).toHaveAttribute("href", "/subjects")
     })
@@ -76,10 +76,11 @@ describe("how it works final UI", () => {
     const page = within(screen.getByRole("main"))
     expect(page.queryByRole("link", { name: "Start free" })).not.toBeInTheDocument()
     const loadingActions = page.getAllByRole("button", { name: "Start free" })
-    expect(loadingActions).toHaveLength(2)
+    expect(loadingActions).toHaveLength(1)
     loadingActions.forEach((button) => {
       expect(button).toBeDisabled()
     })
+    expect(page.getByRole("link", { name: "Choose a subject" })).toHaveAttribute("href", "/subjects")
   })
 
   it("renders the approved static availability and accessible MCQ example", () => {

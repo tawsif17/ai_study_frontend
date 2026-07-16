@@ -49,7 +49,7 @@ describe("homepage final UI", () => {
       "href",
       "/login?next=%2Fsubjects"
     )
-    expect(screen.getByRole("link", { name: "Board-only practice, Pro option, opens pricing" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Board-only MCQ sets, Pro option, opens pricing" })).toHaveAttribute(
       "href",
       "/pricing"
     )
@@ -65,7 +65,7 @@ describe("homepage final UI", () => {
     render(<HomePage />)
 
     expect(screen.getByText("Correct. Review: Refraction")).toBeInTheDocument()
-    expect(screen.getByText(/Activate beta Pro access later only if board-only sets/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Activate Beta Pro later for Board-only MCQ sets and Weak Area Analysis/)).toHaveLength(2)
 
     expect(screen.getByText("CQ Practice")).toBeInTheDocument()
     expect(screen.getByText("Mixed Practice")).toBeInTheDocument()

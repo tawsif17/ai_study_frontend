@@ -112,7 +112,7 @@ function StartPracticingSection() {
             Start practicing
           </h2>
           <p className="mt-3 text-sm leading-6 text-muted-foreground md:text-base">
-            Begin with free MCQ practice. Activate beta Pro access later only if board-only sets and pro features help you revise.
+            Begin with free MCQ practice. Activate Beta Pro later for Board-only MCQ sets and Weak Area Analysis when you need more focused revision.
           </p>
         </div>
 
@@ -150,15 +150,15 @@ function StartPracticingSection() {
               <Link
                 href="/pricing"
                 className="group flex items-center justify-between gap-4 rounded-xl border border-[#ffd89a] bg-[#fffaf2] p-5 transition-colors hover:border-[#f79009] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                aria-label="Board-only practice, Pro option, opens pricing"
+                aria-label="Board-only MCQ sets, Pro option, opens pricing"
               >
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <h4 className="text-base font-bold text-foreground">Board-only practice</h4>
+                    <h4 className="text-base font-bold text-foreground">Board-only MCQ sets</h4>
                     <Badge className="border-transparent bg-[#fff2cc] text-[#dc6803] hover:bg-[#fff2cc]">Pro</Badge>
                   </div>
                   <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
-                    Practice only past board questions when you want stricter exam revision.
+                    Practise past board-question MCQ sets when you want stricter exam revision.
                   </p>
                 </div>
                 <ChevronRight className="h-6 w-6 shrink-0 text-foreground transition-transform group-hover:translate-x-0.5" />
@@ -311,8 +311,7 @@ function FinalCtaSection() {
               Start your first SSC practice session today
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground md:text-base">
-              Try free MCQ practice now. Activate beta Pro access later only if you want board-only sets and other pro features
-              designed to make your practice smarter.
+              Try free MCQ practice now. Activate Beta Pro later for Board-only MCQ sets and Weak Area Analysis when you want more focused revision.
             </p>
             <Button className="mt-5 h-11 w-full rounded-lg px-10 shadow-primary sm:w-auto" asChild>
               <AuthGatedLink href="/subjects">Start free</AuthGatedLink>

@@ -73,7 +73,7 @@ describe("FAQ page", () => {
     render(<FAQPage />)
 
     const triggers = screen.getAllByRole("button", {
-      name: /Which subjects|What can I practise|What is Beta Pro|Is payment required|How does Board-only|Can AI-generated|How is my data|How do I contact support/,
+      name: /Which subjects|What can I practise|What is Beta Pro|Is payment required|How do Board-only|Can AI-generated|How is my data|How do I contact support/,
     })
 
     for (const trigger of triggers) {
@@ -112,6 +112,13 @@ describe("FAQ page", () => {
     expect(
       screen.getByText(
         "No. Activating Beta Pro during the beta does not require payment and does not start a trial, renewal, or automatic billing.",
+      ),
+    ).toBeVisible()
+
+    await user.click(screen.getByRole("button", { name: "What is Beta Pro?" }))
+    expect(
+      screen.getByText(
+        "Beta Pro is optional access for verified beta users. It includes Board-only MCQ sets and Weak Area Analysis and does not create a paid subscription.",
       ),
     ).toBeVisible()
 
