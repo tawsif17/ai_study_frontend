@@ -5,9 +5,17 @@ import type React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Menu, X, LogOut } from "@/components/icons"
 import { BrandLogo } from "@/components/brand-logo"
 import { useState } from "react"
+import type { AuthUser } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/auth-context"
 
@@ -35,8 +43,14 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
   )
 }
 
+function getInitials(name: string | undefined) {
+  const parts = name?.trim().split(/\s+/).filter(Boolean) ?? []
+
+  return parts.slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "SB"
+}
+
 export function Navbar() {
-  const { isAuthenticated, logout, isLoading } = useAuth()
+  const { isAuthenticated, logout, isLoading, user } = useAuth()
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/70">
@@ -51,7 +65,6 @@ export function Navbar() {
           <NavLink href="/subjects">Practice</NavLink>
           <NavLink href="/how-it-works">How it works</NavLink>
           <NavLink href="/pricing">Pricing</NavLink>
-          <NavLink href="/profile">Profile</NavLink>
         </div>
 
         {/* Auth Buttons - Hidden on mobile */}
@@ -59,10 +72,7 @@ export function Navbar() {
           {!isLoading && (
             <>
               {isAuthenticated ? (
-                <Button variant="ghost" size="sm" onClick={logout} className="min-h-11 gap-2">
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </Button>
+                <AccountMenu user={user} logout={logout} />
               ) : (
                 <>
                   <Button variant="ghost" size="sm" className="min-h-11" asChild>
@@ -84,25 +94,82 @@ export function Navbar() {
   )
 }
 
+function AccountMenu({
+  user,
+  logout,
+  onAfterAction,
+}: {
+  user: AuthUser | null
+  logout: () => void
+  onAfterAction?: () => void
+}) {
+  const initials = getInitials(user?.full_name)
+  const accountMenuLabel = user?.full_name
+    ? `Open ${user.full_name}'s account menu`
+    : "Open account menu"
+
+  const handleLogout = () => {
+    logout()
+    onAfterAction?.()
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          type="button"
+          className="size-11 rounded-full p-0"
+          aria-label={accountMenuLabel}
+        >
+          <span className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+            {initials}
+          </span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48 p-1">
+        <DropdownMenuItem asChild className="min-h-11 cursor-pointer px-3">
+          <Link href="/profile" onClick={onAfterAction}>Profile</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="min-h-11 cursor-pointer px-3">
+          <Link href="/dashboard/weak-areas" onClick={onAfterAction}>Dashboard</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled
+          aria-label="Bookmarks coming soon"
+          className="min-h-11 cursor-not-allowed px-3"
+        >
+          <span>Bookmarks</span>
+          <span className="ml-auto text-xs">Coming soon</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="min-h-11 cursor-pointer px-3" onSelect={handleLogout}>
+          <LogOut className="h-4 w-4" aria-hidden="true" />
+          Logout
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
-  const { isAuthenticated, logout, isLoading } = useAuth()
+  const { isAuthenticated, logout, isLoading, user } = useAuth()
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/"
     return pathname.startsWith(href)
   }
 
-  const handleLogout = () => {
-    logout()
-    setIsOpen(false)
-  }
-
   const menuId = "mobile-navigation"
 
   return (
-    <div className="lg:hidden">
+    <div className="flex items-center gap-1 lg:hidden">
+      {!isLoading && isAuthenticated && (
+        <AccountMenu user={user} logout={logout} onAfterAction={() => setIsOpen(false)} />
+      )}
       <Button
         variant="ghost"
         size="icon"
@@ -163,25 +230,9 @@ function MobileMenu() {
             >
               Pricing
             </Link>
-            <Link
-              href="/profile"
-              aria-current={isActive("/profile") ? "page" : undefined}
-              onClick={() => setIsOpen(false)}
-              className={cn(
-                "flex min-h-11 items-center rounded-md px-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-                isActive("/profile") ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary",
-              )}
-            >
-              Profile
-            </Link>
             {!isLoading && (
               <div className="flex flex-col gap-2 pt-2 border-t border-border">
-                {isAuthenticated ? (
-                  <Button variant="ghost" size="sm" className="min-h-11 justify-start gap-2" onClick={handleLogout}>
-                    <LogOut className="h-4 w-4" aria-hidden="true" />
-                    Logout
-                  </Button>
-                ) : (
+                {!isAuthenticated && (
                   <>
                     <Button variant="ghost" size="sm" className="min-h-11 justify-start" asChild>
                       <Link href="/login" onClick={() => setIsOpen(false)}>Login</Link>
