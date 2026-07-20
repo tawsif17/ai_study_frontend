@@ -16,6 +16,7 @@ import {
   XCircle,
 } from "@/components/icons"
 import { QuestionReportDialog } from "@/components/question-report-dialog"
+import { BookmarkPracticeItemButton } from "@/components/bookmark-practice-item-button"
 import { useSubjects } from "@/lib/api/hooks"
 import { useCompletePracticeResults } from "@/lib/api/practice-hooks"
 import { ApiClientError } from "@/lib/api/client"
@@ -318,6 +319,19 @@ function ResultsWorkspace({ items, subjectName }: { items: ResultItem[]; subject
         />
       </div>
 
+      {summary.incorrectCount > 0 && (
+        <aside className="mt-6 flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/[0.035] p-4 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="mistakes-saved-heading">
+          <div>
+            <h2 id="mistakes-saved-heading" className="font-semibold text-foreground">Incorrect answers are saved to Mistakes</h2>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">Answer them correctly in a later MCQ session to remove them from your active mistakes.</p>
+          </div>
+          <Link href="/bookmarks?tab=mistakes" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-md px-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+            View mistakes
+            <ChevronRight className="size-4" aria-hidden="true" />
+          </Link>
+        </aside>
+      )}
+
       <aside className="mt-6 flex flex-col gap-4 rounded-2xl border border-primary/20 bg-primary/[0.035] p-5 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="weak-areas-handoff-heading">
         <div className="flex gap-4">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -489,7 +503,10 @@ function QuestionReviewPanel({
             {statusCopy(status)}
           </span>
         </div>
-        <QuestionReportDialog questionId={item.question?.id} />
+        <div className="flex items-center gap-1">
+          {item.mcq && <BookmarkPracticeItemButton practiceItemId={item.practice_item_id} compact />}
+          <QuestionReportDialog questionId={item.question?.id} />
+        </div>
       </div>
 
       <p className="mt-6 text-lg font-semibold leading-7 text-foreground sm:text-xl sm:leading-8">{questionText}</p>

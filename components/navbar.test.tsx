@@ -46,7 +46,7 @@ describe("Navbar", () => {
     const accountMenu = screen.getByRole("menu")
     expect(within(accountMenu).getByRole("menuitem", { name: "Profile" })).toHaveAttribute("href", "/profile")
     expect(within(accountMenu).getByRole("menuitem", { name: "Dashboard" })).toHaveAttribute("href", "/dashboard/weak-areas")
-    expect(within(accountMenu).getByRole("menuitem", { name: "Bookmarks coming soon" })).toHaveAttribute("data-disabled", "")
+    expect(within(accountMenu).getByRole("menuitem", { name: "Bookmarks" })).toHaveAttribute("href", "/bookmarks")
   })
 
   it("keeps account access in the mobile avatar menu rather than the navigation list", async () => {

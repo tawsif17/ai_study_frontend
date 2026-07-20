@@ -190,20 +190,22 @@ export interface QuestionReportResponse {
 // ============================================
 
 export type PracticeMode = "MCQ" | "CQ" | "MIXED"
-export type SelectionType = "CHAPTERS" | "FULL_SYLLABUS"
+export type SelectionType = "CHAPTERS" | "FULL_SYLLABUS" | "BOOKMARKED"
 export type AttemptStatus = "IN_PROGRESS" | "SUBMITTED"
 export type Section = "MCQ" | "CQ"
 export type AnswerType = "MCQ" | "CQ"
 export type Language = "bn" | "en"
 
+export interface PracticeSelection {
+  type: SelectionType
+  chapter_ids?: number[]
+}
+
 export interface PracticeGenerateRequest {
   exam_type_id: number
   subject_id: number
   mode: PracticeMode
-  selection: {
-    type: SelectionType
-    chapter_ids?: number[]
-  }
+  selection: PracticeSelection
   mcq_count?: number
   mcqCount?: number
   mcq_requested?: number
@@ -221,6 +223,79 @@ export interface PracticeGenerateResponse {
     code: string
     message: string
   }
+}
+
+// ============================================
+// REVISION TYPES
+// ============================================
+
+export type RevisionListKind = "bookmarks" | "mistakes"
+
+export interface RevisionListRequest {
+  subject_id?: number
+  chapter_id?: number
+  page?: number
+  page_size?: number
+}
+
+export interface RevisionQuestionMedia {
+  link_id: number
+  question_part_id: number | null
+  option_id: number | null
+  caption: string | null
+  public_url: string | null
+  media_type: string
+  mime_type: string | null
+}
+
+export interface RevisionReviewItem {
+  question_id: number
+  stem_text: string | null
+  explanation: string | null
+  source: string | null
+  language: string
+  correct_answer: {
+    label: string
+    option_text: string
+  }
+  subject: { id: number; name: string }
+  chapter: { id: number; name: string } | null
+  media: RevisionQuestionMedia[]
+  bookmarked_at?: string
+  last_mistaken_at?: string
+}
+
+export interface RevisionListResponse {
+  page: number
+  page_size: number
+  total: number
+  items: RevisionReviewItem[]
+}
+
+export interface RevisionSummarySubject {
+  subject_id: number
+  subject_name: string
+  bookmark_count: number
+  active_mistake_count: number
+  saved_question_count: number
+}
+
+export interface RevisionSummaryResponse {
+  bookmark_total: number
+  active_mistake_total: number
+  saved_question_total: number
+  subjects: RevisionSummarySubject[]
+}
+
+export interface SaveBookmarkResponse {
+  question_id: number
+  bookmarked: boolean
+  bookmarked_at: string
+}
+
+export interface RemoveBookmarkResponse {
+  question_id: number
+  bookmarked: false
 }
 
 // ============================================

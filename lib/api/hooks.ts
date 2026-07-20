@@ -5,12 +5,18 @@ import {
   getExamTypes,
   getProgressDashboard,
   getQuestions,
+  getRevisionItems,
+  getRevisionSummary,
   getSubjectChapters,
   getSubjects,
   type Chapter,
   type ExamType,
   type QuestionListItem,
   type QuestionsListRequest,
+  type RevisionListKind,
+  type RevisionListRequest,
+  type RevisionListResponse,
+  type RevisionSummaryResponse,
   type Subject,
   type ProgressDashboardResponse,
 } from "./index"
@@ -36,6 +42,33 @@ export function useProgressDashboard(enabled: boolean = true) {
     isError: error,
     mutate,
   }
+}
+
+export function useRevisionSummary(enabled: boolean = true) {
+  const { data, error, isLoading, mutate } = useSWR<RevisionSummaryResponse>(
+    enabled ? "revision-summary" : null,
+    getRevisionSummary,
+    { revalidateOnFocus: false }
+  )
+
+  return { summary: data, isLoading, isError: error, mutate }
+}
+
+export function useRevisionItems(
+  kind: RevisionListKind,
+  query: RevisionListRequest,
+  enabled: boolean = true
+) {
+  const key = enabled
+    ? ["revision-items", kind, query.subject_id, query.chapter_id, query.page ?? 1, query.page_size ?? 20] as const
+    : null
+  const { data, error, isLoading, mutate } = useSWR<RevisionListResponse>(
+    key,
+    () => getRevisionItems(kind, query),
+    { revalidateOnFocus: false }
+  )
+
+  return { revisionItems: data, isLoading, isError: error, mutate }
 }
 
 async function subjectsFetcher([, examType]: [string, string | undefined]): Promise<Subject[]> {

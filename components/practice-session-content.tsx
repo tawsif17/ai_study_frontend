@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ChevronLeft, ChevronRight, CheckCircle } from "@/components/icons"
 import { QuestionReportDialog } from "@/components/question-report-dialog"
+import { BookmarkPracticeItemButton } from "@/components/bookmark-practice-item-button"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -320,7 +321,10 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
                   </Badge>
                   <Badge variant="outline">{currentSection}</Badge>
                 </div>
-                <QuestionReportDialog questionId={currentItem.question_id} />
+                <div className="flex items-center gap-1">
+                  {currentSection === "MCQ" && <BookmarkPracticeItemButton practiceItemId={currentItem.practice_item_id} compact />}
+                  <QuestionReportDialog questionId={currentItem.question_id} />
+                </div>
               </div>
 
               {questionLoading ? (

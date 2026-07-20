@@ -4,9 +4,10 @@ import { useState } from "react"
 import Link from "next/link"
 import { SubjectBanner } from "@/components/subject-banner"
 import { PracticeConfigCard } from "@/components/practice-config-card"
+import { BookmarkedPracticeCard } from "@/components/bookmarked-practice-card"
 import { FeatureCard } from "@/components/feature-card"
 import { ListChecks, FileText, Shuffle, Zap, BookCheck, Target, ArrowLeft, Calculator, Atom, FlaskConical } from "@/components/icons"
-import { useChapters } from "@/lib/api/hooks"
+import { useChapters, useRevisionSummary } from "@/lib/api/hooks"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -70,9 +71,13 @@ interface SubjectDetailContentProps {
 export function SubjectDetailContent({ subjectId, subjectName, examTypeId, questionCount }: SubjectDetailContentProps) {
   const [selectedChapterIds, setSelectedChapterIds] = useState<number[]>([])
   const { chapters, isLoading: chaptersLoading } = useChapters(subjectId)
+  const { summary: revisionSummary, isLoading: revisionSummaryLoading } = useRevisionSummary()
   
   const styles = getSubjectStyles(subjectName)
   const SubjectIcon = styles.Icon
+  const savedQuestionCount = revisionSummary?.subjects.find(
+    (subject) => subject.subject_id === subjectId
+  )?.saved_question_count ?? 0
 
   const handleChapterToggle = (chapterId: number) => {
     setSelectedChapterIds((prev) =>
@@ -173,6 +178,18 @@ export function SubjectDetailContent({ subjectId, subjectName, examTypeId, quest
                 Select at least one chapter to start practicing.
               </p>
             )}
+
+            {revisionSummaryLoading ? (
+              <Skeleton className="mt-6 h-32 w-full" />
+            ) : savedQuestionCount > 0 ? (
+              <div className="mt-6">
+                <BookmarkedPracticeCard
+                  subjectId={subjectId}
+                  examTypeId={examTypeId}
+                  savedQuestionCount={savedQuestionCount}
+                />
+              </div>
+            ) : null}
           </div>
         </div>
       </section>

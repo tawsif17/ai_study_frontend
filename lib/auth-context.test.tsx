@@ -53,6 +53,8 @@ describe("AuthProvider logout", () => {
     expect(matcher(["practice-answers", 9])).toBe(true)
     expect(matcher(["practice-results", 9, "MCQ", 1, 10])).toBe(true)
     expect(matcher(["progress-dashboard"])).toBe(true)
+    expect(matcher("revision-summary")).toBe(true)
+    expect(matcher(["revision-items", "bookmarks", undefined, undefined, 1, 20])).toBe(true)
     expect(matcher(["exam-types"])).toBe(false)
     expect(matcher("subjects")).toBe(false)
   })

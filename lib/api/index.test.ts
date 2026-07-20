@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { getCompleteResults, getPracticeItems, getProgressDashboard, register, reportQuestion, resendVerification, submitContact, upgradeToPro, verifyEmail } from "./index"
+import { getCompleteResults, getPracticeItems, getProgressDashboard, getRevisionItems, getRevisionSummary, register, removeBookmark, reportQuestion, resendVerification, saveBookmark, submitContact, upgradeToPro, verifyEmail } from "./index"
 import { apiClient, apiClientWithResponse } from "./client"
 
 vi.mock("./client", () => ({
@@ -169,6 +169,37 @@ describe("progress dashboard API contract", () => {
     expect(apiClient).toHaveBeenCalledWith("/profile/progress-dashboard", {
       requiresAuth: true,
     })
+  })
+})
+
+describe("revision API contract", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("uses authenticated revision list and summary endpoints", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce({ page: 1, page_size: 20, total: 0, items: [] })
+    vi.mocked(apiClient).mockResolvedValueOnce({ bookmark_total: 0, active_mistake_total: 0, saved_question_total: 0, subjects: [] })
+
+    await getRevisionItems("bookmarks", { subject_id: 2, chapter_id: 7, page: 2, page_size: 20 })
+    await getRevisionSummary()
+
+    expect(apiClient).toHaveBeenNthCalledWith(1, "/revision/bookmarks", {
+      params: { subject_id: 2, chapter_id: 7, page: 2, page_size: 20 },
+      requiresAuth: true,
+    })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/revision/summary", { requiresAuth: true })
+  })
+
+  it("saves from a practice item and removes only a manual bookmark", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce({ question_id: 42, bookmarked: true, bookmarked_at: "2026-07-20T00:00:00.000Z" })
+    vi.mocked(apiClient).mockResolvedValueOnce({ question_id: 42, bookmarked: false })
+
+    await saveBookmark(9)
+    await removeBookmark(42)
+
+    expect(apiClient).toHaveBeenNthCalledWith(1, "/revision/bookmarks/practice-items/9", { method: "PUT", requiresAuth: true })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/revision/bookmarks/questions/42", { method: "DELETE", requiresAuth: true })
   })
 })
 

@@ -399,4 +399,15 @@ describe("PracticeResultsContent", () => {
     expect(screen.queryByRole("button", { name: /Mixed/i })).not.toBeInTheDocument()
     expect(screen.queryByText("Refund Policy")).not.toBeInTheDocument()
   })
+
+  it("links incorrect submitted answers to the active Mistakes list only", () => {
+    const { unmount } = render(<PracticeResultsContent practiceId={42} summary={summary} />)
+
+    expect(screen.getByRole("link", { name: "View mistakes" })).toHaveAttribute("href", "/bookmarks?tab=mistakes")
+
+    unmount()
+    mockResults([resultItem(1, "correct")])
+    const { queryByRole } = render(<PracticeResultsContent practiceId={42} summary={summary} />)
+    expect(queryByRole("link", { name: "View mistakes" })).not.toBeInTheDocument()
+  })
 })

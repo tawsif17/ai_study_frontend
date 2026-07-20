@@ -106,10 +106,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAuthenticated(false)
     mutate(
       (key) =>
-        Array.isArray(key) &&
-        ["subjects", "questions", "practice-summary", "practice-items", "practice-answers", "practice-results", "progress-dashboard"].includes(
-          key[0]
-        ),
+        key === "revision-summary" ||
+        (Array.isArray(key) &&
+          [
+            "subjects",
+            "questions",
+            "practice-summary",
+            "practice-items",
+            "practice-answers",
+            "practice-results",
+            "progress-dashboard",
+            "revision-items",
+          ].includes(key[0])),
       undefined,
       { revalidate: false }
     )

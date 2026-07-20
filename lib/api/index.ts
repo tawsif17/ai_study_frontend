@@ -45,8 +45,14 @@ import type {
   RegisterRequest,
   RegisterResponse,
   RegisterResult,
+  RemoveBookmarkResponse,
   ResendVerificationRequest,
   ResendVerificationResponse,
+  RevisionListKind,
+  RevisionListRequest,
+  RevisionListResponse,
+  RevisionSummaryResponse,
+  SaveBookmarkResponse,
   UpgradeToProResponse,
   ResultsJumpResponse,
   ResultsResponse,
@@ -242,6 +248,45 @@ export async function generatePractice(
   return apiClient<PracticeGenerateResponse>("/practice/generate", {
     method: "POST",
     body: payload,
+    requiresAuth: true,
+  })
+}
+
+// ============================================
+// REVISION API
+// ============================================
+
+export async function getRevisionItems(
+  kind: RevisionListKind,
+  query: RevisionListRequest = {}
+): Promise<RevisionListResponse> {
+  return apiClient<RevisionListResponse>(`/revision/${kind}`, {
+    params: {
+      subject_id: query.subject_id,
+      chapter_id: query.chapter_id,
+      page: query.page,
+      page_size: query.page_size,
+    },
+    requiresAuth: true,
+  })
+}
+
+export async function getRevisionSummary(): Promise<RevisionSummaryResponse> {
+  return apiClient<RevisionSummaryResponse>("/revision/summary", {
+    requiresAuth: true,
+  })
+}
+
+export async function saveBookmark(practiceItemId: number): Promise<SaveBookmarkResponse> {
+  return apiClient<SaveBookmarkResponse>(`/revision/bookmarks/practice-items/${practiceItemId}`, {
+    method: "PUT",
+    requiresAuth: true,
+  })
+}
+
+export async function removeBookmark(questionId: number): Promise<RemoveBookmarkResponse> {
+  return apiClient<RemoveBookmarkResponse>(`/revision/bookmarks/questions/${questionId}`, {
+    method: "DELETE",
     requiresAuth: true,
   })
 }

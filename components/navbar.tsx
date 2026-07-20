@@ -135,13 +135,8 @@ function AccountMenu({
         <DropdownMenuItem asChild className="min-h-11 cursor-pointer px-3">
           <Link href="/dashboard/weak-areas" onClick={onAfterAction}>Dashboard</Link>
         </DropdownMenuItem>
-        <DropdownMenuItem
-          disabled
-          aria-label="Bookmarks coming soon"
-          className="min-h-11 cursor-not-allowed px-3"
-        >
-          <span>Bookmarks</span>
-          <span className="ml-auto text-xs">Coming soon</span>
+        <DropdownMenuItem asChild className="min-h-11 cursor-pointer px-3">
+          <Link href="/bookmarks" onClick={onAfterAction}>Bookmarks</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="min-h-11 cursor-pointer px-3" onSelect={handleLogout}>

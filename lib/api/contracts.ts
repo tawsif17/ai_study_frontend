@@ -94,7 +94,7 @@ const practiceGenerateRequestSchema = z
     mode: z.enum(["MCQ", "CQ", "MIXED"]),
     selection: z
       .object({
-        type: z.enum(["CHAPTERS", "FULL_SYLLABUS"]),
+        type: z.enum(["CHAPTERS", "FULL_SYLLABUS", "BOOKMARKED"]),
         chapter_ids: z.array(z.number().int()).min(1).optional(),
       })
       .strict(),
@@ -107,6 +107,43 @@ const practiceGenerateRequestSchema = z
     language: z.string().optional(),
   })
   .strict()
+  .superRefine((value, context) => {
+    if (value.selection.type === "CHAPTERS" && !value.selection.chapter_ids?.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["selection", "chapter_ids"],
+        message: "selection.chapter_ids is required when selection.type is CHAPTERS",
+      })
+    }
+
+    if (value.selection.type !== "BOOKMARKED") return
+
+    if (value.mode !== "MCQ") {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["mode"],
+        message: "BOOKMARKED selection supports only MCQ mode",
+      })
+    }
+
+    if (value.selection.chapter_ids !== undefined) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["selection", "chapter_ids"],
+        message: "selection.chapter_ids is not allowed for BOOKMARKED selection",
+      })
+    }
+
+    for (const field of ["mcq_count", "mcqCount", "mcq_requested", "cq_count", "cqCount", "cq_requested", "language"] as const) {
+      if (value[field] !== undefined) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [field],
+          message: `${field} is not allowed for BOOKMARKED selection`,
+        })
+      }
+    }
+  })
 
 function zodMessage(error: z.ZodError): string {
   return error.issues[0]?.message ?? "Invalid request payload"
@@ -178,10 +215,6 @@ export function validatePracticeGenerateRequest(
   const parsed = practiceGenerateRequestSchema.safeParse(input)
   if (!parsed.success) {
     throw new Error(zodMessage(parsed.error))
-  }
-
-  if (parsed.data.selection.type === "CHAPTERS" && !parsed.data.selection.chapter_ids?.length) {
-    throw new Error("selection.chapter_ids is required when selection.type is CHAPTERS")
   }
 
   return parsed.data
