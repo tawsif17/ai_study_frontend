@@ -3,6 +3,7 @@
 import { useEffect, useState, type ComponentType } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { BookmarkCheck } from "lucide-react"
 import { PageShell } from "@/components/page-shell"
 import { Button } from "@/components/ui/button"
 import {
@@ -10,7 +11,6 @@ import {
   ArrowRight,
   BookOpen,
   CheckCircle,
-  Crown,
   RotateCcw,
   TrendingUp,
 } from "@/components/icons"
@@ -47,12 +47,12 @@ const nextSteps: Array<{
     iconClassName: "bg-emerald-500/10 text-emerald-600",
   },
   {
-    title: "Understand your access",
-    description: "Free MCQ practice is available now. Compare access when you need more options.",
-    action: "View pricing",
-    href: "/pricing",
-    icon: Crown,
-    iconClassName: "bg-orange-500/10 text-orange-600",
+    title: "Review bookmarked questions",
+    description: "Revisit questions you saved and mistakes from submitted MCQ sessions.",
+    action: "View bookmarks",
+    href: "/bookmarks",
+    icon: BookmarkCheck,
+    iconClassName: "bg-primary/10 text-primary",
   },
 ]
 

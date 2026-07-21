@@ -67,7 +67,8 @@ describe("profile page", () => {
 
     expect(screen.getByRole("link", { name: "Choose a subject: Start MCQ practice" })).toHaveAttribute("href", "/subjects")
     expect(screen.getByRole("link", { name: "View weak areas: Review weak areas" })).toHaveAttribute("href", "/dashboard/weak-areas")
-    expect(screen.getByRole("link", { name: "View pricing: Understand your access" })).toHaveAttribute("href", "/pricing")
+    expect(screen.getByRole("link", { name: "View bookmarks: Review bookmarked questions" })).toHaveAttribute("href", "/bookmarks")
+    expect(screen.queryByText("Understand your access")).not.toBeInTheDocument()
     expect(screen.queryByText("Sample profile data")).not.toBeInTheDocument()
   })
 
