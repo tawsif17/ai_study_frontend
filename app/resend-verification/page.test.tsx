@@ -1,6 +1,7 @@
 import type React from "react"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { axe } from "vitest-axe"
 import ResendVerificationPage from "./page"
 import { resendVerification } from "@/lib/api"
 
@@ -54,5 +55,10 @@ describe("resend verification page", () => {
     await waitFor(() => {
       expect(screen.getByText("Invalid email address")).toBeInTheDocument()
     })
+  })
+
+  it("has no detectable accessibility violations", async () => {
+    const { container } = render(<ResendVerificationPage />)
+    expect((await axe(container, { rules: { region: { enabled: false } } })).violations).toEqual([])
   })
 })

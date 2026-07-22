@@ -3,6 +3,7 @@ import { PricingContent } from "./pricing-content"
 
 export const metadata: Metadata = {
   title: "Pricing | Shikkha Buddy",
+  alternates: { canonical: "/pricing" },
   description: "Compare Free and Beta Pro access for focused SSC practice.",
   openGraph: {
     title: "Pricing | Shikkha Buddy",

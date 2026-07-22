@@ -6,6 +6,7 @@ import { VerifyEmailContent } from "./verify-email-content"
 export const metadata: Metadata = {
   title: "Verify Email | Shikkha Buddy",
   description: "Complete email verification for your Shikkha Buddy account.",
+  robots: { index: false, follow: false },
   openGraph: {
     title: "Verify Email | Shikkha Buddy",
     description: "Complete email verification for your Shikkha Buddy account.",

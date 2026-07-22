@@ -50,7 +50,7 @@ describe("homepage final UI", () => {
       "/login?next=%2Fsubjects"
     )
     expect(screen.getByRole("link", { name: "Continue practicing" })).toHaveAttribute("href", "/subjects")
-    expect(screen.getByRole("link", { name: "Board-only MCQ sets, Pro option, opens pricing" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Board-only MCQ sets, coming soon option, opens pricing" })).toHaveAttribute(
       "href",
       "/pricing"
     )
@@ -66,11 +66,11 @@ describe("homepage final UI", () => {
     render(<HomePage />)
 
     expect(screen.getByText("Correct. Review: Refraction")).toBeInTheDocument()
-    expect(screen.getAllByText(/Activate Beta Pro later for Board-only MCQ sets and Weak Area Analysis/)).toHaveLength(2)
+    expect(screen.getAllByText(/Board-only MCQ sets are coming soon/)).toHaveLength(2)
 
     expect(screen.getByText("CQ Practice")).toBeInTheDocument()
     expect(screen.getByText("Mixed Practice")).toBeInTheDocument()
-    expect(screen.getAllByText("Coming soon")).toHaveLength(2)
+    expect(screen.getAllByText("Coming soon")).toHaveLength(3)
 
     expect(screen.getByRole("heading", { name: "General Math" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Physics" })).toBeInTheDocument()

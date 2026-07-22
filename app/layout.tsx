@@ -6,9 +6,11 @@ import { ScrollToTop } from "@/components/scroll-to-top"
 import { AuthProvider } from "@/lib/auth-context"
 
 const inter = Inter({ subsets: ["latin"] })
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://shikkhabuddy.com"
 
 // Updated metadata for Shikkha Buddy
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   applicationName: "Shikkha Buddy",
   title: "Shikkha Buddy - SSC Science Practice for Bangladesh",
   description:

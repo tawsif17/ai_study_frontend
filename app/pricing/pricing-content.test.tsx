@@ -20,8 +20,8 @@ describe("PricingContent", () => {
     expect(screen.getAllByText("Board-only MCQ sets")).toHaveLength(2)
     expect(screen.getAllByText("Weak Area Analysis")).toHaveLength(2)
     expect(screen.getAllByText("CQ & Mixed Practice")).toHaveLength(1)
-    expect(screen.getAllByText("Available now").length).toBeGreaterThanOrEqual(4)
-    expect(screen.getAllByText("Coming soon")).toHaveLength(2)
+    expect(screen.getAllByText("Available now").length).toBeGreaterThanOrEqual(3)
+    expect(screen.getAllByText("Coming soon")).toHaveLength(4)
 
     expect(within(screen.getByRole("row", { name: /Weak Area Analysis/i })).getByLabelText("Not included")).toBeInTheDocument()
     expect(within(screen.getByRole("row", { name: /Board-only MCQ sets/i })).getByLabelText("Not included")).toBeInTheDocument()

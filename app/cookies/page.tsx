@@ -4,6 +4,7 @@ import { PolicyPage, type PolicySection, type PolicySummaryItem } from "@/compon
 
 export const metadata: Metadata = {
   title: "Cookie Policy | Shikkha Buddy",
+  alternates: { canonical: "/cookies" },
   description: "How Shikkha Buddy uses essential browser storage and cookies during beta.",
   openGraph: {
     title: "Cookie Policy | Shikkha Buddy",

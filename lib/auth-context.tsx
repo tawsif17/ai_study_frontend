@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react"
 import { useSWRConfig } from "swr"
-import { clearAuthToken, setAuthToken } from "./api/client"
+import { ApiClientError, clearAuthToken, formatApiError, setAuthToken } from "./api/client"
 import {
   getAuthMe,
   login as apiLogin,
@@ -13,14 +13,19 @@ import {
   type RegisterResult,
 } from "./api"
 
+export type AuthStatus = "loading" | "authenticated" | "unauthenticated" | "retryable-refresh-error"
+
 interface AuthContextValue {
   isAuthenticated: boolean
   isLoading: boolean
+  authStatus?: AuthStatus
+  authError?: string | null
   user: AuthUser | null
   login: (data: LoginRequest) => Promise<void>
   register: (data: RegisterRequest) => Promise<RegisterResult>
   logout: () => void
   refreshUser: () => Promise<AuthUser | null>
+  retryAuth?: () => Promise<AuthUser | null>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -30,20 +35,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [user, setUser] = useState<AuthUser | null>(null)
+  const [authStatus, setAuthStatus] = useState<AuthStatus>("loading")
+  const [authError, setAuthError] = useState<string | null>(null)
+
+  const clearSession = useCallback(() => {
+    clearAuthToken()
+    setUser(null)
+    setIsAuthenticated(false)
+    setAuthStatus("unauthenticated")
+    setAuthError(null)
+  }, [])
+
+  const setRetryableRefreshError = useCallback((error: unknown) => {
+    // A token still exists locally. Preserve it until the API confirms that it is invalid.
+    setIsAuthenticated(true)
+    setAuthStatus("retryable-refresh-error")
+    setAuthError(formatApiError(error))
+  }, [])
 
   const refreshUser = useCallback(async () => {
     try {
       const response = await getAuthMe()
       setUser(response.user)
       setIsAuthenticated(true)
+      setAuthStatus("authenticated")
+      setAuthError(null)
       return response.user
-    } catch {
-      clearAuthToken()
-      setUser(null)
-      setIsAuthenticated(false)
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 401) {
+        clearSession()
+      } else {
+        setRetryableRefreshError(error)
+      }
       return null
     }
-  }, [])
+  }, [clearSession, setRetryableRefreshError])
 
   useEffect(() => {
     let mounted = true
@@ -58,6 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (mounted) {
           setUser(null)
           setIsAuthenticated(false)
+          setAuthStatus("unauthenticated")
+          setAuthError(null)
           setIsLoading(false)
         }
         return
@@ -68,12 +96,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (mounted) {
           setUser(response.user)
           setIsAuthenticated(true)
+          setAuthStatus("authenticated")
+          setAuthError(null)
         }
-      } catch {
-        clearAuthToken()
+      } catch (error) {
         if (mounted) {
-          setUser(null)
-          setIsAuthenticated(false)
+          if (error instanceof ApiClientError && error.status === 401) {
+            clearAuthToken()
+            setUser(null)
+            setIsAuthenticated(false)
+            setAuthStatus("unauthenticated")
+            setAuthError(null)
+          } else {
+            // The browser still has a token; do not convert an outage into a logout.
+            setIsAuthenticated(true)
+            setAuthStatus("retryable-refresh-error")
+            setAuthError(formatApiError(error))
+          }
         }
       } finally {
         if (mounted) {
@@ -94,6 +133,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthToken(response.token)
     setUser(response.user)
     setIsAuthenticated(true)
+    setAuthStatus("authenticated")
+    setAuthError(null)
   }, [])
 
   const register = useCallback(async (data: RegisterRequest) => {
@@ -101,9 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = useCallback(() => {
-    clearAuthToken()
-    setUser(null)
-    setIsAuthenticated(false)
+    clearSession()
     mutate(
       (key) =>
         key === "revision-summary" ||
@@ -121,18 +160,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       undefined,
       { revalidate: false }
     )
-  }, [mutate])
+  }, [clearSession, mutate])
 
   return (
     <AuthContext.Provider
       value={{
         isAuthenticated,
         isLoading,
+        authStatus,
+        authError,
         user,
         login,
         register,
         logout,
         refreshUser,
+        retryAuth: refreshUser,
       }}
     >
       {children}

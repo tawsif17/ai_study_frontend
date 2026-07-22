@@ -3,6 +3,7 @@ import { FAQContent } from "./faq-content"
 
 export const metadata: Metadata = {
   title: "FAQ | Shikkha Buddy",
+  alternates: { canonical: "/faq" },
   description:
     "Clear answers about Shikkha Buddy beta access, available subjects, practice modes, AI-generated content, and support.",
   openGraph: {

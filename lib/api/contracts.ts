@@ -240,5 +240,5 @@ export function matchEntitlementErrorByExactMessage(
 }
 
 export function isUnverifiedLoginError(error: unknown): boolean {
-  return error instanceof ApiClientError && error.status === 401 && error.message === "Email verification required"
+  return error instanceof ApiClientError && error.status === 403 && error.message === "Email verification required"
 }

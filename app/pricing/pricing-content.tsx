@@ -18,7 +18,7 @@ const freeFeatures = [
 
 const betaProFeatures = [
   { label: "More MCQ practice" },
-  { label: "Board-only MCQ sets", availability: "Available now" },
+  { label: "Board-only MCQ sets", availability: "Coming soon" },
   { label: "Weak Area Analysis", availability: "Available now" },
   { label: subjects },
   { label: "Results and revision tools" },
@@ -26,7 +26,7 @@ const betaProFeatures = [
 
 const comparisonRows = [
   { feature: "Free MCQ practice", free: "Available now", betaPro: "Available now" },
-  { feature: "Board-only MCQ sets", free: "Not included", betaPro: "Available now" },
+  { feature: "Board-only MCQ sets", free: "Not included", betaPro: "Coming soon" },
   { feature: "Weak Area Analysis", free: "Not included", betaPro: "Available now" },
   { feature: "CQ & Mixed Practice", free: "Coming soon", betaPro: "Coming soon" },
   { feature: "No payment during beta", free: "Included", betaPro: "Included" },
@@ -84,13 +84,13 @@ export function PricingContent() {
               Start free. Activate Beta Pro when revision needs more focus.
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-pretty text-base leading-7 text-muted-foreground md:text-lg">
-              Practise free SSC MCQs now. Verified beta users can activate Beta Pro for Board-only MCQ sets and Weak Area Analysis.
+              Practise free SSC MCQs now. Verified beta users can activate Beta Pro for more MCQ practice and Weak Area Analysis. Board-only MCQ sets are coming soon.
             </p>
             <ul className="mx-auto mt-6 flex max-w-3xl flex-col items-center justify-center gap-3 text-sm font-medium text-foreground sm:flex-row sm:gap-0">
               {[
                 "MCQ available now",
                 "No payment during beta",
-                "Pro features available now",
+                "Weak Area Analysis available now",
               ].map((item, index) => (
                 <li key={item} className="flex items-center gap-2 sm:px-5 sm:[&:not(:last-child)]:border-r sm:[&:not(:last-child)]:border-border">
                   {index === 1 ? <CheckCircle aria-hidden="true" className="size-5 text-primary" /> : index === 2 ? <Sparkles aria-hidden="true" className="size-5 text-primary" /> : <CheckCircle aria-hidden="true" className="size-5 text-success" />}

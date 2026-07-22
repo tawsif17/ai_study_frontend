@@ -75,7 +75,7 @@ function getInitials(user: AuthUser): string {
 
 export function ProfileContent() {
   const router = useRouter()
-  const { isAuthenticated, isLoading, user, refreshUser } = useAuth()
+  const { authError, authStatus, isAuthenticated, isLoading, user, refreshUser } = useAuth()
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [refreshFailed, setRefreshFailed] = useState(false)
 
@@ -126,7 +126,13 @@ export function ProfileContent() {
               <RotateCcw className="h-4 w-4" aria-hidden="true" />
               {isRefreshing ? "Refreshing…" : "Refresh profile"}
             </Button>
-            {refreshFailed && <p className="mt-4 text-sm text-destructive" role="alert">Your profile is still unavailable. Please sign in again.</p>}
+            {refreshFailed && (
+              <p className="mt-4 text-sm text-destructive" role="alert">
+                {authStatus === "retryable-refresh-error"
+                  ? authError || "Your profile is still unavailable. Please try again shortly."
+                  : "Your profile is still unavailable. Please sign in again."}
+              </p>
+            )}
           </section>
         </div>
       </PageShell>
@@ -200,6 +206,14 @@ function ProfileDetails({ user }: { user: AuthUser }) {
         )}
         {user.email_verified_at ? "Email verified" : "Email not verified"}
       </div>
+      {!user.email_verified_at && (
+        <Link
+          href={`/resend-verification?email=${encodeURIComponent(user.email)}`}
+          className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          Resend verification email
+        </Link>
+      )}
     </section>
   )
 }

@@ -118,7 +118,7 @@ describe("FAQ page", () => {
     await user.click(screen.getByRole("button", { name: "What is Beta Pro?" }))
     expect(
       screen.getByText(
-        "Beta Pro is optional access for verified beta users. It includes Board-only MCQ sets and Weak Area Analysis and does not create a paid subscription.",
+        "Beta Pro is optional access for verified beta users. It includes more MCQ practice and Weak Area Analysis and does not create a paid subscription. Board-only MCQ sets are coming soon.",
       ),
     ).toBeVisible()
 

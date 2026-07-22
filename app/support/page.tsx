@@ -4,6 +4,7 @@ import { TrustPage } from "@/components/trust-page"
 // Founder review required before launch. Do not add support SLAs or email addresses until approved.
 export const metadata: Metadata = {
   title: "Support | Shikkha Buddy",
+  alternates: { canonical: "/support" },
   description: "Find the current support path for Shikkha Buddy account, practice, and content questions.",
   openGraph: {
     title: "Support | Shikkha Buddy",

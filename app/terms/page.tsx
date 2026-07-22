@@ -4,6 +4,7 @@ import { PolicyPage, type PolicySection, type PolicySummaryItem } from "@/compon
 
 export const metadata: Metadata = {
   title: "Terms of Use | Shikkha Buddy",
+  alternates: { canonical: "/terms" },
   description: "Terms for using Shikkha Buddy's SSC practice platform during beta.",
   openGraph: {
     title: "Terms of Use | Shikkha Buddy",
@@ -63,7 +64,7 @@ const sections: PolicySection[] = [
     title: "Beta access and Beta Pro",
     paragraphs: [
       "Shikkha Buddy is currently in beta. No payment is required for beta access, and no paid subscription, automatic renewal, or checkout is created through the platform during beta.",
-      "Beta Pro is optional access for verified beta users. It includes Board-only MCQ sets and Weak Area Analysis for more focused revision.",
+      "Beta Pro is optional access for verified beta users. It includes Weak Area Analysis for more focused revision. Board-only MCQ sets are planned for a future beta update.",
     ],
   },
   {

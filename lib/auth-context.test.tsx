@@ -1,7 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { AuthProvider, useAuth } from "./auth-context"
-import { clearAuthToken } from "./api/client"
+import { ApiClientError, clearAuthToken } from "./api/client"
 
 const mockMutate = vi.fn()
 
@@ -9,10 +9,23 @@ vi.mock("swr", () => ({
   useSWRConfig: () => ({ mutate: mockMutate }),
 }))
 
-vi.mock("./api/client", () => ({
-  clearAuthToken: vi.fn(),
-  setAuthToken: vi.fn(),
-}))
+vi.mock("./api/client", () => {
+  class MockApiClientError extends Error {
+    status: number
+
+    constructor(_error: { message: string }, status: number) {
+      super(_error.message)
+      this.status = status
+    }
+  }
+
+  return {
+    ApiClientError: MockApiClientError,
+    clearAuthToken: vi.fn(),
+    formatApiError: (error: Error) => error.message,
+    setAuthToken: vi.fn(),
+  }
+})
 
 vi.mock("./api", () => ({
   getAuthMe: vi.fn(),
@@ -23,6 +36,11 @@ vi.mock("./api", () => ({
 function LogoutButton() {
   const { logout } = useAuth()
   return <button onClick={logout}>Logout</button>
+}
+
+function AuthState() {
+  const { authStatus, isAuthenticated } = useAuth()
+  return <p>{`${authStatus}:${isAuthenticated}`}</p>
 }
 
 describe("AuthProvider logout", () => {
@@ -57,5 +75,33 @@ describe("AuthProvider logout", () => {
     expect(matcher(["revision-items", "bookmarks", undefined, undefined, 1, 20])).toBe(true)
     expect(matcher(["exam-types"])).toBe(false)
     expect(matcher("subjects")).toBe(false)
+  })
+})
+
+describe("AuthProvider refresh recovery", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    localStorage.setItem("auth_token", "stored-token")
+  })
+
+  it("keeps a stored session when refresh has a temporary failure", async () => {
+    const { getAuthMe } = await import("./api")
+    vi.mocked(getAuthMe).mockRejectedValueOnce(new Error("Network unavailable"))
+
+    render(<AuthProvider><AuthState /></AuthProvider>)
+
+    await waitFor(() => expect(screen.getByText("retryable-refresh-error:true")).toBeInTheDocument())
+    expect(clearAuthToken).not.toHaveBeenCalled()
+  })
+
+  it("clears the stored session only when refresh confirms a 401", async () => {
+    const { getAuthMe } = await import("./api")
+    vi.mocked(getAuthMe).mockRejectedValueOnce(new ApiClientError({ message: "Expired" }, 401))
+
+    render(<AuthProvider><AuthState /></AuthProvider>)
+
+    await waitFor(() => expect(screen.getByText("unauthenticated:false")).toBeInTheDocument())
+    expect(clearAuthToken).toHaveBeenCalledTimes(1)
   })
 })

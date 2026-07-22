@@ -54,7 +54,7 @@ describe("how it works final UI", () => {
       expect(link).toHaveAttribute("href", "/login?next=%2Fsubjects")
     })
     expect(screen.getByRole("link", { name: "Choose a subject" })).toHaveAttribute("href", "/subjects")
-    expect(screen.getByRole("link", { name: "Board-only MCQ sets, Pro option, opens pricing" })).toHaveAttribute("href", "/pricing")
+    expect(screen.getByText("Board-only MCQ sets")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Weak Area Analysis, Pro option, opens pricing" })).toHaveAttribute("href", "/pricing")
   })
 
@@ -86,7 +86,7 @@ describe("how it works final UI", () => {
   it("renders the approved static availability and accessible MCQ example", () => {
     render(<HowItWorksPage />)
 
-    expect(screen.getAllByText("Coming soon")).toHaveLength(2)
+    expect(screen.getAllByText("Coming soon")).toHaveLength(3)
     expect(screen.getByText("Weak Area Analysis")).toBeInTheDocument()
     expect(screen.getByText("Identifying chapters that need more practice")).toBeInTheDocument()
     expect(screen.getByText("Correct. Review: Refraction")).toBeInTheDocument()

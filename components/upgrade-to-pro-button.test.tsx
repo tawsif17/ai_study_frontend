@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { axe } from "vitest-axe"
 import { UpgradeToProButton } from "./upgrade-to-pro-button"
 import { upgradeToPro } from "@/lib/api"
 import { ApiClientError } from "@/lib/api/client"
@@ -75,12 +76,15 @@ describe("Beta Pro activation button", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Checking your beta access.")
   })
 
-  it("keeps unverified signed-in users from activating Beta Pro", () => {
+  it("sends unverified signed-in users to resend verification", () => {
     mockAuth({ user: { ...verifiedFreeUser, email_verified_at: null } })
 
     render(<UpgradeToProButton />)
 
-    expect(screen.getByRole("button", { name: "Verify your email" })).toBeDisabled()
+    expect(screen.getByRole("link", { name: "Verify your email" })).toHaveAttribute(
+      "href",
+      "/resend-verification?email=student%40example.com"
+    )
     expect(screen.getByText("Verify your email before activating Beta Pro.")).toBeInTheDocument()
   })
 
@@ -135,16 +139,15 @@ describe("Beta Pro activation button", () => {
     expect(sessionStorage.getItem("beta-pro-activation-confirmed")).toBeNull()
   })
 
-  it("returns to login instead of claiming activation when account refresh fails", async () => {
+  it("does not claim activation when account refresh is temporarily unavailable", async () => {
     vi.mocked(upgradeToPro).mockResolvedValueOnce({ message: "Activation complete", plan_tier: "pro" })
     mockAuth({ refreshUser: vi.fn().mockResolvedValue(null) })
 
     render(<UpgradeToProButton />)
     fireEvent.click(screen.getByRole("button", { name: "Activate Beta Pro" }))
 
-    await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/login?next=%2Fpricing%3Fnext%3D%252Fsubjects%252F5")
-    })
+    expect(await screen.findByRole("alert")).toHaveTextContent("We could not refresh your account")
+    expect(mockPush).not.toHaveBeenCalled()
     expect(sessionStorage.getItem("beta-pro-activation-confirmed")).toBeNull()
   })
 
@@ -169,5 +172,11 @@ describe("Beta Pro activation button", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Beta Pro activation is unavailable right now")
     expect(screen.getByRole("button", { name: "Activate Beta Pro" })).toBeDisabled()
+  })
+
+  it("has no detectable accessibility violations for the verification action", async () => {
+    mockAuth({ user: { ...verifiedFreeUser, email_verified_at: null } })
+    const { container } = render(<UpgradeToProButton />)
+    expect((await axe(container, { rules: { region: { enabled: false } } })).violations).toEqual([])
   })
 })

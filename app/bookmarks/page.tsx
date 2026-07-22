@@ -1,7 +1,13 @@
 import { Suspense } from "react"
+import type { Metadata } from "next"
 import { PageShell } from "@/components/page-shell"
 import { BookmarksContent } from "@/components/bookmarks-content"
 import { Skeleton } from "@/components/ui/skeleton"
+
+export const metadata: Metadata = {
+  title: "Bookmarks | Shikkha Buddy",
+  robots: { index: false, follow: false },
+}
 
 export default function BookmarksPage() {
   return (

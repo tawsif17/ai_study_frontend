@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { PageShell } from "@/components/page-shell"
@@ -12,6 +12,7 @@ import { resendVerification } from "@/lib/api"
 import { formatApiError } from "@/lib/api/client"
 
 type SubmitStatus = "idle" | "loading" | "success" | "error"
+const RESEND_COOLDOWN_SECONDS = 60
 
 export function ResendVerificationContent() {
   const searchParams = useSearchParams()
@@ -19,15 +20,28 @@ export function ResendVerificationContent() {
   const [email, setEmail] = useState(initialEmail)
   const [status, setStatus] = useState<SubmitStatus>("idle")
   const [message, setMessage] = useState("")
+  const [cooldownSeconds, setCooldownSeconds] = useState(0)
+
+  useEffect(() => {
+    if (cooldownSeconds === 0) return
+
+    const interval = window.setInterval(() => {
+      setCooldownSeconds((seconds) => Math.max(0, seconds - 1))
+    }, 1000)
+
+    return () => window.clearInterval(interval)
+  }, [cooldownSeconds])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (cooldownSeconds > 0) return
     setStatus("loading")
     setMessage("")
     try {
       const response = await resendVerification({ email: email.trim() })
       setStatus("success")
       setMessage(response.message)
+      setCooldownSeconds(RESEND_COOLDOWN_SECONDS)
     } catch (error) {
       setStatus("error")
       setMessage(formatApiError(error))
@@ -68,9 +82,19 @@ export function ResendVerificationContent() {
                 />
               </div>
 
-              <Button type="submit" className="w-full rounded-lg" disabled={status === "loading" || !email.trim()}>
-                {status === "loading" ? "Sending..." : "Send verification email"}
+              <Button type="submit" className="w-full rounded-lg" disabled={status === "loading" || cooldownSeconds > 0 || !email.trim()}>
+                {status === "loading"
+                  ? "Sending..."
+                  : cooldownSeconds > 0
+                    ? `Resend available in ${cooldownSeconds}s`
+                    : "Send verification email"}
               </Button>
+
+              {cooldownSeconds > 0 && (
+                <p className="text-center text-xs text-muted-foreground" role="status" aria-live="polite">
+                  To protect your inbox, you can request another email in {cooldownSeconds} seconds.
+                </p>
+              )}
 
               <Button asChild variant="outline" className="w-full rounded-lg bg-transparent" disabled={status === "loading"}>
                 <Link href="/login">Back to login</Link>

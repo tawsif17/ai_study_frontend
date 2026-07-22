@@ -161,7 +161,7 @@ function NewHereStrip() {
         <div>
           <h2 className="text-base font-bold text-foreground">New here?</h2>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            Start with any subject, then choose the chapter and practice type. Beta Pro includes Board-only MCQ sets and Weak Area Analysis for more focused revision.
+            Start with any subject, then choose the chapter and practice type. Beta Pro includes Weak Area Analysis for more focused revision. Board-only MCQ sets are coming soon.
           </p>
         </div>
       </div>

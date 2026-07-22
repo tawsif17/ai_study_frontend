@@ -1,6 +1,7 @@
 import type React from "react"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { axe } from "vitest-axe"
 import SignupPage from "./page"
 import { useAuth } from "@/lib/auth-context"
 
@@ -72,9 +73,9 @@ describe("signup page", () => {
     })
   })
 
-  it("redirects to login when closed beta account is created", async () => {
+  it("shows check-email guidance when a closed beta account is created", async () => {
     mockRegister.mockResolvedValueOnce({
-      data: { message: "Registration successful. You can now log in." },
+      data: { message: "Registration successful. Please check your email to verify your account." },
       status: 201,
     })
 
@@ -93,7 +94,17 @@ describe("signup page", () => {
         studentClass: 10,
       })
     })
-    expect(mockPush).toHaveBeenCalledWith("/login?registered=true&email=student%40example.com")
+    expect(await screen.findByRole("heading", { name: "Check your email" })).toBeInTheDocument()
+    expect(screen.getByText(/student@example.com/)).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Resend verification email" })).toHaveAttribute(
+      "href",
+      "/resend-verification?email=student%40example.com"
+    )
+    expect(screen.getByRole("link", { name: "Go to login" })).toHaveAttribute(
+      "href",
+      "/login?email=student%40example.com"
+    )
+    expect(mockPush).not.toHaveBeenCalled()
   })
 
   it("shows private beta success in place when signup interest is captured", async () => {
@@ -161,5 +172,10 @@ describe("signup page", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Create Account" })).toBeEnabled()
     })
+  })
+
+  it("has no detectable accessibility violations", async () => {
+    const { container } = render(<SignupPage />)
+    expect((await axe(container, { rules: { region: { enabled: false } } })).violations).toEqual([])
   })
 })

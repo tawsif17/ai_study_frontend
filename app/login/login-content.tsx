@@ -14,39 +14,22 @@ import { GraduationCap } from "@/components/icons"
 import { useAuth } from "@/lib/auth-context"
 import { formatApiError } from "@/lib/api/client"
 import { isUnverifiedLoginError } from "@/lib/api"
-
-const DEFAULT_NEXT_PATH = "/subjects"
-
-function normalizeNextPath(value: string | null): string {
-  const nextPath = value?.trim()
-
-  if (
-    !nextPath ||
-    !nextPath.startsWith("/") ||
-    nextPath.startsWith("//") ||
-    nextPath.startsWith("/\\") ||
-    /[\u0000-\u001F\u007F]/.test(nextPath)
-  ) {
-    return DEFAULT_NEXT_PATH
-  }
-
-  return nextPath
-}
+import { getSafeNextPath } from "@/lib/safe-next-path"
 
 export function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { login } = useAuth()
-  const nextPath = normalizeNextPath(searchParams.get("next"))
+  const nextPath = getSafeNextPath(searchParams.get("next"))
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(
     searchParams.get("registered") === "true"
-      ? "Registration successful. You can now log in."
+      ? "Registration successful. Check your email and verify your account before signing in."
       : null
   )
-  const [showResend, setShowResend] = useState(false)
+  const [showResend, setShowResend] = useState(searchParams.get("registered") === "true")
   const [formData, setFormData] = useState({
     email: searchParams.get("email") ?? "",
     password: "",
@@ -91,7 +74,7 @@ export function LoginContent() {
               {success && (
                 <Alert variant="success" role="status">
                   <CheckCircle2 aria-hidden="true" />
-                  <AlertTitle>Account ready</AlertTitle>
+                  <AlertTitle>Check your email</AlertTitle>
                   <AlertDescription>{success}</AlertDescription>
                 </Alert>
               )}

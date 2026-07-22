@@ -4,6 +4,7 @@ import { PolicyPage, type PolicySection, type PolicySummaryItem } from "@/compon
 
 export const metadata: Metadata = {
   title: "Privacy Policy | Shikkha Buddy",
+  alternates: { canonical: "/privacy" },
   description: "How Shikkha Buddy handles account, learning, support, and technical information during beta.",
   openGraph: {
     title: "Privacy Policy | Shikkha Buddy",
@@ -85,7 +86,7 @@ const sections: PolicySection[] = [
     items: [
       "Create and manage accounts and provide SSC practice sessions.",
       "Save answers, scores, progress, bookmarks, and other learning activity where available.",
-      "Provide explanations, revision guidance, and Beta Pro features such as Board-only MCQ sets and Weak Area Analysis for verified beta users.",
+      "Provide explanations, revision guidance, and Beta Pro features such as Weak Area Analysis for verified beta users. Board-only MCQ sets are planned for a future beta update.",
       "Respond to support, contact, deletion, and policy requests.",
       "Protect accounts, prevent abuse, and maintain the reliability and security of the platform.",
     ],

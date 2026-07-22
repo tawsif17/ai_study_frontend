@@ -2,7 +2,6 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { AlertCircle, MailCheck } from "lucide-react"
 import { PageShell } from "@/components/page-shell"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -16,12 +15,12 @@ import { useAuth } from "@/lib/auth-context"
 import { formatApiError } from "@/lib/api/client"
 
 export function SignupContent() {
-  const router = useRouter()
   const { register } = useAuth()
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [registrationComplete, setRegistrationComplete] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -51,8 +50,8 @@ export function SignupContent() {
         setFormData((current) => ({ ...current, password: "" }))
         return
       }
-      const params = new URLSearchParams({ registered: "true", email: formData.email })
-      router.push(`/login?${params.toString()}`)
+      setRegistrationComplete(true)
+      setFormData((current) => ({ ...current, password: "" }))
     } catch (err) {
       setError(formatApiError(err))
     } finally {
@@ -74,6 +73,25 @@ export function SignupContent() {
             <CardDescription>Start focused SSC science practice</CardDescription>
           </CardHeader>
           <CardContent>
+            {registrationComplete ? (
+              <div className="space-y-5 text-center" role="status">
+                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-700">
+                  <MailCheck className="mx-auto mb-3 h-8 w-8" aria-hidden="true" />
+                  <h2 className="text-lg font-semibold text-foreground">Check your email</h2>
+                  <p className="mt-2 leading-6">
+                    We sent a verification link to <span className="font-medium">{formData.email}</span>. Click the link to verify your account before signing in.
+                  </p>
+                </div>
+                <Button asChild className="w-full rounded-lg">
+                  <Link href={`/resend-verification?email=${encodeURIComponent(formData.email)}`}>
+                    Resend verification email
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="w-full rounded-lg bg-transparent">
+                  <Link href={`/login?email=${encodeURIComponent(formData.email)}`}>Go to login</Link>
+                </Button>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               {success && (
                 <Alert variant="success" role="status">
@@ -186,6 +204,7 @@ export function SignupContent() {
                 </Link>
               </p>
             </form>
+            )}
           </CardContent>
         </Card>
       </div>

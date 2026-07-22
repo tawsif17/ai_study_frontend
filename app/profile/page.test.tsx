@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { axe } from "vitest-axe"
 import type React from "react"
 import ProfilePage from "./page"
 import { useAuth } from "@/lib/auth-context"
@@ -79,6 +80,10 @@ describe("profile page", () => {
     expect(screen.getByText("Beta Pro access")).toBeInTheDocument()
     expect(screen.getAllByText("Not provided")).toHaveLength(3)
     expect(screen.getByText("Email not verified")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Resend verification email" })).toHaveAttribute(
+      "href",
+      "/resend-verification?email=nadia%40example.com"
+    )
   })
 
   it("announces the loading state without exposing profile data", () => {
@@ -107,5 +112,10 @@ describe("profile page", () => {
     expect(screen.getByRole("button", { name: "Refreshing…" })).toBeDisabled()
     await waitFor(() => expect(refreshUser).toHaveBeenCalledTimes(1))
     expect(await screen.findByRole("alert")).toHaveTextContent("Please sign in again")
+  })
+
+  it("has no detectable accessibility violations", async () => {
+    const { container } = render(<ProfilePage />)
+    expect((await axe(container, { rules: { region: { enabled: false } } })).violations).toEqual([])
   })
 })

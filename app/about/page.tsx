@@ -4,6 +4,7 @@ import { TrustPage } from "@/components/trust-page"
 // Founder review required before launch. Keep claims factual and avoid invented company/team details.
 export const metadata: Metadata = {
   title: "About | Shikkha Buddy",
+  alternates: { canonical: "/about" },
   description: "Learn what Shikkha Buddy is, who it is for, and the current SSC science practice focus.",
   openGraph: {
     title: "About | Shikkha Buddy",

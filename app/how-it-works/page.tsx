@@ -30,6 +30,7 @@ import {
 
 export const metadata: Metadata = {
   title: "How SSC Practice Works | Shikkha Buddy",
+  alternates: { canonical: "/how-it-works" },
   description: "See how Shikkha Buddy helps SSC students choose a subject, practice MCQs, and plan their next revision.",
   openGraph: {
     title: "How SSC Practice Works | Shikkha Buddy",
@@ -103,7 +104,7 @@ const availabilityRows = [
   { type: "MCQ Practice", status: "Available now", bestFor: "Focused chapter revision", tone: "available" },
   { type: "CQ Practice", status: "Coming soon", bestFor: "Full creative-question practice", tone: "coming" },
   { type: "Mixed Practice", status: "Coming soon", bestFor: "MCQ + CQ practice sets", tone: "coming" },
-  { type: "Board-only MCQ sets", status: "Pro", bestFor: "Stricter exam revision", tone: "pro" },
+  { type: "Board-only MCQ sets", status: "Coming soon", bestFor: "Stricter exam revision", tone: "coming" },
   { type: "Weak Area Analysis", status: "Pro", bestFor: "Identifying chapters that need more practice", tone: "pro" },
 ] as const
 
@@ -256,7 +257,7 @@ export default function HowItWorksPage() {
           <div className="text-center sm:text-left">
             <h2 className="text-xl font-bold text-foreground">Try the flow in a free MCQ session</h2>
             <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-              Start with one subject and one chapter. Beta Pro adds Board-only MCQ sets and Weak Area Analysis when you need more focused revision.
+              Start with one subject and one chapter. Beta Pro includes Weak Area Analysis for more focused revision. Board-only MCQ sets are coming soon.
             </p>
             <AuthAwareStartFreeButton className="mt-4 h-11 rounded-lg px-6 shadow-primary" />
             <p className="mt-2 text-xs text-muted-foreground">No credit card required.</p>

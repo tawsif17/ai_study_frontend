@@ -3,6 +3,7 @@ import { ContactContent } from "./contact-content"
 
 export const metadata: Metadata = {
   title: "Contact | Shikkha Buddy",
+  alternates: { canonical: "/contact" },
   description: "Contact Shikkha Buddy for account or SSC practice support.",
   openGraph: {
     title: "Contact | Shikkha Buddy",

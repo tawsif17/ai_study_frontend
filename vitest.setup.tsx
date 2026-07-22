@@ -1,5 +1,6 @@
 import React from "react"
 import "@testing-library/jest-dom/vitest"
+import "vitest-axe/extend-expect"
 import { vi } from "vitest"
 
 class ResizeObserverMock {

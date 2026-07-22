@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button"
 
 export const metadata: Metadata = {
   title: "SSC MCQ Practice | Shikkha Buddy",
+  alternates: { canonical: "/" },
   description:
     "Practice SSC exam MCQs for General Math, Physics, and Chemistry with answer explanations and mistake review.",
   openGraph: {
@@ -112,7 +113,7 @@ function StartPracticingSection() {
             Start practicing
           </h2>
           <p className="mt-3 text-sm leading-6 text-muted-foreground md:text-base">
-            Begin with free MCQ practice. Activate Beta Pro later for Board-only MCQ sets and Weak Area Analysis when you need more focused revision.
+            Begin with free MCQ practice. Activate Beta Pro later for Weak Area Analysis when you need more focused revision. Board-only MCQ sets are coming soon.
           </p>
         </div>
 
@@ -150,15 +151,15 @@ function StartPracticingSection() {
               <Link
                 href="/pricing"
                 className="group flex items-center justify-between gap-4 rounded-xl border border-[#ffd89a] bg-[#fffaf2] p-5 transition-colors hover:border-[#f79009] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                aria-label="Board-only MCQ sets, Pro option, opens pricing"
+                aria-label="Board-only MCQ sets, coming soon option, opens pricing"
               >
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
                     <h4 className="text-base font-bold text-foreground">Board-only MCQ sets</h4>
-                    <Badge className="border-transparent bg-[#fff2cc] text-[#dc6803] hover:bg-[#fff2cc]">Pro</Badge>
+                    <Badge className="border-transparent bg-muted text-muted-foreground hover:bg-muted">Coming soon</Badge>
                   </div>
                   <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
-                    Practise past board-question MCQ sets when you want stricter exam revision.
+                    Focused past-board-question MCQ sets are planned for a future beta update.
                   </p>
                 </div>
                 <ChevronRight className="h-6 w-6 shrink-0 text-foreground transition-transform group-hover:translate-x-0.5" />
@@ -311,7 +312,7 @@ function FinalCtaSection() {
               Start your first SSC practice session today
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground md:text-base">
-              Try free MCQ practice now. Activate Beta Pro later for Board-only MCQ sets and Weak Area Analysis when you want more focused revision.
+              Try free MCQ practice now. Activate Beta Pro later for Weak Area Analysis when you want more focused revision. Board-only MCQ sets are coming soon.
             </p>
             <Button className="mt-5 h-11 w-full rounded-lg px-10 shadow-primary sm:w-auto" asChild>
               <AuthGatedLink href="/subjects">Start free</AuthGatedLink>
