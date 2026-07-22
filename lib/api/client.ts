@@ -1,5 +1,5 @@
 /**
- * Shared HTTP client for backend API
+ * Shared HTTP client for backend API.
  */
 
 import type { ApiError } from "./types"
@@ -8,6 +8,10 @@ const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:
   /\/+$/,
   ""
 )
+
+export const DEFAULT_API_TIMEOUT_MS = 15_000
+const SAFE_GENERIC_ERROR = "Something went wrong. Please try again."
+const SAFE_CONNECTION_ERROR = "We could not reach Shikkha Buddy. Check your connection and try again."
 
 export class ApiClientError extends Error {
   code?: string
@@ -21,22 +25,61 @@ export class ApiClientError extends Error {
   }
 }
 
-export function formatApiError(error: unknown): string {
-  if (error instanceof ApiClientError) {
-    return error.message || "Something went wrong."
+export class ApiTimeoutError extends Error {
+  timeoutMs: number
+
+  constructor(timeoutMs: number) {
+    super(`Request timed out after ${timeoutMs}ms`)
+    this.name = "ApiTimeoutError"
+    this.timeoutMs = timeoutMs
   }
-  if (error instanceof Error && error.message) {
-    return error.message
-  }
-  return "Something went wrong."
 }
 
-interface RequestOptions {
+export class ApiNetworkError extends Error {
+  constructor(options?: ErrorOptions) {
+    super("The API could not be reached", options)
+    this.name = "ApiNetworkError"
+  }
+}
+
+export class ApiAbortError extends Error {
+  constructor(options?: ErrorOptions) {
+    super("The request was cancelled", options)
+    this.name = "ApiAbortError"
+  }
+}
+
+export class ApiContractError extends Error {
+  constructor(message = "The server returned an unexpected response", options?: ErrorOptions) {
+    super(message, options)
+    this.name = "ApiContractError"
+  }
+}
+
+export function formatApiError(error: unknown): string {
+  if (error instanceof ApiClientError) {
+    return error.status >= 500 ? SAFE_GENERIC_ERROR : error.message || SAFE_GENERIC_ERROR
+  }
+  if (error instanceof ApiTimeoutError || error instanceof ApiNetworkError) {
+    return SAFE_CONNECTION_ERROR
+  }
+  if (error instanceof ApiAbortError) {
+    return "The request was cancelled. Please try again."
+  }
+  if (error instanceof ApiContractError) {
+    return SAFE_GENERIC_ERROR
+  }
+  return SAFE_GENERIC_ERROR
+}
+
+export interface RequestOptions {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE"
   body?: unknown
   params?: Record<string, string | number | undefined>
   requiresAuth?: boolean
   includeAuth?: boolean
+  timeoutMs?: number
+  signal?: AbortSignal
 }
 
 export interface ApiClientResponse<T> {
@@ -75,77 +118,111 @@ export async function apiClientWithResponse<T>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<ApiClientResponse<T>> {
-  const { method = "GET", body, params, requiresAuth = false, includeAuth = false } = options
+  const {
+    method = "GET",
+    body,
+    params,
+    requiresAuth = false,
+    includeAuth = false,
+    timeoutMs = DEFAULT_API_TIMEOUT_MS,
+    signal: callerSignal,
+  } = options
 
-  // Build URL with query params
   let url = `${API_BASE_URL}${endpoint}`
   if (params) {
     const searchParams = new URLSearchParams()
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) {
-        searchParams.append(key, String(value))
-      }
+      if (value !== undefined) searchParams.append(key, String(value))
     })
     const queryString = searchParams.toString()
-    if (queryString) {
-      url += `?${queryString}`
-    }
+    if (queryString) url += `?${queryString}`
   }
 
-  // Build headers
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  }
-
+  const headers: Record<string, string> = { "Content-Type": "application/json" }
   if (requiresAuth || includeAuth) {
     const token = getAuthToken()
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`
-    }
+    if (token) headers.Authorization = `Bearer ${token}`
   }
 
-  // Make request
-  const response = await fetch(url, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-    // Avoid 304s with empty bodies; SWR handles client-side caching.
-    cache: method === "GET" ? "no-store" : "default",
-  })
+  const controller = new AbortController()
+  let timedOut = false
+  const onCallerAbort = () => controller.abort(callerSignal?.reason)
+  if (callerSignal?.aborted) controller.abort(callerSignal.reason)
+  else callerSignal?.addEventListener("abort", onCallerAbort, { once: true })
 
-  // Handle non-2xx responses
-  if (!response.ok) {
-    let error: ApiError
+  const effectiveTimeoutMs = Number.isFinite(timeoutMs) && timeoutMs >= 0
+    ? timeoutMs
+    : DEFAULT_API_TIMEOUT_MS
+  const timeoutId = setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, effectiveTimeoutMs)
+
+  const cleanup = () => {
+    clearTimeout(timeoutId)
+    callerSignal?.removeEventListener("abort", onCallerAbort)
+  }
+
+  const transportError = (error: unknown): Error => {
+    if (timedOut) return new ApiTimeoutError(effectiveTimeoutMs)
+    if (callerSignal?.aborted || controller.signal.aborted) {
+      return new ApiAbortError({ cause: error })
+    }
+    return new ApiNetworkError({ cause: error })
+  }
+
+  let response: Response
+  try {
+    response = await fetch(url, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      cache: method === "GET" ? "no-store" : "default",
+      signal: controller.signal,
+    })
+  } catch (error) {
+    cleanup()
+    throw transportError(error)
+  }
+
+  try {
+    if (!response.ok) {
+      let error: ApiError
+      try {
+        const payload = await response.json()
+        const message =
+          (typeof payload?.message === "string" && payload.message) ||
+          (typeof payload?.error?.message === "string" && payload.error.message) ||
+          (typeof payload?.data?.message === "string" && payload.data.message) ||
+          (typeof payload?.msg === "string" && payload.msg)
+        error = {
+          code: typeof payload?.code === "string" ? payload.code : undefined,
+          message: message || `Request failed with status ${response.status}`,
+        }
+      } catch (parseError) {
+        if (timedOut || callerSignal?.aborted || controller.signal.aborted) {
+          throw transportError(parseError)
+        }
+        error = { code: undefined, message: `Request failed with status ${response.status}` }
+      }
+      throw new ApiClientError(error, response.status)
+    }
+
+    let json: unknown
     try {
-      const payload = await response.json()
-      const message =
-        (typeof payload?.message === "string" && payload.message) ||
-        (typeof payload?.error?.message === "string" && payload.error.message) ||
-        (typeof payload?.data?.message === "string" && payload.data.message) ||
-        (typeof payload?.msg === "string" && payload.msg)
-      error = {
-        code: typeof payload?.code === "string" ? payload.code : undefined,
-        message: message || `Request failed with status ${response.status}`,
+      json = await response.json()
+    } catch (error) {
+      if (timedOut || callerSignal?.aborted || controller.signal.aborted) {
+        throw transportError(error)
       }
-    } catch {
-      error = {
-        code: undefined,
-        message: `Request failed with status ${response.status}`,
-      }
+      throw new ApiContractError("The server returned invalid JSON", { cause: error })
     }
-    throw new ApiClientError(error, response.status)
-  }
 
-  // Parse response
-  const json = await response.json()
-  if (json && typeof json === "object" && "success" in json && "data" in json) {
-    return {
-      data: (json as { data: T }).data,
-      status: response.status,
+    if (json && typeof json === "object" && "success" in json && "data" in json) {
+      return { data: (json as { data: T }).data, status: response.status }
     }
-  }
-  return {
-    data: json,
-    status: response.status,
+    return { data: json as T, status: response.status }
+  } finally {
+    cleanup()
   }
 }

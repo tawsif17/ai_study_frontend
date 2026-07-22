@@ -32,7 +32,7 @@ const sections = [
   },
   {
     title: "Current focus",
-    body: "The current frontend is focused on SSC science practice. The public product surface currently highlights Higher Math, Physics, and Chemistry.",
+    body: "The current frontend is focused on SSC science practice. The public product surface currently highlights General Math, Physics, and Chemistry.",
   },
   {
     title: "Still improving",

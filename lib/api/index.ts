@@ -6,8 +6,14 @@ export * from "./types"
 export * from "./client"
 export * from "./contracts"
 
-import { apiClient, apiClientWithResponse } from "./client"
+import { ApiContractError, apiClient, apiClientWithResponse } from "./client"
 import {
+  parseAuthMeResponse,
+  parseLoginResponse,
+  parseRegisterResponse,
+  parseResendVerificationResponse,
+  parseUpgradeToProResponse,
+  parseVerifyEmailResponse,
   validateContactSubmitRequest,
   validateLoginRequest,
   validatePracticeGenerateRequest,
@@ -73,7 +79,7 @@ import type {
 
 export async function register(data: RegisterRequest): Promise<RegisterResult> {
   const payload = validateRegisterRequest({
-    email: data.email,
+    email: data.email.trim().toLowerCase(),
     password: data.password,
     fullName: data.fullName.trim(),
     school: data.school,
@@ -86,50 +92,64 @@ export async function register(data: RegisterRequest): Promise<RegisterResult> {
     body: payload,
   })
 
+  if (response.status !== 201 && response.status !== 202) {
+    throw new ApiContractError(`Unexpected registration status: ${response.status}`)
+  }
+
   return {
-    data: response.data,
-    status: response.status === 202 ? 202 : 201,
+    data: parseRegisterResponse(response.data),
+    status: response.status,
   }
 }
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
-  const payload = validateLoginRequest(data)
-  return apiClient<LoginResponse>("/auth/login", {
+  const payload = validateLoginRequest({
+    ...data,
+    email: data.email.trim().toLowerCase(),
+  })
+  const response = await apiClient<unknown>("/auth/login", {
     method: "POST",
     body: payload,
   })
+  return parseLoginResponse(response)
 }
 
 export async function getAuthMe(): Promise<AuthMeResponse> {
-  return apiClient<AuthMeResponse>("/auth/me", {
+  const response = await apiClient<unknown>("/auth/me", {
     requiresAuth: true,
   })
+  return parseAuthMeResponse(response)
 }
 
 export async function verifyEmail(data: VerifyEmailRequest): Promise<VerifyEmailResponse> {
   const payload = validateVerifyEmailRequest(data)
-  return apiClient<VerifyEmailResponse>("/auth/verify-email", {
+  const response = await apiClient<unknown>("/auth/verify-email", {
     method: "POST",
     body: payload,
   })
+  return parseVerifyEmailResponse(response)
 }
 
 export async function resendVerification(
   data: ResendVerificationRequest
 ): Promise<ResendVerificationResponse> {
-  const payload = validateResendVerificationRequest(data)
-  return apiClient<ResendVerificationResponse>("/auth/resend-verification", {
+  const payload = validateResendVerificationRequest({
+    email: data.email.trim().toLowerCase(),
+  })
+  const response = await apiClient<unknown>("/auth/resend-verification", {
     method: "POST",
     body: payload,
   })
+  return parseResendVerificationResponse(response)
 }
 
 export async function upgradeToPro(): Promise<UpgradeToProResponse> {
-  return apiClient<UpgradeToProResponse>("/auth/upgrade-to-pro", {
+  const response = await apiClient<unknown>("/auth/upgrade-to-pro", {
     method: "POST",
     body: {},
     requiresAuth: true,
   })
+  return parseUpgradeToProResponse(response)
 }
 
 export async function submitContact(

@@ -4,11 +4,12 @@ import { useEffect } from "react"
 import Link from "next/link"
 import { PageShell } from "@/components/page-shell"
 import { Button } from "@/components/ui/button"
+import { reportApplicationError } from "@/lib/telemetry"
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    console.error(error)
-  }, [error])
+    reportApplicationError("route", error.digest)
+  }, [error.digest])
 
   return (
     <PageShell>

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { axe } from "vitest-axe"
 import SignupPage from "./page"
 import { useAuth } from "@/lib/auth-context"
+import { ApiClientError, ApiNetworkError } from "@/lib/api/client"
 
 const mockPush = vi.fn()
 const mockRegister = vi.fn()
@@ -65,11 +66,14 @@ describe("signup page", () => {
     vi.mocked(useAuth).mockReturnValue({
       isAuthenticated: false,
       isLoading: false,
+      authStatus: "unauthenticated",
+      authError: null,
       user: null,
       login: vi.fn(),
       register: mockRegister,
       logout: vi.fn(),
       refreshUser: vi.fn(),
+      retryAuth: vi.fn(),
     })
   })
 
@@ -131,7 +135,9 @@ describe("signup page", () => {
   })
 
   it("shows API errors and re-enables submit", async () => {
-    mockRegister.mockRejectedValueOnce(new Error("Email is already registered"))
+    mockRegister.mockRejectedValueOnce(
+      new ApiClientError({ message: "Email is already registered" }, 409)
+    )
 
     render(<SignupPage />)
     fillValidSignupForm()
@@ -172,6 +178,54 @@ describe("signup page", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Create Account" })).toBeEnabled()
     })
+  })
+
+  it("normalizes email and shows visible password requirements", async () => {
+    mockRegister.mockResolvedValueOnce({
+      data: { message: "Registration successful." },
+      status: 201,
+    })
+    render(<SignupPage />)
+    fillValidSignupForm()
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: " Student@Example.COM " },
+    })
+
+    expect(screen.getByText(/Use at least 8 characters, including uppercase/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Create Account" }))
+
+    await waitFor(() => {
+      expect(mockRegister).toHaveBeenCalledWith(
+        expect.objectContaining({ email: "student@example.com" })
+      )
+    })
+    expect(screen.getByText(/student@example.com/)).toBeInTheDocument()
+  })
+
+  it("offers resend recovery when signup delivery is uncertain", async () => {
+    mockRegister.mockRejectedValueOnce(new ApiNetworkError())
+    render(<SignupPage />)
+    fillValidSignupForm()
+
+    fireEvent.click(screen.getByRole("button", { name: "Create Account" }))
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "We couldn't confirm whether your verification email was sent"
+    )
+    expect(screen.getByRole("link", { name: "Resend verification email" })).toHaveAttribute(
+      "href",
+      "/resend-verification?email=student%40example.com"
+    )
+  })
+
+  it("shows accessible field errors without calling registration", () => {
+    render(<SignupPage />)
+    fireEvent.click(screen.getByRole("button", { name: "Create Account" }))
+
+    expect(screen.getByLabelText("Email")).toHaveAttribute("aria-invalid", "true")
+    expect(screen.getByLabelText("Password")).toHaveAttribute("aria-invalid", "true")
+    expect(screen.getByText("Select your class.")).toBeInTheDocument()
+    expect(mockRegister).not.toHaveBeenCalled()
   })
 
   it("has no detectable accessibility violations", async () => {

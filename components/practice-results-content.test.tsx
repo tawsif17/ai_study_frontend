@@ -289,7 +289,9 @@ describe("PracticeResultsContent", () => {
 
   it("announces report failures and re-enables submission", async () => {
     const user = userEvent.setup()
-    vi.mocked(reportQuestion).mockRejectedValueOnce(new Error("Report could not be sent"))
+    vi.mocked(reportQuestion).mockRejectedValueOnce(
+      new ApiClientError({ message: "Report could not be sent" }, 400)
+    )
     render(<PracticeResultsContent practiceId={42} summary={summary} />)
 
     await user.click(screen.getByRole("button", { name: "Report Question" }))

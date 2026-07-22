@@ -52,11 +52,14 @@ describe("practice session protected route", () => {
     vi.mocked(useAuth).mockReturnValue({
       isAuthenticated: false,
       isLoading: true,
+      authStatus: "loading",
+      authError: null,
       user: null,
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
       refreshUser: vi.fn(),
+      retryAuth: vi.fn(),
     })
     vi.mocked(usePracticeSummary).mockReturnValue({
       summary: undefined,
@@ -75,11 +78,14 @@ describe("practice session protected route", () => {
     vi.mocked(useAuth).mockReturnValue({
       isAuthenticated: false,
       isLoading: false,
+      authStatus: "unauthenticated",
+      authError: null,
       user: null,
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
       refreshUser: vi.fn(),
+      retryAuth: vi.fn(),
     })
     vi.mocked(usePracticeSummary).mockReturnValue({
       summary: undefined,
@@ -102,11 +108,14 @@ describe("practice session protected route", () => {
     vi.mocked(useAuth).mockReturnValue({
       isAuthenticated: true,
       isLoading: false,
+      authStatus: "authenticated",
+      authError: null,
       user: null,
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
       refreshUser: vi.fn(),
+      retryAuth: vi.fn(),
     })
     vi.mocked(usePracticeSummary).mockReturnValue({
       summary: {
@@ -133,11 +142,14 @@ describe("practice session protected route", () => {
     vi.mocked(useAuth).mockReturnValue({
       isAuthenticated: true,
       isLoading: false,
+      authStatus: "authenticated",
+      authError: null,
       user: null,
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
       refreshUser: vi.fn(),
+      retryAuth: vi.fn(),
     })
     vi.mocked(usePracticeSummary).mockReturnValue({
       summary: {
@@ -168,11 +180,14 @@ describe("practice session protected route", () => {
     vi.mocked(useAuth).mockReturnValue({
       isAuthenticated: true,
       isLoading: false,
+      authStatus: "authenticated",
+      authError: null,
       user: null,
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
       refreshUser: vi.fn(),
+      retryAuth: vi.fn(),
     })
     vi.mocked(usePracticeSummary).mockReturnValue({
       summary: undefined,
@@ -190,11 +205,14 @@ describe("practice session protected route", () => {
     vi.mocked(useAuth).mockReturnValue({
       isAuthenticated: true,
       isLoading: false,
+      authStatus: "authenticated",
+      authError: null,
       user: null,
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
       refreshUser: vi.fn(),
+      retryAuth: vi.fn(),
     })
     vi.mocked(usePracticeSummary).mockReturnValue({
       summary: undefined,

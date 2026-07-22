@@ -44,7 +44,7 @@ function mockDashboard(overrides: Partial<ReturnType<typeof useProgressDashboard
 describe("WeakAreasContent", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useAuth).mockReturnValue({ isAuthenticated: true, isLoading: false, user: null, login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn() })
+    vi.mocked(useAuth).mockReturnValue({ isAuthenticated: true, isLoading: false, authStatus: "authenticated", authError: null, user: null, login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn(), retryAuth: vi.fn() })
     mockDashboard()
   })
 
@@ -203,7 +203,9 @@ describe("WeakAreasContent", () => {
   })
 
   it("restores the recommendation action and reports generation failure", async () => {
-    vi.mocked(generatePractice).mockRejectedValueOnce(new Error("Practice could not start"))
+    vi.mocked(generatePractice).mockRejectedValueOnce(
+      new ApiClientError({ message: "Practice could not start" }, 400)
+    )
     render(<WeakAreasContent />)
     fireEvent.click(screen.getByRole("button", { name: "Start recommended practice" }))
     expect(await screen.findByRole("alert")).toHaveTextContent("Practice could not start")

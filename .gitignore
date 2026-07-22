@@ -12,6 +12,10 @@
 
 # generated design and review artifacts
 /outputs/
+/coverage/
+/playwright-report/
+/test-results/
+/.lighthouseci/
 
 # debug
 npm-debug.log*

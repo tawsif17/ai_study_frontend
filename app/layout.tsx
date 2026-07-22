@@ -3,30 +3,32 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ScrollToTop } from "@/components/scroll-to-top"
+import { WebVitalsReporter } from "@/components/web-vitals-reporter"
 import { AuthProvider } from "@/lib/auth-context"
 
 const inter = Inter({ subsets: ["latin"] })
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://shikkhabuddy.com"
 
-// Updated metadata for Shikkha Buddy
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: "Shikkha Buddy",
   title: "Shikkha Buddy - SSC Science Practice for Bangladesh",
   description:
-    "Practice SSC Higher Math, Physics and Chemistry with guided question sessions, explanations, and a focused study flow.",
+    "Practice SSC General Math, Physics and Chemistry with guided question sessions, explanations, and a focused study flow.",
   openGraph: {
     title: "Shikkha Buddy - SSC Science Practice for Bangladesh",
     description:
-      "Practice SSC Higher Math, Physics and Chemistry with guided question sessions, explanations, and a focused study flow.",
+      "Practice SSC General Math, Physics and Chemistry with guided question sessions, explanations, and a focused study flow.",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Shikkha Buddy SSC practice" }],
     siteName: "Shikkha Buddy",
     type: "website",
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Shikkha Buddy - SSC Science Practice for Bangladesh",
     description:
-      "Practice SSC Higher Math, Physics and Chemistry with guided question sessions, explanations, and a focused study flow.",
+      "Practice SSC General Math, Physics and Chemistry with guided question sessions, explanations, and a focused study flow.",
+    images: ["/opengraph-image"],
   },
   icons: {
     icon: [
@@ -50,6 +52,7 @@ export default function RootLayout({
       <body className={`${inter.className} font-sans antialiased`}>
         <AuthProvider>
           <ScrollToTop />
+          <WebVitalsReporter />
           {children}
         </AuthProvider>
       </body>

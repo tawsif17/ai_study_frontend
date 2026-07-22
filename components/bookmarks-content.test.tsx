@@ -45,7 +45,7 @@ const bookmarkItem = {
 describe("BookmarksContent", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useAuth).mockReturnValue({ isAuthenticated: true, isLoading: false, user: null, login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn() })
+    vi.mocked(useAuth).mockReturnValue({ isAuthenticated: true, isLoading: false, authStatus: "authenticated", authError: null, user: null, login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn(), retryAuth: vi.fn() })
     vi.mocked(useRevisionSummary).mockReturnValue({ summary, isLoading: false, isError: undefined, mutate: mutateSummary })
     vi.mocked(useRevisionItems).mockReturnValue({ revisionItems: { page: 1, page_size: 20, total: 1, items: [bookmarkItem] }, isLoading: false, isError: undefined, mutate: mutateItems })
     vi.mocked(useChapters).mockReturnValue({ chapters: [{ id: 7, subject_id: 2, chapter_name: "Light", order_no: 1 }], isLoading: false, isError: undefined, mutate: vi.fn() })

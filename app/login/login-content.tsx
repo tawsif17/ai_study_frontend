@@ -15,6 +15,12 @@ import { useAuth } from "@/lib/auth-context"
 import { formatApiError } from "@/lib/api/client"
 import { isUnverifiedLoginError } from "@/lib/api"
 import { getSafeNextPath } from "@/lib/safe-next-path"
+import {
+  isValidVerificationEmail,
+  normalizeVerificationEmail,
+} from "@/lib/verification-form-recovery"
+
+type LoginFieldErrors = Partial<Record<"email" | "password", string>>
 
 export function LoginContent() {
   const router = useRouter()
@@ -30,6 +36,7 @@ export function LoginContent() {
       : null
   )
   const [showResend, setShowResend] = useState(searchParams.get("registered") === "true")
+  const [fieldErrors, setFieldErrors] = useState<LoginFieldErrors>({})
   const [formData, setFormData] = useState({
     email: searchParams.get("email") ?? "",
     password: "",
@@ -37,6 +44,18 @@ export function LoginContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const normalizedEmail = normalizeVerificationEmail(formData.email)
+    const nextFieldErrors: LoginFieldErrors = {}
+    if (!isValidVerificationEmail(normalizedEmail)) {
+      nextFieldErrors.email = "Enter a valid email address."
+    }
+    if (!formData.password) {
+      nextFieldErrors.password = "Enter your password."
+    }
+    setFieldErrors(nextFieldErrors)
+    if (Object.keys(nextFieldErrors).length > 0) return
+
+    setFormData((current) => ({ ...current, email: normalizedEmail }))
     setError(null)
     setSuccess(null)
     setShowResend(false)
@@ -44,7 +63,7 @@ export function LoginContent() {
 
     try {
       await login({
-        email: formData.email,
+        email: normalizedEmail,
         password: formData.password,
       })
       router.push(nextPath)
@@ -70,7 +89,7 @@ export function LoginContent() {
             <CardDescription>Sign in to continue your SSC science practice</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               {success && (
                 <Alert variant="success" role="status">
                   <CheckCircle2 aria-hidden="true" />
@@ -92,12 +111,20 @@ export function LoginContent() {
                 <Input
                   id="email"
                   type="email"
+                  name="email"
+                  autoComplete="email"
                   placeholder="you@example.com"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value })
+                    setFieldErrors((current) => ({ ...current, email: undefined }))
+                  }}
+                  aria-invalid={Boolean(fieldErrors.email)}
+                  aria-describedby={fieldErrors.email ? "login-email-error" : undefined}
                   required
                   disabled={isLoading}
                 />
+                {fieldErrors.email && <p id="login-email-error" className="text-sm text-destructive">{fieldErrors.email}</p>}
               </div>
 
               <div className="space-y-2">
@@ -105,12 +132,20 @@ export function LoginContent() {
                 <Input
                   id="password"
                   type="password"
+                  name="password"
+                  autoComplete="current-password"
                   placeholder="Enter your password"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, password: e.target.value })
+                    setFieldErrors((current) => ({ ...current, password: undefined }))
+                  }}
+                  aria-invalid={Boolean(fieldErrors.password)}
+                  aria-describedby={fieldErrors.password ? "login-password-error" : undefined}
                   required
                   disabled={isLoading}
                 />
+                {fieldErrors.password && <p id="login-password-error" className="text-sm text-destructive">{fieldErrors.password}</p>}
               </div>
 
               <Button type="submit" className="w-full rounded-lg" disabled={isLoading}>
@@ -119,7 +154,7 @@ export function LoginContent() {
 
               {showResend && (
                 <Button asChild variant="outline" className="w-full rounded-lg bg-transparent">
-                  <Link href={`/resend-verification?email=${encodeURIComponent(formData.email)}`}>
+                  <Link href={`/resend-verification?email=${encodeURIComponent(normalizeVerificationEmail(formData.email))}`}>
                     Resend verification email
                   </Link>
                 </Button>

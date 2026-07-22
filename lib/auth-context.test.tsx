@@ -1,9 +1,13 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { AuthProvider, useAuth } from "./auth-context"
 import { ApiClientError, clearAuthToken } from "./api/client"
 
 const mockMutate = vi.fn()
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 vi.mock("swr", () => ({
   useSWRConfig: () => ({ mutate: mockMutate }),
@@ -38,9 +42,33 @@ function LogoutButton() {
   return <button onClick={logout}>Logout</button>
 }
 
+function LoginButton() {
+  const { login } = useAuth()
+  return (
+    <button onClick={() => void login({ email: "student@example.com", password: "Password123" })}>
+      Login
+    </button>
+  )
+}
+
 function AuthState() {
-  const { authStatus, isAuthenticated } = useAuth()
-  return <p>{`${authStatus}:${isAuthenticated}`}</p>
+  const { authStatus, isAuthenticated, user } = useAuth()
+  return <p>{`${authStatus}:${isAuthenticated}:${user?.email ?? "no-user"}`}</p>
+}
+
+const authUser = {
+  id: "student-id",
+  email: "student@example.com",
+  full_name: "Student Name",
+  role: "student",
+  plan_tier: "free" as const,
+  school: null,
+  city: null,
+  student_class: 10,
+  email_verified_at: "2026-07-20T00:00:00.000Z",
+  last_login_at: null,
+  created_at: "2026-07-20T00:00:00.000Z",
+  updated_at: "2026-07-20T00:00:00.000Z",
 }
 
 describe("AuthProvider logout", () => {
@@ -91,7 +119,7 @@ describe("AuthProvider refresh recovery", () => {
 
     render(<AuthProvider><AuthState /></AuthProvider>)
 
-    await waitFor(() => expect(screen.getByText("retryable-refresh-error:true")).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText("retryable-refresh-error:true:no-user")).toBeInTheDocument())
     expect(clearAuthToken).not.toHaveBeenCalled()
   })
 
@@ -101,7 +129,126 @@ describe("AuthProvider refresh recovery", () => {
 
     render(<AuthProvider><AuthState /></AuthProvider>)
 
-    await waitFor(() => expect(screen.getByText("unauthenticated:false")).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText("unauthenticated:false:no-user")).toBeInTheDocument())
     expect(clearAuthToken).toHaveBeenCalledTimes(1)
+  })
+
+  it("offers a global retry action and restores the account after recovery", async () => {
+    const { getAuthMe } = await import("./api")
+    vi.mocked(getAuthMe)
+      .mockRejectedValueOnce(new Error("Network unavailable"))
+      .mockResolvedValueOnce({ user: authUser })
+
+    render(<AuthProvider><AuthState /></AuthProvider>)
+
+    const retry = await screen.findByRole("button", { name: "Retry" })
+    fireEvent.click(retry)
+
+    await waitFor(() =>
+      expect(screen.getByText("authenticated:true:student@example.com")).toBeInTheDocument()
+    )
+    expect(screen.queryByText("We could not refresh your account")).not.toBeInTheDocument()
+    expect(clearAuthToken).not.toHaveBeenCalled()
+  })
+
+  it("applies logout events received through the storage fallback", async () => {
+    vi.stubGlobal("BroadcastChannel", undefined)
+    const { getAuthMe } = await import("./api")
+    vi.mocked(getAuthMe).mockResolvedValueOnce({ user: authUser })
+
+    render(<AuthProvider><AuthState /></AuthProvider>)
+    await screen.findByText("authenticated:true:student@example.com")
+
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "shikkha_buddy_auth_sync",
+        newValue: JSON.stringify({ type: "logout", sentAt: Date.now() }),
+      })
+    )
+
+    await waitFor(() =>
+      expect(screen.getByText("unauthenticated:false:no-user")).toBeInTheDocument()
+    )
+    expect(clearAuthToken).toHaveBeenCalledTimes(1)
+  })
+
+  it("refreshes the account for login events received through the storage fallback", async () => {
+    vi.stubGlobal("BroadcastChannel", undefined)
+    localStorage.clear()
+    const { getAuthMe } = await import("./api")
+    vi.mocked(getAuthMe).mockResolvedValueOnce({ user: authUser })
+
+    render(<AuthProvider><AuthState /></AuthProvider>)
+    await screen.findByText("unauthenticated:false:no-user")
+
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "shikkha_buddy_auth_sync",
+        newValue: JSON.stringify({ type: "login", sentAt: Date.now() }),
+      })
+    )
+
+    await waitFor(() =>
+      expect(screen.getByText("authenticated:true:student@example.com")).toBeInTheDocument()
+    )
+  })
+
+  it("broadcasts local login and logout changes when BroadcastChannel is available", async () => {
+    localStorage.clear()
+    const posted: unknown[] = []
+    class MockBroadcastChannel {
+      constructor(name: string) {
+        void name
+      }
+      addEventListener() {}
+      postMessage(message: unknown) {
+        posted.push(message)
+      }
+      close() {}
+    }
+    vi.stubGlobal("BroadcastChannel", MockBroadcastChannel)
+    const { login } = await import("./api")
+    vi.mocked(login).mockResolvedValueOnce({ user: authUser, token: "new-token" })
+
+    render(
+      <AuthProvider>
+        <AuthState />
+        <LoginButton />
+        <LogoutButton />
+      </AuthProvider>
+    )
+    await screen.findByText("unauthenticated:false:no-user")
+
+    fireEvent.click(screen.getByRole("button", { name: "Login" }))
+    await screen.findByText("authenticated:true:student@example.com")
+    fireEvent.click(screen.getByRole("button", { name: "Logout" }))
+
+    expect(posted).toEqual([
+      expect.objectContaining({ type: "login" }),
+      expect.objectContaining({ type: "logout" }),
+    ])
+  })
+
+  it("does not restore a session when an older refresh completes after logout", async () => {
+    const { getAuthMe } = await import("./api")
+    let resolveRefresh: ((value: { user: typeof authUser }) => void) | undefined
+    vi.mocked(getAuthMe).mockImplementationOnce(
+      () => new Promise((resolve) => {
+        resolveRefresh = resolve
+      })
+    )
+
+    render(
+      <AuthProvider>
+        <AuthState />
+        <LogoutButton />
+      </AuthProvider>
+    )
+    await waitFor(() => expect(getAuthMe).toHaveBeenCalledTimes(1))
+    fireEvent.click(screen.getByRole("button", { name: "Logout" }))
+
+    await act(async () => resolveRefresh?.({ user: authUser }))
+
+    expect(screen.getByText("unauthenticated:false:no-user")).toBeInTheDocument()
   })
 })

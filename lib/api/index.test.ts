@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { getCompleteResults, getPracticeItems, getProgressDashboard, getRevisionItems, getRevisionSummary, register, removeBookmark, reportQuestion, resendVerification, saveBookmark, submitContact, upgradeToPro, verifyEmail } from "./index"
-import { apiClient, apiClientWithResponse } from "./client"
+import { getAuthMe, getCompleteResults, getPracticeItems, getProgressDashboard, getRevisionItems, getRevisionSummary, login, register, removeBookmark, reportQuestion, resendVerification, saveBookmark, submitContact, upgradeToPro, verifyEmail } from "./index"
+import { ApiContractError, apiClient, apiClientWithResponse } from "./client"
 
 vi.mock("./client", () => ({
+  ApiClientError: class ApiClientError extends Error {},
+  ApiContractError: class ApiContractError extends Error {},
   apiClient: vi.fn(),
   apiClientWithResponse: vi.fn(),
 }))
@@ -175,6 +177,82 @@ describe("progress dashboard API contract", () => {
 describe("revision API contract", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  it("preserves the private-beta 202 registration result", async () => {
+    vi.mocked(apiClientWithResponse).mockResolvedValueOnce({
+      data: { message: "Your private beta request has been received." },
+      status: 202,
+    })
+
+    await expect(
+      register({
+        email: "student@example.com",
+        password: "Password123",
+        fullName: "Student Name",
+        school: "Example High School",
+        city: "Dhaka",
+        studentClass: 10,
+      })
+    ).resolves.toEqual({
+      data: { message: "Your private beta request has been received." },
+      status: 202,
+    })
+  })
+
+  it("normalizes auth emails and validates login and account responses", async () => {
+    const user = {
+      id: "student-id",
+      email: "student@example.com",
+      full_name: "Student Name",
+      role: "student",
+      plan_tier: "free" as const,
+      school: null,
+      city: null,
+      student_class: 10,
+      email_verified_at: "2026-07-20T00:00:00.000Z",
+      last_login_at: null,
+      created_at: "2026-07-20T00:00:00.000Z",
+      updated_at: "2026-07-20T00:00:00.000Z",
+    }
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce({ user, token: "signed-token" })
+      .mockResolvedValueOnce({ user })
+
+    await expect(login({ email: " Student@Example.COM ", password: "Password123" })).resolves.toEqual({
+      user,
+      token: "signed-token",
+    })
+    await expect(getAuthMe()).resolves.toEqual({ user })
+
+    expect(apiClient).toHaveBeenNthCalledWith(1, "/auth/login", {
+      method: "POST",
+      body: { email: "student@example.com", password: "Password123" },
+    })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/auth/me", { requiresAuth: true })
+  })
+
+  it("rejects unrecognized registration success statuses and malformed auth payloads", async () => {
+    vi.mocked(apiClientWithResponse).mockResolvedValueOnce({
+      data: { message: "Unexpected success" },
+      status: 200,
+    })
+
+    await expect(
+      register({
+        email: "student@example.com",
+        password: "Password123",
+        fullName: "Student Name",
+        school: "Example High School",
+        city: "Dhaka",
+        studentClass: 10,
+      })
+    ).rejects.toBeInstanceOf(ApiContractError)
+
+    vi.mocked(apiClient).mockResolvedValueOnce({ token: "missing-user" })
+    await expect(
+      login({ email: "student@example.com", password: "Password123" })
+    ).rejects.toBeInstanceOf(ApiContractError)
   })
 
   it("uses authenticated revision list and summary endpoints", async () => {

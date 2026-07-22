@@ -158,7 +158,10 @@ describe("PracticeSessionContent", () => {
   it("shows backend report errors", async () => {
     const user = userEvent.setup()
     vi.mocked(reportQuestion).mockRejectedValueOnce(
-      new Error("You have already reported this question for this reason")
+      new ApiClientError(
+        { message: "You have already reported this question for this reason" },
+        409
+      )
     )
 
     render(

@@ -13,5 +13,14 @@ export default defineConfig([
       "@typescript-eslint/no-empty-object-type": "off",
     },
   },
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "build/**",
+    "coverage/**",
+    "playwright-report/**",
+    "test-results/**",
+    ".lighthouseci/**",
+    "next-env.d.ts",
+  ]),
 ])

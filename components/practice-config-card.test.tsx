@@ -47,11 +47,14 @@ describe("PracticeConfigCard", () => {
     vi.mocked(useAuth).mockReturnValue({
       isAuthenticated: true,
       isLoading: false,
+      authStatus: "authenticated",
+      authError: null,
       user: null,
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
       refreshUser: vi.fn(),
+      retryAuth: vi.fn(),
     })
   })
 

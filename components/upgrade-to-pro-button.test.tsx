@@ -41,11 +41,14 @@ function mockAuth(overrides: Partial<ReturnType<typeof useAuth>> = {}) {
   vi.mocked(useAuth).mockReturnValue({
     isAuthenticated: true,
     isLoading: false,
+    authStatus: "authenticated",
+    authError: null,
     user: verifiedFreeUser,
     login: vi.fn(),
     register: vi.fn(),
     logout: vi.fn(),
     refreshUser: vi.fn().mockResolvedValue(verifiedFreeUser),
+    retryAuth: vi.fn().mockResolvedValue(verifiedFreeUser),
     ...overrides,
   })
 }
@@ -118,7 +121,9 @@ describe("Beta Pro activation button", () => {
   })
 
   it("announces an activation error", async () => {
-    vi.mocked(upgradeToPro).mockRejectedValueOnce(new Error("Activation failed"))
+    vi.mocked(upgradeToPro).mockRejectedValueOnce(
+      new ApiClientError({ message: "Activation failed" }, 400)
+    )
     mockAuth()
 
     render(<UpgradeToProButton />)

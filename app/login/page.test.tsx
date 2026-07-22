@@ -52,6 +52,27 @@ describe("login page", () => {
     })
   })
 
+  it("normalizes the email before login and validates empty fields accessibly", async () => {
+    render(<LoginPage />)
+
+    fireEvent.click(screen.getByRole("button", { name: "Sign In" }))
+    expect(screen.getByLabelText("Email")).toHaveAttribute("aria-invalid", "true")
+    expect(screen.getByText("Enter a valid email address.")).toHaveAttribute("id", "login-email-error")
+    expect(screen.getByLabelText("Password")).toHaveAttribute("aria-invalid", "true")
+    expect(mockLogin).not.toHaveBeenCalled()
+
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: " Student@Example.COM " } })
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "password123" } })
+    fireEvent.click(screen.getByRole("button", { name: "Sign In" }))
+
+    await waitFor(() => {
+      expect(mockLogin).toHaveBeenCalledWith({
+        email: "student@example.com",
+        password: "password123",
+      })
+    })
+  })
+
   it("does not show resend CTA for an unrelated unauthorized response", async () => {
     mockLogin.mockRejectedValueOnce(new ApiClientError({ message: "Invalid email or password" }, 401))
     render(<LoginPage />)

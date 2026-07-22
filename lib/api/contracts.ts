@@ -1,15 +1,22 @@
 import { z } from "zod"
-import { ApiClientError } from "./client"
+import { ApiClientError, ApiContractError } from "./client"
 import { questionReportReasonOptions } from "./types"
 import type {
   ContactSubmitRequest,
+  AuthMeResponse,
+  AuthUser,
   LoginRequest,
+  LoginResponse,
   PracticeGenerateRequest,
   QuestionReportRequest,
   QuestionsListRequest,
   RegisterRequest,
+  RegisterResponse,
   ResendVerificationRequest,
+  ResendVerificationResponse,
+  UpgradeToProResponse,
   VerifyEmailRequest,
+  VerifyEmailResponse,
 } from "./types"
 
 export const entitlementErrorMessages = {
@@ -145,6 +152,37 @@ const practiceGenerateRequestSchema = z
     }
   })
 
+const authUserSchema: z.ZodType<AuthUser> = z
+  .object({
+    id: z.string(),
+    email: z.string(),
+    full_name: z.string(),
+    role: z.string(),
+    plan_tier: z.enum(["free", "pro"]),
+    school: z.string().nullable(),
+    city: z.string().nullable(),
+    student_class: z.number().int().nullable(),
+    email_verified_at: z.string().nullable(),
+    last_login_at: z.string().nullable(),
+    created_at: z.string(),
+    updated_at: z.string(),
+  })
+  .strict()
+
+const messageResponseSchema = z.object({ message: z.string().min(1) }).strict()
+const registerResponseSchema: z.ZodType<RegisterResponse> = messageResponseSchema
+const verifyEmailResponseSchema: z.ZodType<VerifyEmailResponse> = messageResponseSchema
+const resendVerificationResponseSchema: z.ZodType<ResendVerificationResponse> = messageResponseSchema
+const loginResponseSchema: z.ZodType<LoginResponse> = z
+  .object({ user: authUserSchema, token: z.string().min(1) })
+  .strict()
+const authMeResponseSchema: z.ZodType<AuthMeResponse> = z
+  .object({ user: authUserSchema })
+  .strict()
+const upgradeToProResponseSchema: z.ZodType<UpgradeToProResponse> = z
+  .object({ message: z.string().min(1), plan_tier: z.literal("pro") })
+  .strict()
+
 function zodMessage(error: z.ZodError): string {
   return error.issues[0]?.message ?? "Invalid request payload"
 }
@@ -219,6 +257,32 @@ export function validatePracticeGenerateRequest(
 
   return parsed.data
 }
+
+function parseResponse<T>(schema: z.ZodType<T>, input: unknown, contractName: string): T {
+  const parsed = schema.safeParse(input)
+  if (!parsed.success) {
+    throw new ApiContractError(`Invalid ${contractName} response`, { cause: parsed.error })
+  }
+  return parsed.data
+}
+
+export const parseRegisterResponse = (input: unknown) =>
+  parseResponse(registerResponseSchema, input, "registration")
+
+export const parseLoginResponse = (input: unknown) =>
+  parseResponse(loginResponseSchema, input, "login")
+
+export const parseAuthMeResponse = (input: unknown) =>
+  parseResponse(authMeResponseSchema, input, "account")
+
+export const parseVerifyEmailResponse = (input: unknown) =>
+  parseResponse(verifyEmailResponseSchema, input, "email verification")
+
+export const parseResendVerificationResponse = (input: unknown) =>
+  parseResponse(resendVerificationResponseSchema, input, "resend verification")
+
+export const parseUpgradeToProResponse = (input: unknown) =>
+  parseResponse(upgradeToProResponseSchema, input, "Beta Pro activation")
 
 export function matchEntitlementErrorByExactMessage(
   error: unknown

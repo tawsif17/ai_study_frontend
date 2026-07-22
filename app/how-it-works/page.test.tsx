@@ -24,11 +24,14 @@ function mockAuth(isAuthenticated: boolean, isLoading = false) {
   vi.mocked(useAuth).mockReturnValue({
     isAuthenticated,
     isLoading,
+    authStatus: isLoading ? "loading" : isAuthenticated ? "authenticated" : "unauthenticated",
+    authError: null,
     user: null,
     login: vi.fn(),
     register: vi.fn(),
     logout: vi.fn(),
     refreshUser: vi.fn(),
+    retryAuth: vi.fn(),
   })
 }
 

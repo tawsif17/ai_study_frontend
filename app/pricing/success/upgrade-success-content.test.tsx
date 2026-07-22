@@ -42,11 +42,14 @@ describe("upgrade success content", () => {
     vi.mocked(useAuth).mockReturnValue({
       isAuthenticated: true,
       isLoading: false,
+      authStatus: "authenticated",
+      authError: null,
       user: activeUser,
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
       refreshUser: vi.fn().mockResolvedValue(activeUser),
+      retryAuth: vi.fn().mockResolvedValue(activeUser),
     })
   })
 
@@ -78,11 +81,14 @@ describe("upgrade success content", () => {
     vi.mocked(useAuth).mockReturnValue({
       isAuthenticated: true,
       isLoading: false,
+      authStatus: "authenticated",
+      authError: null,
       user: { ...activeUser, plan_tier: "free" },
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
       refreshUser: vi.fn().mockResolvedValue(null),
+      retryAuth: vi.fn().mockResolvedValue(null),
     })
 
     render(<UpgradeSuccessContent />)

@@ -8,7 +8,8 @@
     "lint": "eslint .",
     "start": "next start",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage --no-file-parallelism"
+    "test:coverage": "vitest run --coverage --no-file-parallelism",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -64,21 +65,22 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.9",
+    "@playwright/test": "1.61.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/coverage-v8": "4.1.10",
     "eslint": "^9.39.3",
-    "eslint-config-next": "^16.1.6",
+    "eslint-config-next": "16.2.11",
     "jsdom": "^28.1.0",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
     "tw-animate-css": "1.3.3",
     "typescript": "^5",
-    "vitest": "^4.0.18",
+    "vitest": "4.1.10",
     "vitest-axe": "^0.1.0"
   },
   "overrides": {

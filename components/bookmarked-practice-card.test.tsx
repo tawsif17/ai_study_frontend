@@ -17,7 +17,7 @@ vi.mock("@/lib/auth-context", () => ({ useAuth: vi.fn() }))
 describe("BookmarkedPracticeCard", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useAuth).mockReturnValue({ isAuthenticated: true, isLoading: false, user: null, login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn() })
+    vi.mocked(useAuth).mockReturnValue({ isAuthenticated: true, isLoading: false, authStatus: "authenticated", authError: null, user: null, login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn(), retryAuth: vi.fn() })
   })
 
   it("starts the subject-level saved-question session with the exact backend payload", async () => {
