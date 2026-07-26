@@ -148,6 +148,10 @@ export function LoginContent() {
                 {fieldErrors.password && <p id="login-password-error" className="text-sm text-destructive">{fieldErrors.password}</p>}
               </div>
 
+              <p className="text-right text-sm">
+                <Link href="/forgot-password" className="font-medium text-primary hover:underline">Forgot password?</Link>
+              </p>
+
               <Button type="submit" className="w-full rounded-lg" disabled={isLoading}>
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>

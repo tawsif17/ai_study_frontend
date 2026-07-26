@@ -76,6 +76,23 @@ export interface ResendVerificationResponse {
   message: string
 }
 
+export interface ForgotPasswordRequest {
+  email: string
+}
+
+export interface ForgotPasswordResponse {
+  message: string
+}
+
+export interface ResetPasswordRequest {
+  token: string
+  newPassword: string
+}
+
+export interface ResetPasswordResponse {
+  message: string
+}
+
 export interface UpgradeToProResponse {
   message: string
   plan_tier: "pro"

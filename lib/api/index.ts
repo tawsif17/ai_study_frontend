@@ -9,18 +9,22 @@ export * from "./contracts"
 import { ApiContractError, apiClient, apiClientWithResponse } from "./client"
 import {
   parseAuthMeResponse,
+  parseForgotPasswordResponse,
   parseLoginResponse,
   parseRegisterResponse,
   parseResendVerificationResponse,
+  parseResetPasswordResponse,
   parseUpgradeToProResponse,
   parseVerifyEmailResponse,
   validateContactSubmitRequest,
   validateLoginRequest,
+  validateForgotPasswordRequest,
   validatePracticeGenerateRequest,
   validateQuestionReportRequest,
   validateQuestionsListRequest,
   validateRegisterRequest,
   validateResendVerificationRequest,
+  validateResetPasswordRequest,
   validateVerifyEmailRequest,
 } from "./contracts"
 import type {
@@ -29,6 +33,8 @@ import type {
   ChaptersResponse,
   ContactSubmitRequest,
   ContactSubmitResponse,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
   CompleteResultsResponse,
   ExamType,
   GetAnswersResponse,
@@ -54,6 +60,8 @@ import type {
   RemoveBookmarkResponse,
   ResendVerificationRequest,
   ResendVerificationResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
   RevisionListKind,
   RevisionListRequest,
   RevisionListResponse,
@@ -141,6 +149,26 @@ export async function resendVerification(
     body: payload,
   })
   return parseResendVerificationResponse(response)
+}
+
+export async function forgotPassword(data: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
+  const payload = validateForgotPasswordRequest({
+    email: data.email.trim().toLowerCase(),
+  })
+  const response = await apiClient<unknown>("/auth/forgot-password", {
+    method: "POST",
+    body: payload,
+  })
+  return parseForgotPasswordResponse(response)
+}
+
+export async function resetPassword(data: ResetPasswordRequest): Promise<ResetPasswordResponse> {
+  const payload = validateResetPasswordRequest(data)
+  const response = await apiClient<unknown>("/auth/reset-password", {
+    method: "POST",
+    body: payload,
+  })
+  return parseResetPasswordResponse(response)
 }
 
 export async function upgradeToPro(): Promise<UpgradeToProResponse> {

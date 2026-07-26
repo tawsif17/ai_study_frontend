@@ -10,8 +10,12 @@ import type {
   PracticeGenerateRequest,
   QuestionReportRequest,
   QuestionsListRequest,
-  RegisterRequest,
-  RegisterResponse,
+    RegisterRequest,
+    RegisterResponse,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
+    ResetPasswordRequest,
+    ResetPasswordResponse,
   ResendVerificationRequest,
   ResendVerificationResponse,
   UpgradeToProResponse,
@@ -114,7 +118,8 @@ const practiceGenerateRequestSchema = z
     language: z.string().optional(),
   })
   .strict()
-  .superRefine((value, context) => {
+
+const practiceGenerateRequestSchemaWithRules = practiceGenerateRequestSchema.superRefine((value, context) => {
     if (value.selection.type === "CHAPTERS" && !value.selection.chapter_ids?.length) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -152,6 +157,24 @@ const practiceGenerateRequestSchema = z
     }
   })
 
+const forgotPasswordRequestSchema = z
+  .object({
+    email: z.string().min(1),
+  })
+  .strict()
+
+const resetPasswordRequestSchema = z
+  .object({
+    token: z.string().min(1),
+    newPassword: z
+      .string()
+      .min(8, "Password must be at least 8 characters long")
+      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+      .regex(/[0-9]/, "Password must contain at least one number"),
+  })
+  .strict()
+
 const authUserSchema: z.ZodType<AuthUser> = z
   .object({
     id: z.string(),
@@ -173,6 +196,8 @@ const messageResponseSchema = z.object({ message: z.string().min(1) }).strict()
 const registerResponseSchema: z.ZodType<RegisterResponse> = messageResponseSchema
 const verifyEmailResponseSchema: z.ZodType<VerifyEmailResponse> = messageResponseSchema
 const resendVerificationResponseSchema: z.ZodType<ResendVerificationResponse> = messageResponseSchema
+const forgotPasswordResponseSchema: z.ZodType<ForgotPasswordResponse> = messageResponseSchema
+const resetPasswordResponseSchema: z.ZodType<ResetPasswordResponse> = messageResponseSchema
 const loginResponseSchema: z.ZodType<LoginResponse> = z
   .object({ user: authUserSchema, token: z.string().min(1) })
   .strict()
@@ -250,11 +275,23 @@ export function validateQuestionReportRequest(
 export function validatePracticeGenerateRequest(
   input: PracticeGenerateRequest
 ): PracticeGenerateRequest {
-  const parsed = practiceGenerateRequestSchema.safeParse(input)
+  const parsed = practiceGenerateRequestSchemaWithRules.safeParse(input)
   if (!parsed.success) {
     throw new Error(zodMessage(parsed.error))
   }
 
+  return parsed.data
+}
+
+export function validateForgotPasswordRequest(input: ForgotPasswordRequest): ForgotPasswordRequest {
+  const parsed = forgotPasswordRequestSchema.safeParse(input)
+  if (!parsed.success) throw new Error(zodMessage(parsed.error))
+  return parsed.data
+}
+
+export function validateResetPasswordRequest(input: ResetPasswordRequest): ResetPasswordRequest {
+  const parsed = resetPasswordRequestSchema.safeParse(input)
+  if (!parsed.success) throw new Error(zodMessage(parsed.error))
   return parsed.data
 }
 
@@ -280,6 +317,12 @@ export const parseVerifyEmailResponse = (input: unknown) =>
 
 export const parseResendVerificationResponse = (input: unknown) =>
   parseResponse(resendVerificationResponseSchema, input, "resend verification")
+
+export const parseForgotPasswordResponse = (input: unknown) =>
+  parseResponse(forgotPasswordResponseSchema, input, "password recovery")
+
+export const parseResetPasswordResponse = (input: unknown) =>
+  parseResponse(resetPasswordResponseSchema, input, "password reset")
 
 export const parseUpgradeToProResponse = (input: unknown) =>
   parseResponse(upgradeToProResponseSchema, input, "Beta Pro activation")

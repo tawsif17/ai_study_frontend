@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { getAuthMe, getCompleteResults, getPracticeItems, getProgressDashboard, getRevisionItems, getRevisionSummary, login, register, removeBookmark, reportQuestion, resendVerification, saveBookmark, submitContact, upgradeToPro, verifyEmail } from "./index"
+import { forgotPassword, getAuthMe, getCompleteResults, getPracticeItems, getProgressDashboard, getRevisionItems, getRevisionSummary, login, register, removeBookmark, reportQuestion, resendVerification, resetPassword, saveBookmark, submitContact, upgradeToPro, verifyEmail } from "./index"
 import { ApiContractError, apiClient, apiClientWithResponse } from "./client"
 
 vi.mock("./client", () => ({
@@ -177,6 +177,22 @@ describe("progress dashboard API contract", () => {
 describe("revision API contract", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  it("normalizes password-recovery email and uses exact reset payloads", async () => {
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce({ message: "If the account is eligible, a password reset email has been sent." })
+      .mockResolvedValueOnce({ message: "Password reset successful. Please log in with your new password." })
+
+    await forgotPassword({ email: " Student@Example.COM " })
+    await resetPassword({ token: "reset-token", newPassword: "NewPassword123" })
+
+    expect(apiClient).toHaveBeenNthCalledWith(1, "/auth/forgot-password", {
+      method: "POST", body: { email: "student@example.com" },
+    })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/auth/reset-password", {
+      method: "POST", body: { token: "reset-token", newPassword: "NewPassword123" },
+    })
   })
 
   it("preserves the private-beta 202 registration result", async () => {

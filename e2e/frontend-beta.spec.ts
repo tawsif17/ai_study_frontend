@@ -104,6 +104,35 @@ test("verification removes the token from history before showing success", async
   await expect(page.getByRole("link", { name: "Go to login" })).toBeVisible()
 })
 
+test("password recovery requests a generic email, removes its token, and returns to login", async ({ page }) => {
+  await page.route(`${API_BASE}/auth/forgot-password`, (route) =>
+    fulfillData(route, { message: "If the account is eligible, a password reset email has been sent." })
+  )
+  await page.route(`${API_BASE}/auth/reset-password`, (route) =>
+    fulfillData(route, { message: "Password reset successful. Please log in with your new password." })
+  )
+
+  await page.goto("/login")
+  await expect(page.getByRole("link", { name: "Forgot password?" })).toHaveAttribute("href", "/forgot-password")
+
+  await page.goto("/forgot-password")
+  const email = page.getByLabel("Email")
+  const submit = page.getByRole("button", { name: "Send password reset link" })
+  await expect(email).toBeEditable()
+  await email.fill(" Student@Example.com ")
+  await expect(submit).toBeEnabled()
+  await submit.click()
+  await expect(page.getByText("If the account is eligible, a password reset email has been sent.")).toBeVisible()
+
+  await page.goto("/reset-password?token=secret-reset-token&source=email")
+  await expect(page).toHaveURL(/\/reset-password\?source=email$/)
+  await page.getByLabel("New password", { exact: true }).fill("NewPassword123")
+  await page.getByLabel("Confirm new password", { exact: true }).fill("NewPassword123")
+  await page.getByRole("button", { name: "Reset password" }).click()
+  await expect(page.getByText("Password reset successful. Please log in with your new password.")).toBeVisible()
+  await expect(page.getByRole("link", { name: "Go to login" })).toHaveAttribute("href", "/login")
+})
+
 test("temporary account refresh failure retains the session and recovers", async ({ page }) => {
   let attempts = 0
   await page.addInitScript(() => localStorage.setItem("auth_token", "stored-token"))
