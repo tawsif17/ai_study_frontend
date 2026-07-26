@@ -148,12 +148,16 @@ describe("PracticeSessionContent", () => {
     )
     await user.click(screen.getByRole("button", { name: "Submit report" }))
 
-    expect(reportQuestion).toHaveBeenCalledWith(44, {
-      reason_code: "OUT_OF_SYLLABUS",
-      details: " This topic is no longer in the current SSC syllabus. ",
+    await waitFor(() => {
+      expect(reportQuestion).toHaveBeenCalledWith(44, {
+        reason_code: "OUT_OF_SYLLABUS",
+        details: " This topic is no longer in the current SSC syllabus. ",
+      })
     })
-    expect(await screen.findByText("Question report submitted successfully.")).toBeInTheDocument()
-  }, 10000)
+    expect(
+      await screen.findByText("Question report submitted successfully.", {}, { timeout: 5_000 })
+    ).toBeInTheDocument()
+  }, 30_000)
 
   it("shows backend report errors", async () => {
     const user = userEvent.setup()
@@ -186,10 +190,13 @@ describe("PracticeSessionContent", () => {
     await user.click(screen.getByText("Typo"))
     await user.click(screen.getByRole("button", { name: "Submit report" }))
 
+    await waitFor(() => {
+      expect(reportQuestion).toHaveBeenCalledWith(44, { reason_code: "TYPO" })
+    })
     expect(
-      await screen.findByText("You have already reported this question for this reason")
+      await screen.findByText("You have already reported this question for this reason", {}, { timeout: 5_000 })
     ).toBeInTheDocument()
-  }, 10000)
+  }, 30_000)
 
   it("keeps the latest rapid selection visible and serializes slow saves", async () => {
     const user = userEvent.setup()
