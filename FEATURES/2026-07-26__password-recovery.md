@@ -38,11 +38,13 @@ Students who forget their password need a secure, understandable way to request 
 
 - `npm run lint` passed.
 - `npx tsc --noEmit --incremental false` passed.
-- Focused password-recovery, API, and Login tests passed: 42 tests.
-- Local `npm run build` passed with public HTTPS test values; both recovery routes were generated.
+- Full coverage passed: 45 test files and 295 tests, with 87.43% statements, 79.90% branches, 83.23% functions, and 89.84% lines.
+- Forgot-password branch coverage is 82.75%; reset-password branch coverage is 90.90%.
+- Recovery tests cover invalid email, safe network/server errors, persisted cooldown restoration, missing tokens, password mismatch, unchanged passwords, permanent token failures, rate limiting, and successful transient-error retry.
+- Local `npm run build` passed with public HTTPS test values; Inter is packaged locally, so production builds no longer download Google Fonts.
 - All 9 serial Playwright assertions passed against the local production bundle, including the complete mocked password-recovery journey.
-- The Playwright command did not exit before the shell timeout because its local Next server did not shut down cleanly after assertions completed. This is a local test-runner cleanup limitation, not a failed assertion.
-- Full coverage run still has two unrelated failures in `components/practice-session-content.test.tsx`; those failures are not caused by password recovery.
+- The Playwright-managed production server now shuts down cleanly after the suite; `npx playwright test --workers=1` exits normally.
+- Runtime response validation now also covers practice generation, summaries, items, answers, submission, results, progress, revision lists, revision summaries, and bookmark actions.
 
 ## Risks
 

@@ -5,6 +5,7 @@
 export * from "./types"
 export * from "./client"
 export * from "./contracts"
+export * from "./response-contracts"
 
 import { ApiContractError, apiClient, apiClientWithResponse } from "./client"
 import {
@@ -27,6 +28,22 @@ import {
   validateResetPasswordRequest,
   validateVerifyEmailRequest,
 } from "./contracts"
+import {
+  parseGetAnswersResponse,
+  parsePracticeGenerateResponse,
+  parsePracticeItemsResponse,
+  parsePracticeSummaryResponse,
+  parseProgressDashboardResponse,
+  parseRemoveBookmarkResponse,
+  parseResultsJumpResponse,
+  parseResultsResponse,
+  parseRevisionListResponse,
+  parseRevisionSummaryResponse,
+  parseSaveAnswersResponse,
+  parseSaveBookmarkResponse,
+  parseSubmitResponse,
+  type RawPracticeSummaryResponse,
+} from "./response-contracts"
 import type {
   AuthMeResponse,
   Chapter,
@@ -43,10 +60,8 @@ import type {
   McqOption,
   PracticeGenerateRequest,
   PracticeGenerateResponse,
-  PracticeItemsResponse,
   ProgressDashboardResponse,
   PracticeItem,
-  PracticeMode,
   PracticeSummaryResponse,
   QuestionDetail,
   QuestionPart,
@@ -76,7 +91,6 @@ import type {
   Subject,
   SubjectsResponse,
   SubmitResponse,
-  AttemptStatus,
   VerifyEmailRequest,
   VerifyEmailResponse,
 } from "./types"
@@ -293,11 +307,12 @@ export async function generatePractice(
 ): Promise<PracticeGenerateResponse> {
   const payload = validatePracticeGenerateRequest(data)
 
-  return apiClient<PracticeGenerateResponse>("/practice/generate", {
+  const response = await apiClient<unknown>("/practice/generate", {
     method: "POST",
     body: payload,
     requiresAuth: true,
   })
+  return parsePracticeGenerateResponse(response)
 }
 
 // ============================================
@@ -308,7 +323,7 @@ export async function getRevisionItems(
   kind: RevisionListKind,
   query: RevisionListRequest = {}
 ): Promise<RevisionListResponse> {
-  return apiClient<RevisionListResponse>(`/revision/${kind}`, {
+  const response = await apiClient<unknown>(`/revision/${kind}`, {
     params: {
       subject_id: query.subject_id,
       chapter_id: query.chapter_id,
@@ -317,52 +332,46 @@ export async function getRevisionItems(
     },
     requiresAuth: true,
   })
+  return parseRevisionListResponse(response)
 }
 
 export async function getRevisionSummary(): Promise<RevisionSummaryResponse> {
-  return apiClient<RevisionSummaryResponse>("/revision/summary", {
+  const response = await apiClient<unknown>("/revision/summary", {
     requiresAuth: true,
   })
+  return parseRevisionSummaryResponse(response)
 }
 
 export async function saveBookmark(practiceItemId: number): Promise<SaveBookmarkResponse> {
-  return apiClient<SaveBookmarkResponse>(`/revision/bookmarks/practice-items/${practiceItemId}`, {
+  const response = await apiClient<unknown>(`/revision/bookmarks/practice-items/${practiceItemId}`, {
     method: "PUT",
     requiresAuth: true,
   })
+  return parseSaveBookmarkResponse(response)
 }
 
 export async function removeBookmark(questionId: number): Promise<RemoveBookmarkResponse> {
-  return apiClient<RemoveBookmarkResponse>(`/revision/bookmarks/questions/${questionId}`, {
+  const response = await apiClient<unknown>(`/revision/bookmarks/questions/${questionId}`, {
     method: "DELETE",
     requiresAuth: true,
   })
+  return parseRemoveBookmarkResponse(response)
 }
 
 export async function getProgressDashboard(): Promise<ProgressDashboardResponse> {
-  return apiClient<ProgressDashboardResponse>("/profile/progress-dashboard", {
+  const response = await apiClient<unknown>("/profile/progress-dashboard", {
     requiresAuth: true,
   })
+  return parseProgressDashboardResponse(response)
 }
 
 export async function getPracticeSummary(
   practiceId: number
 ): Promise<PracticeSummaryResponse> {
-  const response = await apiClient<
-    | PracticeSummaryResponse
-    | {
-        session: {
-          id: number
-          exam_type_id: number
-          subject_id: number
-          mode: PracticeMode
-          attempt_status: AttemptStatus
-        }
-        totals?: { mcq_total?: number; cq_total?: number }
-      }
-  >(`/practice/${practiceId}/summary`, {
+  const rawResponse = await apiClient<unknown>(`/practice/${practiceId}/summary`, {
     requiresAuth: true,
   })
+  const response: RawPracticeSummaryResponse = parsePracticeSummaryResponse(rawResponse)
 
   if ("session" in response) {
     return {
@@ -384,10 +393,13 @@ export async function getPracticeItems(
   section: Section
 ): Promise<PracticeItem[]> {
   const pageSize = 20
-  const getPage = (page: number) => apiClient<PracticeItemsResponse>(`/practice/${practiceId}/items`, {
-    params: { section, page, page_size: pageSize },
-    requiresAuth: true,
-  })
+  const getPage = async (page: number) => {
+    const response = await apiClient<unknown>(`/practice/${practiceId}/items`, {
+      params: { section, page, page_size: pageSize },
+      requiresAuth: true,
+    })
+    return parsePracticeItemsResponse(response)
+  }
 
   const firstResponse = await getPage(1)
 
@@ -420,24 +432,27 @@ export async function saveAnswers(
   practiceId: number,
   data: SaveAnswersRequest
 ): Promise<SaveAnswersResponse> {
-  return apiClient<SaveAnswersResponse>(`/practice/${practiceId}/answers`, {
+  const response = await apiClient<unknown>(`/practice/${practiceId}/answers`, {
     method: "PATCH",
     body: data,
     requiresAuth: true,
   })
+  return parseSaveAnswersResponse(response)
 }
 
 export async function getAnswers(practiceId: number): Promise<GetAnswersResponse> {
-  return apiClient<GetAnswersResponse>(`/practice/${practiceId}/answers`, {
+  const response = await apiClient<unknown>(`/practice/${practiceId}/answers`, {
     requiresAuth: true,
   })
+  return parseGetAnswersResponse(response)
 }
 
 export async function submitPractice(practiceId: number): Promise<SubmitResponse> {
-  return apiClient<SubmitResponse>(`/practice/${practiceId}/submit`, {
+  const response = await apiClient<unknown>(`/practice/${practiceId}/submit`, {
     method: "POST",
     requiresAuth: true,
   })
+  return parseSubmitResponse(response)
 }
 
 export async function getResults(
@@ -446,7 +461,7 @@ export async function getResults(
   page: number = 1,
   pageSize: number = 10
 ): Promise<ResultsResponse> {
-  return apiClient<ResultsResponse>(`/practice/${practiceId}/results`, {
+  const response = await apiClient<unknown>(`/practice/${practiceId}/results`, {
     params: {
       section,
       page,
@@ -454,6 +469,7 @@ export async function getResults(
     },
     requiresAuth: true,
   })
+  return parseResultsResponse(response)
 }
 
 export async function getCompleteResults(
@@ -541,11 +557,12 @@ export async function jumpToResult(
   section: Section,
   number: number
 ): Promise<ResultsJumpResponse> {
-  return apiClient<ResultsJumpResponse>(`/practice/${practiceId}/results/jump`, {
+  const response = await apiClient<unknown>(`/practice/${practiceId}/results/jump`, {
     params: {
       section,
       number,
     },
     requiresAuth: true,
   })
+  return parseResultsJumpResponse(response)
 }

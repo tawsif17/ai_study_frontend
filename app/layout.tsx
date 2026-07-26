@@ -1,12 +1,11 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import "@fontsource-variable/inter"
 import "./globals.css"
 import { ScrollToTop } from "@/components/scroll-to-top"
 import { WebVitalsReporter } from "@/components/web-vitals-reporter"
 import { AuthProvider } from "@/lib/auth-context"
 
-const inter = Inter({ subsets: ["latin"] })
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://shikkhabuddy.com"
 
 export const metadata: Metadata = {
@@ -49,7 +48,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} font-sans antialiased`}>
+      <body className="font-sans antialiased">
         <AuthProvider>
           <ScrollToTop />
           <WebVitalsReporter />

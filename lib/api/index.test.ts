@@ -512,7 +512,7 @@ describe("complete practice results pagination", () => {
     vi.mocked(apiClient)
       .mockResolvedValueOnce({ ...page(1, 20, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))), total_in_section: -1 })
 
-    await expect(getCompleteResults(12)).rejects.toThrow("response is inconsistent")
+    await expect(getCompleteResults(12)).rejects.toBeInstanceOf(ApiContractError)
     expect(apiClient).toHaveBeenCalledTimes(1)
 
     vi.mocked(apiClient).mockReset()
