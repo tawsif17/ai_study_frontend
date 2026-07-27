@@ -21,7 +21,7 @@ describe("SessionRecoveryBanner", () => {
       />
     )
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Your session is still saved")
+    expect(screen.getByRole("alert")).toHaveTextContent("Check your connection and retry")
     expect(screen.getByRole("button", { name: "Retry" })).toBeEnabled()
     expect((await axe(container)).violations).toEqual([])
   })

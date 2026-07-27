@@ -98,7 +98,7 @@ describe("profile page", () => {
   })
 
   it("redirects unauthenticated visitors while preserving the intended destination", async () => {
-    mockAuth({ isAuthenticated: false, user: null })
+    mockAuth({ isAuthenticated: false, authStatus: "unauthenticated", user: null })
     render(<ProfilePage />)
 
     expect(screen.getByRole("status")).toHaveTextContent("Redirecting to login")
@@ -115,6 +115,20 @@ describe("profile page", () => {
     expect(screen.getByRole("button", { name: "Refreshing…" })).toBeDisabled()
     await waitFor(() => expect(refreshUser).toHaveBeenCalledTimes(1))
     expect(await screen.findByRole("alert")).toHaveTextContent("Please sign in again")
+  })
+
+  it("does not redirect while cold-start session verification is indeterminate", () => {
+    mockAuth({
+      isAuthenticated: false,
+      authStatus: "retryable-refresh-error",
+      authError: "Connection unavailable",
+      user: null,
+    })
+
+    render(<ProfilePage />)
+
+    expect(screen.getByRole("heading", { name: "Profile unavailable" })).toBeInTheDocument()
+    expect(router.replace).not.toHaveBeenCalled()
   })
 
   it("has no detectable accessibility violations", async () => {

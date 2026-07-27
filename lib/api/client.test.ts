@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
   ApiAbortError,
   ApiClientError,
@@ -6,7 +6,9 @@ import {
   ApiNetworkError,
   ApiTimeoutError,
   apiClient,
+  clearSessionCredentials,
   formatApiError,
+  setCsrfToken,
 } from "./client"
 
 function response({
@@ -22,6 +24,10 @@ function response({
 }
 
 describe("apiClient failure classification", () => {
+  beforeEach(() => {
+    clearSessionCredentials()
+  })
+
   afterEach(() => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
@@ -134,5 +140,151 @@ describe("apiClient failure classification", () => {
     expect(forbidden).toBeInstanceOf(ApiClientError)
     expect(formatApiError(forbidden)).toBe("Email verification required")
     expect(formatApiError(serverFailure)).toBe("Something went wrong. Please try again.")
+  })
+})
+
+describe("apiClient cookie session transport", () => {
+  beforeEach(() => {
+    clearSessionCredentials()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it("sends credentials without a bearer header", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      response({ json: async () => ({ success: true, data: { user: {} } }) })
+    )
+    vi.stubGlobal("fetch", fetchMock)
+
+    await apiClient("/auth/me", { auth: "required" })
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+    const init = fetchMock.mock.calls[0][1] as RequestInit
+    expect(init.credentials).toBe("include")
+    expect(init.headers).not.toHaveProperty("Authorization")
+  })
+
+  it("acquires one CSRF token and attaches it to an authenticated mutation", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        response({ json: async () => ({ success: true, data: { csrfToken: "csrf-1" } }) })
+      )
+      .mockResolvedValueOnce(
+        response({ json: async () => ({ success: true, data: { saved: true } }) })
+      )
+    vi.stubGlobal("fetch", fetchMock)
+
+    await apiClient("/practice/42/answers", {
+      method: "PATCH",
+      body: { answers: [] },
+      auth: "required",
+    })
+
+    expect(fetchMock.mock.calls[0][0]).toBe("http://localhost:3001/api/auth/csrf")
+    expect(fetchMock.mock.calls[1][1]).toMatchObject({
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": "csrf-1",
+      },
+    })
+  })
+
+  it("deduplicates refresh and retries concurrent protected requests once", async () => {
+    let protectedAttempts = 0
+    let csrfAttempts = 0
+    let refreshAttempts = 0
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.endsWith("/auth/csrf")) {
+        csrfAttempts += 1
+        return response({
+          json: async () => ({ success: true, data: { csrfToken: "csrf-before-refresh" } }),
+        })
+      }
+      if (url.endsWith("/auth/refresh")) {
+        refreshAttempts += 1
+        return response({
+          json: async () => ({ success: true, data: { csrfToken: "csrf-after-refresh" } }),
+        })
+      }
+      protectedAttempts += 1
+      if (protectedAttempts <= 2) {
+        return response({
+          ok: false,
+          status: 401,
+          json: async () => ({ success: false, error: { message: "Invalid or expired session" } }),
+        })
+      }
+      return response({ json: async () => ({ success: true, data: { ok: true } }) })
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    await Promise.all([
+      apiClient("/subjects", { auth: "required" }),
+      apiClient("/questions", { auth: "required" }),
+    ])
+
+    expect(csrfAttempts).toBe(1)
+    expect(refreshAttempts).toBe(1)
+    expect(protectedAttempts).toBe(4)
+  })
+
+  it("reacquires CSRF once for its exact 403 and preserves unrelated 403 errors", async () => {
+    setCsrfToken("stale-csrf")
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        response({
+          ok: false,
+          status: 403,
+          json: async () => ({ error: { message: "CSRF token missing or invalid" } }),
+        })
+      )
+      .mockResolvedValueOnce(
+        response({ json: async () => ({ success: true, data: { csrfToken: "fresh-csrf" } }) })
+      )
+      .mockResolvedValueOnce(response({ json: async () => ({ success: true, data: { saved: true } }) }))
+      .mockResolvedValueOnce(
+        response({
+          ok: false,
+          status: 403,
+          json: async () => ({ error: { message: "Request origin is not allowed" } }),
+        })
+      )
+    vi.stubGlobal("fetch", fetchMock)
+
+    await expect(
+      apiClient("/practice/42/answers", { method: "PATCH", auth: "required" })
+    ).resolves.toEqual({ saved: true })
+    await expect(
+      apiClient("/practice/42/answers", { method: "PATCH", auth: "required" })
+    ).rejects.toMatchObject({ status: 403, message: "Request origin is not allowed" })
+    expect(fetchMock).toHaveBeenCalledTimes(4)
+  })
+
+  it("falls back to anonymous optional auth when no cookie session exists", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        response({
+          ok: false,
+          status: 401,
+          json: async () => ({ error: { message: "Authentication session missing or invalid" } }),
+        })
+      )
+      .mockResolvedValueOnce(
+        response({ status: 201, json: async () => ({ success: true, data: { message: "Sent" } }) })
+      )
+    vi.stubGlobal("fetch", fetchMock)
+
+    await expect(
+      apiClient("/contact", { method: "POST", body: {}, auth: "optional" })
+    ).resolves.toEqual({ message: "Sent" })
+
+    const contactHeaders = fetchMock.mock.calls[1][1].headers as Record<string, string>
+    expect(contactHeaders["X-CSRF-Token"]).toBeUndefined()
   })
 })

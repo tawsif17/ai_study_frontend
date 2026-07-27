@@ -1,12 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { forgotPassword, getAuthMe, getCompleteResults, getPracticeItems, getProgressDashboard, getRevisionItems, getRevisionSummary, login, register, removeBookmark, reportQuestion, resendVerification, resetPassword, saveBookmark, submitContact, upgradeToPro, verifyEmail } from "./index"
-import { ApiContractError, apiClient, apiClientWithResponse } from "./client"
+import { forgotPassword, getAuthMe, getCompleteResults, getPracticeItems, getProgressDashboard, getRevisionItems, getRevisionSummary, login, logout, register, removeBookmark, reportQuestion, resendVerification, resetPassword, saveBookmark, submitContact, upgradeToPro, verifyEmail } from "./index"
+import {
+  ApiContractError,
+  apiClient,
+  apiClientWithResponse,
+  notifySessionInvalid,
+  setCsrfToken,
+} from "./client"
 
 vi.mock("./client", () => ({
   ApiClientError: class ApiClientError extends Error {},
   ApiContractError: class ApiContractError extends Error {},
   apiClient: vi.fn(),
   apiClientWithResponse: vi.fn(),
+  notifySessionInvalid: vi.fn(),
+  setCsrfToken: vi.fn(),
 }))
 
 describe("auth API contract calls", () => {
@@ -70,6 +78,16 @@ describe("auth API contract calls", () => {
     })
   })
 
+  it("calls current-session logout with the exact empty authenticated request", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce({ message: "Logged out successfully" })
+
+    await expect(logout()).resolves.toEqual({ message: "Logged out successfully" })
+    expect(apiClient).toHaveBeenCalledWith("/auth/logout", {
+      method: "POST",
+      auth: "required",
+    })
+  })
+
   it("calls upgrade to pro endpoint with exact contract payload", async () => {
     vi.mocked(apiClient).mockResolvedValueOnce({
       message: "Upgrade successful. Pro trial is now active.",
@@ -81,7 +99,7 @@ describe("auth API contract calls", () => {
     expect(apiClient).toHaveBeenCalledWith("/auth/upgrade-to-pro", {
       method: "POST",
       body: {},
-      requiresAuth: true,
+      auth: "required",
     })
   })
 
@@ -103,7 +121,7 @@ describe("auth API contract calls", () => {
         email: "student@example.com",
         message: "I need help with the platform.",
       },
-      includeAuth: true,
+      auth: "optional",
     })
   })
 
@@ -128,7 +146,7 @@ describe("auth API contract calls", () => {
         reason_code: "OUT_OF_SYLLABUS",
         details: "This topic is no longer in the current SSC syllabus.",
       },
-      requiresAuth: true,
+      auth: "required",
     })
   })
 
@@ -152,7 +170,7 @@ describe("auth API contract calls", () => {
       body: {
         reason_code: "TYPO",
       },
-      requiresAuth: true,
+      auth: "required",
     })
   })
 })
@@ -169,7 +187,7 @@ describe("progress dashboard API contract", () => {
 
     await expect(getProgressDashboard()).resolves.toEqual(dashboard)
     expect(apiClient).toHaveBeenCalledWith("/profile/progress-dashboard", {
-      requiresAuth: true,
+      auth: "required",
     })
   })
 })
@@ -186,6 +204,7 @@ describe("revision API contract", () => {
 
     await forgotPassword({ email: " Student@Example.COM " })
     await resetPassword({ token: "reset-token", newPassword: "NewPassword123" })
+    expect(notifySessionInvalid).toHaveBeenCalledOnce()
 
     expect(apiClient).toHaveBeenNthCalledWith(1, "/auth/forgot-password", {
       method: "POST", body: { email: "student@example.com" },
@@ -232,12 +251,12 @@ describe("revision API contract", () => {
       updated_at: "2026-07-20T00:00:00.000Z",
     }
     vi.mocked(apiClient)
-      .mockResolvedValueOnce({ user, token: "signed-token" })
+      .mockResolvedValueOnce({ user, csrfToken: "signed-csrf-token" })
       .mockResolvedValueOnce({ user })
 
     await expect(login({ email: " Student@Example.COM ", password: "Password123" })).resolves.toEqual({
       user,
-      token: "signed-token",
+      csrfToken: "signed-csrf-token",
     })
     await expect(getAuthMe()).resolves.toEqual({ user })
 
@@ -245,7 +264,8 @@ describe("revision API contract", () => {
       method: "POST",
       body: { email: "student@example.com", password: "Password123" },
     })
-    expect(apiClient).toHaveBeenNthCalledWith(2, "/auth/me", { requiresAuth: true })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/auth/me", { auth: "required" })
+    expect(setCsrfToken).toHaveBeenCalledWith("signed-csrf-token")
   })
 
   it("rejects unrecognized registration success statuses and malformed auth payloads", async () => {
@@ -265,7 +285,7 @@ describe("revision API contract", () => {
       })
     ).rejects.toBeInstanceOf(ApiContractError)
 
-    vi.mocked(apiClient).mockResolvedValueOnce({ token: "missing-user" })
+    vi.mocked(apiClient).mockResolvedValueOnce({ csrfToken: "missing-user" })
     await expect(
       login({ email: "student@example.com", password: "Password123" })
     ).rejects.toBeInstanceOf(ApiContractError)
@@ -280,9 +300,9 @@ describe("revision API contract", () => {
 
     expect(apiClient).toHaveBeenNthCalledWith(1, "/revision/bookmarks", {
       params: { subject_id: 2, chapter_id: 7, page: 2, page_size: 20 },
-      requiresAuth: true,
+      auth: "required",
     })
-    expect(apiClient).toHaveBeenNthCalledWith(2, "/revision/summary", { requiresAuth: true })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/revision/summary", { auth: "required" })
   })
 
   it("saves from a practice item and removes only a manual bookmark", async () => {
@@ -292,8 +312,8 @@ describe("revision API contract", () => {
     await saveBookmark(9)
     await removeBookmark(42)
 
-    expect(apiClient).toHaveBeenNthCalledWith(1, "/revision/bookmarks/practice-items/9", { method: "PUT", requiresAuth: true })
-    expect(apiClient).toHaveBeenNthCalledWith(2, "/revision/bookmarks/questions/42", { method: "DELETE", requiresAuth: true })
+    expect(apiClient).toHaveBeenNthCalledWith(1, "/revision/bookmarks/practice-items/9", { method: "PUT", auth: "required" })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/revision/bookmarks/questions/42", { method: "DELETE", auth: "required" })
   })
 })
 
@@ -336,11 +356,11 @@ describe("practice items pagination", () => {
     )
     expect(apiClient).toHaveBeenNthCalledWith(1, "/practice/12/items", {
       params: { section: "MCQ", page: 1, page_size: 20 },
-      requiresAuth: true,
+      auth: "required",
     })
     expect(apiClient).toHaveBeenNthCalledWith(2, "/practice/12/items", {
       params: { section: "MCQ", page: 2, page_size: 20 },
-      requiresAuth: true,
+      auth: "required",
     })
   })
 
@@ -358,7 +378,7 @@ describe("practice items pagination", () => {
     expect(apiClient).toHaveBeenCalledTimes(1)
     expect(apiClient).toHaveBeenCalledWith("/practice/12/items", {
       params: { section: "MCQ", page: 1, page_size: 20 },
-      requiresAuth: true,
+      auth: "required",
     })
   })
 
@@ -423,7 +443,7 @@ describe("complete practice results pagination", () => {
     })
     expect(apiClient).toHaveBeenCalledWith("/practice/12/results", {
       params: { section: "MCQ", page: 1, page_size: 20 },
-      requiresAuth: true,
+      auth: "required",
     })
   })
 
@@ -466,11 +486,11 @@ describe("complete practice results pagination", () => {
     await expect(getCompleteResults(12)).resolves.toMatchObject({ total_in_section: 25 })
     expect(apiClient).toHaveBeenNthCalledWith(1, "/practice/12/results", {
       params: { section: "MCQ", page: 1, page_size: 20 },
-      requiresAuth: true,
+      auth: "required",
     })
     expect(apiClient).toHaveBeenNthCalledWith(2, "/practice/12/results", {
       params: { section: "MCQ", page: 2, page_size: 20 },
-      requiresAuth: true,
+      auth: "required",
     })
     expect(apiClient).toHaveBeenCalledTimes(2)
   })

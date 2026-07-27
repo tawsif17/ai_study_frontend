@@ -44,6 +44,12 @@ async function completeSignupForm(page: Page) {
   await page.getByRole("option", { name: "Class 9" }).click()
 }
 
+test.beforeEach(async ({ page }) => {
+  await page.route(`${API_BASE}/auth/me`, (route) =>
+    fulfillError(route, 401, "Authentication session missing or invalid")
+  )
+})
+
 test("signup 201 stays in place and offers prefilled verification recovery", async ({ page }) => {
   await page.route(`${API_BASE}/auth/register`, (route) =>
     fulfillData(route, { message: "Registration successful. Please verify your email." }, 201)
@@ -133,9 +139,8 @@ test("password recovery requests a generic email, removes its token, and returns
   await expect(page.getByRole("link", { name: "Go to login" })).toHaveAttribute("href", "/login")
 })
 
-test("temporary account refresh failure retains the session and recovers", async ({ page }) => {
+test("temporary account restoration failure stays indeterminate and recovers", async ({ page }) => {
   let attempts = 0
-  await page.addInitScript(() => localStorage.setItem("auth_token", "stored-token"))
   await page.route(`${API_BASE}/auth/me`, async (route) => {
     attempts += 1
     if (attempts === 1) await fulfillError(route, 503, "Internal provider details")
@@ -143,17 +148,26 @@ test("temporary account refresh failure retains the session and recovers", async
   })
 
   await page.goto("/profile")
-  await expect(page.getByText("We could not refresh your account")).toBeVisible()
-  await expect(page.getByText("Your session is still saved.")).toBeVisible()
+  await expect(page.getByText("We could not verify your session")).toBeVisible()
+  await expect(page.getByText("Check your connection and retry before continuing.")).toBeVisible()
   await page.getByRole("button", { name: "Retry" }).click()
   await expect(page.getByRole("heading", { name: /Welcome back, Beta/ })).toBeVisible()
-  await expect(page.getByText("We could not refresh your account")).toHaveCount(0)
-  expect(await page.evaluate(() => localStorage.getItem("auth_token"))).toBe("stored-token")
+  await expect(page.getByText("We could not verify your session")).toHaveCount(0)
+  expect(await page.evaluate(() => localStorage.getItem("auth_token"))).toBeNull()
 })
 
 test("logout synchronizes across open tabs", async ({ context, page }) => {
-  await context.addInitScript(() => localStorage.setItem("auth_token", "stored-token"))
+  let logoutCalled = false
   await context.route(`${API_BASE}/auth/me`, (route) => fulfillData(route, { user: verifiedUser }))
+  await page.route(`${API_BASE}/auth/me`, (route) => fulfillData(route, { user: verifiedUser }))
+  await context.route(`${API_BASE}/auth/csrf`, (route) =>
+    fulfillData(route, { csrfToken: "logout-csrf" })
+  )
+  await context.route(`${API_BASE}/auth/logout`, async (route) => {
+    expect(route.request().headers()["x-csrf-token"]).toBe("logout-csrf")
+    logoutCalled = true
+    await fulfillData(route, { message: "Logged out successfully" })
+  })
 
   const secondPage = await context.newPage()
   await Promise.all([page.goto("/profile"), secondPage.goto("/profile")])
@@ -164,19 +178,19 @@ test("logout synchronizes across open tabs", async ({ context, page }) => {
   await page.getByRole("menuitem", { name: "Logout" }).click()
 
   await expect(secondPage).toHaveURL(/\/login\?next=%2Fprofile$/)
-  expect(await secondPage.evaluate(() => localStorage.getItem("auth_token"))).toBeNull()
+  expect(logoutCalled).toBe(true)
 })
 
 test("practice saves an answer, submits, and transitions to results", async ({ page }) => {
   let submitted = false
   let saved = false
-  await page.addInitScript(() => localStorage.setItem("auth_token", "stored-token"))
   await page.route(`${API_BASE}/**`, async (route) => {
     const request = route.request()
     const url = new URL(request.url())
     const path = url.pathname
 
     if (path === "/api/auth/me") return fulfillData(route, { user: verifiedUser })
+    if (path === "/api/auth/csrf") return fulfillData(route, { csrfToken: "practice-csrf" })
     if (path === "/api/practice/42/summary") {
       return fulfillData(route, {
         practice_session_id: 42,
@@ -202,6 +216,7 @@ test("practice saves an answer, submits, and transitions to results", async ({ p
       return fulfillData(route, { answers: [] })
     }
     if (path === "/api/practice/42/answers" && request.method() === "PATCH") {
+      expect(request.headers()["x-csrf-token"]).toBe("practice-csrf")
       saved = true
       return fulfillData(route, { saved: true })
     }
@@ -220,6 +235,7 @@ test("practice saves an answer, submits, and transitions to results", async ({ p
       })
     }
     if (path === "/api/practice/42/submit") {
+      expect(request.headers()["x-csrf-token"]).toBe("practice-csrf")
       submitted = true
       return fulfillData(route, { practice_session_id: 42, mcq_total: 1, mcq_correct: 1, mcq_score: 1 })
     }
@@ -278,7 +294,6 @@ test("practice saves an answer, submits, and transitions to results", async ({ p
 })
 
 test("auth and recovery pages expose a keyboard skip path and reachable controls", async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem("auth_token", "stored-token"))
   await page.route(`${API_BASE}/auth/me`, (route) => fulfillData(route, { user: verifiedUser }))
   for (const path of ["/signup", "/login", "/resend-verification", "/profile", "/pricing"]) {
     await page.goto(path)

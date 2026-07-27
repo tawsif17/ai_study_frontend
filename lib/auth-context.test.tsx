@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { AuthProvider, useAuth } from "./auth-context"
-import { ApiClientError, clearAuthToken } from "./api/client"
+import { ApiClientError, clearSessionCredentials, removeLegacyAuthToken } from "./api/client"
 
 const mockMutate = vi.fn()
 
@@ -25,21 +25,23 @@ vi.mock("./api/client", () => {
 
   return {
     ApiClientError: MockApiClientError,
-    clearAuthToken: vi.fn(),
+    clearSessionCredentials: vi.fn(),
     formatApiError: (error: Error) => error.message,
-    setAuthToken: vi.fn(),
+    removeLegacyAuthToken: vi.fn(),
+    subscribeToSessionInvalid: vi.fn(() => () => {}),
   }
 })
 
 vi.mock("./api", () => ({
   getAuthMe: vi.fn(),
   login: vi.fn(),
+  logout: vi.fn(),
   register: vi.fn(),
 }))
 
 function LogoutButton() {
   const { logout } = useAuth()
-  return <button onClick={logout}>Logout</button>
+  return <button onClick={() => void logout().catch(() => {})}>Logout</button>
 }
 
 function LoginButton() {
@@ -77,7 +79,9 @@ describe("AuthProvider logout", () => {
     localStorage.clear()
   })
 
-  it("clears auth-scoped SWR cache keys", () => {
+  it("clears auth-scoped SWR cache keys", async () => {
+    const { logout } = await import("./api")
+    vi.mocked(logout).mockResolvedValueOnce({ message: "Logged out successfully" })
     render(
       <AuthProvider>
         <LogoutButton />
@@ -86,7 +90,7 @@ describe("AuthProvider logout", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Logout" }))
 
-    expect(clearAuthToken).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(clearSessionCredentials).toHaveBeenCalledTimes(1))
     expect(mockMutate).toHaveBeenCalledTimes(1)
     const [matcher, value, options] = mockMutate.mock.calls[0]
 
@@ -104,23 +108,44 @@ describe("AuthProvider logout", () => {
     expect(matcher(["exam-types"])).toBe(false)
     expect(matcher("subjects")).toBe(false)
   })
+
+  it("keeps the confirmed session when server logout cannot be completed", async () => {
+    const { getAuthMe, logout } = await import("./api")
+    vi.mocked(getAuthMe).mockResolvedValueOnce({ user: authUser })
+    vi.mocked(logout).mockRejectedValueOnce(new Error("Network unavailable"))
+
+    render(
+      <AuthProvider>
+        <AuthState />
+        <LogoutButton />
+      </AuthProvider>
+    )
+    await screen.findByText("authenticated:true:student@example.com")
+
+    fireEvent.click(screen.getByRole("button", { name: "Logout" }))
+
+    await waitFor(() =>
+      expect(screen.getByText("authenticated:true:student@example.com")).toBeInTheDocument()
+    )
+    expect(clearSessionCredentials).not.toHaveBeenCalled()
+  })
 })
 
 describe("AuthProvider refresh recovery", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
-    localStorage.setItem("auth_token", "stored-token")
   })
 
-  it("keeps a stored session when refresh has a temporary failure", async () => {
+  it("keeps a cold-start transport failure indeterminate", async () => {
     const { getAuthMe } = await import("./api")
     vi.mocked(getAuthMe).mockRejectedValueOnce(new Error("Network unavailable"))
 
     render(<AuthProvider><AuthState /></AuthProvider>)
 
-    await waitFor(() => expect(screen.getByText("retryable-refresh-error:true:no-user")).toBeInTheDocument())
-    expect(clearAuthToken).not.toHaveBeenCalled()
+    await waitFor(() => expect(screen.getByText("retryable-refresh-error:false:no-user")).toBeInTheDocument())
+    expect(clearSessionCredentials).not.toHaveBeenCalled()
+    expect(removeLegacyAuthToken).toHaveBeenCalledOnce()
   })
 
   it("clears the stored session only when refresh confirms a 401", async () => {
@@ -130,7 +155,7 @@ describe("AuthProvider refresh recovery", () => {
     render(<AuthProvider><AuthState /></AuthProvider>)
 
     await waitFor(() => expect(screen.getByText("unauthenticated:false:no-user")).toBeInTheDocument())
-    expect(clearAuthToken).toHaveBeenCalledTimes(1)
+    expect(clearSessionCredentials).toHaveBeenCalledTimes(1)
   })
 
   it("offers a global retry action and restores the account after recovery", async () => {
@@ -147,8 +172,8 @@ describe("AuthProvider refresh recovery", () => {
     await waitFor(() =>
       expect(screen.getByText("authenticated:true:student@example.com")).toBeInTheDocument()
     )
-    expect(screen.queryByText("We could not refresh your account")).not.toBeInTheDocument()
-    expect(clearAuthToken).not.toHaveBeenCalled()
+    expect(screen.queryByText("We could not verify your session")).not.toBeInTheDocument()
+    expect(clearSessionCredentials).not.toHaveBeenCalled()
   })
 
   it("applies logout events received through the storage fallback", async () => {
@@ -169,14 +194,16 @@ describe("AuthProvider refresh recovery", () => {
     await waitFor(() =>
       expect(screen.getByText("unauthenticated:false:no-user")).toBeInTheDocument()
     )
-    expect(clearAuthToken).toHaveBeenCalledTimes(1)
+    expect(clearSessionCredentials).toHaveBeenCalledTimes(1)
   })
 
   it("refreshes the account for login events received through the storage fallback", async () => {
     vi.stubGlobal("BroadcastChannel", undefined)
     localStorage.clear()
     const { getAuthMe } = await import("./api")
-    vi.mocked(getAuthMe).mockResolvedValueOnce({ user: authUser })
+    vi.mocked(getAuthMe)
+      .mockRejectedValueOnce(new ApiClientError({ message: "Missing" }, 401))
+      .mockResolvedValueOnce({ user: authUser })
 
     render(<AuthProvider><AuthState /></AuthProvider>)
     await screen.findByText("unauthenticated:false:no-user")
@@ -207,8 +234,9 @@ describe("AuthProvider refresh recovery", () => {
       close() {}
     }
     vi.stubGlobal("BroadcastChannel", MockBroadcastChannel)
-    const { login } = await import("./api")
-    vi.mocked(login).mockResolvedValueOnce({ user: authUser, token: "new-token" })
+    const { getAuthMe, login } = await import("./api")
+    vi.mocked(getAuthMe).mockRejectedValueOnce(new ApiClientError({ message: "Missing" }, 401))
+    vi.mocked(login).mockResolvedValueOnce({ user: authUser, csrfToken: "new-csrf-token" })
 
     render(
       <AuthProvider>
@@ -223,10 +251,12 @@ describe("AuthProvider refresh recovery", () => {
     await screen.findByText("authenticated:true:student@example.com")
     fireEvent.click(screen.getByRole("button", { name: "Logout" }))
 
-    expect(posted).toEqual([
-      expect.objectContaining({ type: "login" }),
-      expect.objectContaining({ type: "logout" }),
-    ])
+    await waitFor(() =>
+      expect(posted).toEqual([
+        expect.objectContaining({ type: "login" }),
+        expect.objectContaining({ type: "logout" }),
+      ])
+    )
   })
 
   it("does not restore a session when an older refresh completes after logout", async () => {
