@@ -5,8 +5,10 @@ import type {
   ContactSubmitRequest,
   AuthMeResponse,
   AuthUser,
+  CsrfResponse,
   LoginRequest,
   LoginResponse,
+  LogoutResponse,
   PracticeGenerateRequest,
   QuestionReportRequest,
   QuestionsListRequest,
@@ -16,6 +18,7 @@ import type {
     ForgotPasswordResponse,
     ResetPasswordRequest,
     ResetPasswordResponse,
+    RefreshResponse,
   ResendVerificationRequest,
   ResendVerificationResponse,
   UpgradeToProResponse,
@@ -191,6 +194,15 @@ const authUserSchema: z.ZodType<AuthUser> = z
     updated_at: z.string(),
   })
   .strict()
+const verifiedAuthUserSchema: z.ZodType<AuthUser> = authUserSchema.superRefine((user, context) => {
+  if (user.email_verified_at === null) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["email_verified_at"],
+      message: "email_verified_at is required for a logged-in user",
+    })
+  }
+})
 
 const messageResponseSchema = z.object({ message: z.string().min(1) }).strict()
 const registerResponseSchema: z.ZodType<RegisterResponse> = messageResponseSchema
@@ -199,10 +211,17 @@ const resendVerificationResponseSchema: z.ZodType<ResendVerificationResponse> = 
 const forgotPasswordResponseSchema: z.ZodType<ForgotPasswordResponse> = messageResponseSchema
 const resetPasswordResponseSchema: z.ZodType<ResetPasswordResponse> = messageResponseSchema
 const loginResponseSchema: z.ZodType<LoginResponse> = z
-  .object({ user: authUserSchema, token: z.string().min(1) })
+  .object({ user: verifiedAuthUserSchema, csrfToken: z.string().min(1) })
   .strict()
 const authMeResponseSchema: z.ZodType<AuthMeResponse> = z
   .object({ user: authUserSchema })
+  .strict()
+const csrfResponseSchema: z.ZodType<CsrfResponse> = z
+  .object({ csrfToken: z.string().min(1) })
+  .strict()
+const refreshResponseSchema: z.ZodType<RefreshResponse> = csrfResponseSchema
+const logoutResponseSchema: z.ZodType<LogoutResponse> = z
+  .object({ message: z.literal("Logged out successfully") })
   .strict()
 const upgradeToProResponseSchema: z.ZodType<UpgradeToProResponse> = z
   .object({ message: z.string().min(1), plan_tier: z.literal("pro") })
@@ -311,6 +330,15 @@ export const parseLoginResponse = (input: unknown) =>
 
 export const parseAuthMeResponse = (input: unknown) =>
   parseResponse(authMeResponseSchema, input, "account")
+
+export const parseCsrfResponse = (input: unknown) =>
+  parseResponse(csrfResponseSchema, input, "CSRF token")
+
+export const parseRefreshResponse = (input: unknown) =>
+  parseResponse(refreshResponseSchema, input, "session refresh")
+
+export const parseLogoutResponse = (input: unknown) =>
+  parseResponse(logoutResponseSchema, input, "logout")
 
 export const parseVerifyEmailResponse = (input: unknown) =>
   parseResponse(verifyEmailResponseSchema, input, "email verification")

@@ -32,9 +32,9 @@ export function SessionRecoveryBanner({
   return (
     <div className="sticky top-0 z-[60] px-3 py-2" aria-live="polite">
       <Alert variant="destructive" className="mx-auto max-w-5xl bg-background shadow-md">
-        <AlertTitle>We could not refresh your account</AlertTitle>
+        <AlertTitle>We could not verify your session</AlertTitle>
         <AlertDescription>
-          <p>Your session is still saved. Check your connection and try again.</p>
+          <p>Check your connection and retry before continuing.</p>
           {authError ? <p>{authError}</p> : null}
           <Button type="button" size="sm" variant="outline" onClick={retry} disabled={isRetrying}>
             {isRetrying ? "Retrying…" : "Retry"}

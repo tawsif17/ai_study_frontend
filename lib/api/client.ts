@@ -76,8 +76,7 @@ export interface RequestOptions {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE"
   body?: unknown
   params?: Record<string, string | number | undefined>
-  requiresAuth?: boolean
-  includeAuth?: boolean
+  auth?: "none" | "optional" | "required"
   timeoutMs?: number
   signal?: AbortSignal
 }
@@ -87,23 +86,37 @@ export interface ApiClientResponse<T> {
   status: number
 }
 
-function getAuthToken(): string | null {
-  if (typeof window === "undefined") return null
-  return localStorage.getItem("auth_token")
+const CSRF_ERROR_MESSAGE = "CSRF token missing or invalid"
+const UNSAFE_METHODS = new Set(["POST", "PATCH", "PUT", "DELETE"])
+
+let csrfToken: string | null = null
+let csrfRequest: Promise<string> | null = null
+let refreshRequest: Promise<string> | null = null
+const sessionInvalidListeners = new Set<() => void>()
+
+export function setCsrfToken(token: string): void {
+  csrfToken = token
 }
 
-export function setAuthToken(token: string): void {
-  if (typeof window === "undefined") return
-  localStorage.setItem("auth_token", token)
+export function clearSessionCredentials(): void {
+  csrfToken = null
+  csrfRequest = null
+  refreshRequest = null
 }
 
-export function clearAuthToken(): void {
+export function removeLegacyAuthToken(): void {
   if (typeof window === "undefined") return
   localStorage.removeItem("auth_token")
 }
 
-export function isAuthenticated(): boolean {
-  return getAuthToken() !== null
+export function subscribeToSessionInvalid(listener: () => void): () => void {
+  sessionInvalidListeners.add(listener)
+  return () => sessionInvalidListeners.delete(listener)
+}
+
+export function notifySessionInvalid(): void {
+  clearSessionCredentials()
+  for (const listener of sessionInvalidListeners) listener()
 }
 
 export async function apiClient<T>(
@@ -118,12 +131,134 @@ export async function apiClientWithResponse<T>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<ApiClientResponse<T>> {
+  const method = options.method ?? "GET"
+  const auth = options.auth ?? "none"
+  const unsafe = UNSAFE_METHODS.has(method)
+  let requestCsrfToken: string | undefined
+
+  if (unsafe && auth !== "none") {
+    try {
+      requestCsrfToken = await ensureCsrfToken()
+    } catch (error) {
+      if (!(auth === "optional" && error instanceof ApiClientError && error.status === 401)) {
+        if (auth === "required" && error instanceof ApiClientError && error.status === 401) {
+          notifySessionInvalid()
+        }
+        throw error
+      }
+    }
+  }
+
+  try {
+    return await executeRequest<T>(endpoint, options, requestCsrfToken)
+  } catch (error) {
+    if (auth === "required" && error instanceof ApiClientError && error.status === 401) {
+      try {
+        requestCsrfToken = await refreshSession()
+        return await executeRequest<T>(endpoint, options, unsafe ? requestCsrfToken : undefined)
+      } catch (refreshError) {
+        if (refreshError instanceof ApiClientError && refreshError.status === 401) {
+          notifySessionInvalid()
+        }
+        throw refreshError
+      }
+    }
+
+    if (
+      unsafe &&
+      auth !== "none" &&
+      error instanceof ApiClientError &&
+      error.status === 403 &&
+      error.message === CSRF_ERROR_MESSAGE
+    ) {
+      csrfToken = null
+      requestCsrfToken = await ensureCsrfToken()
+      return executeRequest<T>(endpoint, options, requestCsrfToken)
+    }
+
+    throw error
+  }
+}
+
+async function ensureCsrfToken(): Promise<string> {
+  if (csrfToken) return csrfToken
+  if (csrfRequest) return csrfRequest
+
+  csrfRequest = executeRequest<{ csrfToken: string }>("/auth/csrf", {
+    auth: "none",
+  })
+    .then((response) => {
+      csrfToken = parseCsrfTokenData(response.data, "CSRF token")
+      return csrfToken
+    })
+    .finally(() => {
+      csrfRequest = null
+    })
+
+  return csrfRequest
+}
+
+async function refreshSession(): Promise<string> {
+  if (refreshRequest) return refreshRequest
+
+  refreshRequest = (async () => {
+    let token = await ensureCsrfToken()
+    let response: ApiClientResponse<{ csrfToken: string }>
+
+    try {
+      response = await executeRequest("/auth/refresh", {
+        method: "POST",
+        auth: "none",
+      }, token)
+    } catch (error) {
+      if (
+        error instanceof ApiClientError &&
+        error.status === 403 &&
+        error.message === CSRF_ERROR_MESSAGE
+      ) {
+        csrfToken = null
+        token = await ensureCsrfToken()
+        response = await executeRequest("/auth/refresh", {
+          method: "POST",
+          auth: "none",
+        }, token)
+      } else {
+        throw error
+      }
+    }
+
+    csrfToken = parseCsrfTokenData(response.data, "session refresh")
+    return csrfToken
+  })().finally(() => {
+    refreshRequest = null
+  })
+
+  return refreshRequest
+}
+
+function parseCsrfTokenData(input: unknown, contractName: string): string {
+  if (
+    !input ||
+    typeof input !== "object" ||
+    Object.keys(input).length !== 1 ||
+    !("csrfToken" in input) ||
+    typeof input.csrfToken !== "string" ||
+    input.csrfToken.length === 0
+  ) {
+    throw new ApiContractError(`The server returned an invalid ${contractName}`)
+  }
+  return input.csrfToken
+}
+
+async function executeRequest<T>(
+  endpoint: string,
+  options: RequestOptions,
+  requestCsrfToken?: string
+): Promise<ApiClientResponse<T>> {
   const {
     method = "GET",
     body,
     params,
-    requiresAuth = false,
-    includeAuth = false,
     timeoutMs = DEFAULT_API_TIMEOUT_MS,
     signal: callerSignal,
   } = options
@@ -139,10 +274,7 @@ export async function apiClientWithResponse<T>(
   }
 
   const headers: Record<string, string> = { "Content-Type": "application/json" }
-  if (requiresAuth || includeAuth) {
-    const token = getAuthToken()
-    if (token) headers.Authorization = `Bearer ${token}`
-  }
+  if (requestCsrfToken) headers["X-CSRF-Token"] = requestCsrfToken
 
   const controller = new AbortController()
   let timedOut = false
@@ -178,6 +310,7 @@ export async function apiClientWithResponse<T>(
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       cache: method === "GET" ? "no-store" : "default",
+      credentials: "include",
       signal: controller.signal,
     })
   } catch (error) {

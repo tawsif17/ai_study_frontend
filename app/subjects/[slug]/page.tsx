@@ -38,7 +38,7 @@ export function parseSubjectId(slug: string): number | null {
 
 export function SubjectDetailWrapper({ subjectId }: { subjectId: number }) {
   const router = useRouter()
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { authStatus, isAuthenticated, isLoading: authLoading } = useAuth()
 
   const { examTypes, isLoading: examTypesLoading, isError: examTypesError, mutate: retryExamTypes } = useExamTypes()
   const { subjects, isLoading: subjectsLoading, isError: subjectsError, mutate: retrySubjects } = useSubjects("SSC", isAuthenticated)
@@ -57,12 +57,17 @@ export function SubjectDetailWrapper({ subjectId }: { subjectId: number }) {
   )
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
+    if (!authLoading && authStatus === "unauthenticated") {
       router.push(`/login?next=${encodeURIComponent(`/subjects/${subjectId}`)}`)
     }
-  }, [authLoading, isAuthenticated, router, subjectId])
+  }, [authLoading, authStatus, router, subjectId])
 
-  const isLoading = authLoading || examTypesLoading || subjectsLoading || questionsLoading
+  const isLoading =
+    authLoading ||
+    authStatus === "retryable-refresh-error" ||
+    examTypesLoading ||
+    subjectsLoading ||
+    questionsLoading
   const hasUnauthorized =
     (examTypesError instanceof ApiClientError && examTypesError.status === 401) ||
     (subjectsError instanceof ApiClientError && subjectsError.status === 401) ||
@@ -97,7 +102,7 @@ export function SubjectDetailWrapper({ subjectId }: { subjectId: number }) {
     )
   }
 
-  if (!isAuthenticated) {
+  if (authStatus === "unauthenticated") {
     return (
       <div className="container mx-auto px-4 py-12 text-center space-y-4">
         <h1 className="text-xl font-semibold text-foreground mb-2">Redirecting to login</h1>

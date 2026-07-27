@@ -43,15 +43,15 @@ export function PracticeSessionWrapper({ practiceId }: { practiceId: number }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const warning = searchParams.get("warning")
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { authStatus, isAuthenticated, isLoading: authLoading } = useAuth()
   const { summary, isLoading, isError } = usePracticeSummary(practiceId, isAuthenticated)
 
   // Redirect to login if not authenticated
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
+    if (!authLoading && authStatus === "unauthenticated") {
       router.push(`/login?next=${encodeURIComponent(`/practice/${practiceId}`)}`)
     }
-  }, [authLoading, isAuthenticated, practiceId, router])
+  }, [authLoading, authStatus, practiceId, router])
 
   useEffect(() => {
     if (isError instanceof ApiClientError && isError.status === 401) {
@@ -59,7 +59,7 @@ export function PracticeSessionWrapper({ practiceId }: { practiceId: number }) {
     }
   }, [isError, practiceId, router])
 
-  if (authLoading || isLoading) {
+  if (authLoading || authStatus === "retryable-refresh-error" || isLoading) {
     return (
       <div className="container mx-auto px-4 py-12" role="status" aria-label="Loading practice session">
         <span className="sr-only">Loading practice session.</span>
@@ -69,7 +69,7 @@ export function PracticeSessionWrapper({ practiceId }: { practiceId: number }) {
     )
   }
 
-  if (!isAuthenticated) {
+  if (authStatus === "unauthenticated") {
     return (
       <div className="container mx-auto px-4 py-12 text-center space-y-4">
         <h1 className="text-xl font-semibold text-foreground mb-2">Please sign in to continue</h1>

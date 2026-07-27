@@ -7,9 +7,16 @@ export * from "./client"
 export * from "./contracts"
 export * from "./response-contracts"
 
-import { ApiContractError, apiClient, apiClientWithResponse } from "./client"
+import {
+  ApiContractError,
+  apiClient,
+  apiClientWithResponse,
+  notifySessionInvalid,
+  setCsrfToken,
+} from "./client"
 import {
   parseAuthMeResponse,
+  parseLogoutResponse,
   parseForgotPasswordResponse,
   parseLoginResponse,
   parseRegisterResponse,
@@ -57,6 +64,7 @@ import type {
   GetAnswersResponse,
   LoginRequest,
   LoginResponse,
+  LogoutResponse,
   McqOption,
   PracticeGenerateRequest,
   PracticeGenerateResponse,
@@ -133,14 +141,24 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
     method: "POST",
     body: payload,
   })
-  return parseLoginResponse(response)
+  const parsed = parseLoginResponse(response)
+  setCsrfToken(parsed.csrfToken)
+  return parsed
 }
 
 export async function getAuthMe(): Promise<AuthMeResponse> {
   const response = await apiClient<unknown>("/auth/me", {
-    requiresAuth: true,
+    auth: "required",
   })
   return parseAuthMeResponse(response)
+}
+
+export async function logout(): Promise<LogoutResponse> {
+  const response = await apiClient<unknown>("/auth/logout", {
+    method: "POST",
+    auth: "required",
+  })
+  return parseLogoutResponse(response)
 }
 
 export async function verifyEmail(data: VerifyEmailRequest): Promise<VerifyEmailResponse> {
@@ -182,14 +200,16 @@ export async function resetPassword(data: ResetPasswordRequest): Promise<ResetPa
     method: "POST",
     body: payload,
   })
-  return parseResetPasswordResponse(response)
+  const parsed = parseResetPasswordResponse(response)
+  notifySessionInvalid()
+  return parsed
 }
 
 export async function upgradeToPro(): Promise<UpgradeToProResponse> {
   const response = await apiClient<unknown>("/auth/upgrade-to-pro", {
     method: "POST",
     body: {},
-    requiresAuth: true,
+    auth: "required",
   })
   return parseUpgradeToProResponse(response)
 }
@@ -206,7 +226,7 @@ export async function submitContact(
   return apiClient<ContactSubmitResponse>("/contact", {
     method: "POST",
     body: payload,
-    includeAuth: true,
+    auth: "optional",
   })
 }
 
@@ -225,7 +245,7 @@ export async function getExamTypes(): Promise<ExamType[]> {
 export async function getSubjects(examType?: string): Promise<Subject[]> {
   const response = await apiClient<SubjectsResponse>("/subjects", {
     params: examType ? { exam_type: examType } : undefined,
-    requiresAuth: true,
+    auth: "required",
   })
   return response.subjects
 }
@@ -249,7 +269,7 @@ export async function getQuestions(query: QuestionsListRequest): Promise<Questio
       question_type: params.question_type,
       language: params.language,
     },
-    requiresAuth: true,
+    auth: "required",
   })
 }
 
@@ -294,7 +314,7 @@ export async function reportQuestion(
   return apiClient<QuestionReportResponse>(`/questions/${questionId}/reports`, {
     method: "POST",
     body: payload,
-    requiresAuth: true,
+    auth: "required",
   })
 }
 
@@ -310,7 +330,7 @@ export async function generatePractice(
   const response = await apiClient<unknown>("/practice/generate", {
     method: "POST",
     body: payload,
-    requiresAuth: true,
+    auth: "required",
   })
   return parsePracticeGenerateResponse(response)
 }
@@ -330,14 +350,14 @@ export async function getRevisionItems(
       page: query.page,
       page_size: query.page_size,
     },
-    requiresAuth: true,
+    auth: "required",
   })
   return parseRevisionListResponse(response)
 }
 
 export async function getRevisionSummary(): Promise<RevisionSummaryResponse> {
   const response = await apiClient<unknown>("/revision/summary", {
-    requiresAuth: true,
+    auth: "required",
   })
   return parseRevisionSummaryResponse(response)
 }
@@ -345,7 +365,7 @@ export async function getRevisionSummary(): Promise<RevisionSummaryResponse> {
 export async function saveBookmark(practiceItemId: number): Promise<SaveBookmarkResponse> {
   const response = await apiClient<unknown>(`/revision/bookmarks/practice-items/${practiceItemId}`, {
     method: "PUT",
-    requiresAuth: true,
+    auth: "required",
   })
   return parseSaveBookmarkResponse(response)
 }
@@ -353,14 +373,14 @@ export async function saveBookmark(practiceItemId: number): Promise<SaveBookmark
 export async function removeBookmark(questionId: number): Promise<RemoveBookmarkResponse> {
   const response = await apiClient<unknown>(`/revision/bookmarks/questions/${questionId}`, {
     method: "DELETE",
-    requiresAuth: true,
+    auth: "required",
   })
   return parseRemoveBookmarkResponse(response)
 }
 
 export async function getProgressDashboard(): Promise<ProgressDashboardResponse> {
   const response = await apiClient<unknown>("/profile/progress-dashboard", {
-    requiresAuth: true,
+    auth: "required",
   })
   return parseProgressDashboardResponse(response)
 }
@@ -369,7 +389,7 @@ export async function getPracticeSummary(
   practiceId: number
 ): Promise<PracticeSummaryResponse> {
   const rawResponse = await apiClient<unknown>(`/practice/${practiceId}/summary`, {
-    requiresAuth: true,
+    auth: "required",
   })
   const response: RawPracticeSummaryResponse = parsePracticeSummaryResponse(rawResponse)
 
@@ -396,7 +416,7 @@ export async function getPracticeItems(
   const getPage = async (page: number) => {
     const response = await apiClient<unknown>(`/practice/${practiceId}/items`, {
       params: { section, page, page_size: pageSize },
-      requiresAuth: true,
+      auth: "required",
     })
     return parsePracticeItemsResponse(response)
   }
@@ -435,14 +455,14 @@ export async function saveAnswers(
   const response = await apiClient<unknown>(`/practice/${practiceId}/answers`, {
     method: "PATCH",
     body: data,
-    requiresAuth: true,
+    auth: "required",
   })
   return parseSaveAnswersResponse(response)
 }
 
 export async function getAnswers(practiceId: number): Promise<GetAnswersResponse> {
   const response = await apiClient<unknown>(`/practice/${practiceId}/answers`, {
-    requiresAuth: true,
+    auth: "required",
   })
   return parseGetAnswersResponse(response)
 }
@@ -450,7 +470,7 @@ export async function getAnswers(practiceId: number): Promise<GetAnswersResponse
 export async function submitPractice(practiceId: number): Promise<SubmitResponse> {
   const response = await apiClient<unknown>(`/practice/${practiceId}/submit`, {
     method: "POST",
-    requiresAuth: true,
+    auth: "required",
   })
   return parseSubmitResponse(response)
 }
@@ -467,7 +487,7 @@ export async function getResults(
       page,
       page_size: pageSize,
     },
-    requiresAuth: true,
+    auth: "required",
   })
   return parseResultsResponse(response)
 }
@@ -562,7 +582,7 @@ export async function jumpToResult(
       section,
       number,
     },
-    requiresAuth: true,
+    auth: "required",
   })
   return parseResultsJumpResponse(response)
 }

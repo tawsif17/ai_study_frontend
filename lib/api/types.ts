@@ -53,11 +53,21 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   user: AuthUser
-  token: string
+  csrfToken: string
 }
 
 export interface AuthMeResponse {
   user: AuthUser
+}
+
+export interface CsrfResponse {
+  csrfToken: string
+}
+
+export type RefreshResponse = CsrfResponse
+
+export interface LogoutResponse {
+  message: "Logged out successfully"
 }
 
 export interface VerifyEmailRequest {

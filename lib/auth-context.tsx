@@ -11,10 +11,17 @@ import {
 } from "react"
 import { useSWRConfig } from "swr"
 import { SessionRecoveryBanner } from "@/components/session-recovery-banner"
-import { ApiClientError, clearAuthToken, formatApiError, setAuthToken } from "./api/client"
+import {
+  ApiClientError,
+  clearSessionCredentials,
+  formatApiError,
+  removeLegacyAuthToken,
+  subscribeToSessionInvalid,
+} from "./api/client"
 import {
   getAuthMe,
   login as apiLogin,
+  logout as apiLogout,
   register as apiRegister,
   type AuthUser,
   type LoginRequest,
@@ -32,7 +39,7 @@ export interface AuthContextValue {
   user: AuthUser | null
   login: (data: LoginRequest) => Promise<void>
   register: (data: RegisterRequest) => Promise<RegisterResult>
-  logout: () => void
+  logout: () => Promise<void>
   refreshUser: () => Promise<AuthUser | null>
   retryAuth: () => Promise<AuthUser | null>
 }
@@ -48,8 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { mutate } = useSWRConfig()
   const channelRef = useRef<BroadcastChannel | null>(null)
   const sessionVersionRef = useRef(0)
+  const authenticatedRef = useRef(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [user, setUser] = useState<AuthUser | null>(null)
   const [authStatus, setAuthStatus] = useState<AuthStatus>("loading")
   const [authError, setAuthError] = useState<string | null>(null)
@@ -90,21 +99,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearSession = useCallback(
     ({ broadcast = true }: { broadcast?: boolean } = {}) => {
+      const hadAuthenticatedSession = authenticatedRef.current
       sessionVersionRef.current += 1
-      clearAuthToken()
+      clearSessionCredentials()
+      authenticatedRef.current = false
       setUser(null)
       setIsAuthenticated(false)
       setAuthStatus("unauthenticated")
       setAuthError(null)
       clearAuthCache()
-      if (broadcast) publishAuthChange("logout")
+      if (broadcast && hadAuthenticatedSession) publishAuthChange("logout")
     },
     [clearAuthCache, publishAuthChange]
   )
 
   const setRetryableRefreshError = useCallback((error: unknown) => {
-    // The token remains locally stored until the API explicitly rejects it.
-    setIsAuthenticated(true)
     setAuthStatus("retryable-refresh-error")
     setAuthError(formatApiError(error))
   }, [])
@@ -116,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await getAuthMe()
       if (sessionVersionRef.current !== requestVersion) return null
       setUser(response.user)
+      authenticatedRef.current = true
       setIsAuthenticated(true)
       setAuthStatus("authenticated")
       setAuthError(null)
@@ -132,24 +142,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true
 
     const initializeAuth = async () => {
+      removeLegacyAuthToken()
       const requestVersion = sessionVersionRef.current + 1
       sessionVersionRef.current = requestVersion
-      const token = localStorage.getItem("auth_token")
-      if (!token) {
-        if (active) {
-          setUser(null)
-          setIsAuthenticated(false)
-          setAuthStatus("unauthenticated")
-          setAuthError(null)
-          setIsLoading(false)
-        }
-        return
-      }
 
       try {
         const response = await getAuthMe()
         if (active && sessionVersionRef.current === requestVersion) {
           setUser(response.user)
+          authenticatedRef.current = true
           setIsAuthenticated(true)
           setAuthStatus("authenticated")
           setAuthError(null)
@@ -169,6 +170,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       active = false
     }
   }, [clearSession, setRetryableRefreshError])
+
+  useEffect(
+    () => subscribeToSessionInvalid(() => clearSession()),
+    [clearSession]
+  )
 
   useEffect(() => {
     const receiveAuthChange = (message: AuthSyncMessage) => {
@@ -209,8 +215,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await apiLogin(data)
       if (sessionVersionRef.current !== requestVersion) return
       sessionVersionRef.current += 1
-      setAuthToken(response.token)
       setUser(response.user)
+      authenticatedRef.current = true
       setIsAuthenticated(true)
       setAuthStatus("authenticated")
       setAuthError(null)
@@ -220,7 +226,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const register = useCallback((data: RegisterRequest) => apiRegister(data), [])
-  const logout = useCallback(() => clearSession(), [clearSession])
+  const logout = useCallback(async () => {
+    if (isLoggingOut) return
+    setIsLoggingOut(true)
+    setAuthError(null)
+    try {
+      await apiLogout()
+      clearSession()
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 401) {
+        clearSession()
+        return
+      }
+      setAuthError(formatApiError(error))
+      throw error
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }, [clearSession, isLoggingOut])
 
   return (
     <AuthContext.Provider

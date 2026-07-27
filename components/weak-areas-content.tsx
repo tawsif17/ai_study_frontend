@@ -55,7 +55,7 @@ function normalizeAttemptCount(value: number) {
 
 export function WeakAreasContent() {
   const router = useRouter()
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { authStatus, isAuthenticated, isLoading: authLoading } = useAuth()
   const { dashboard, isLoading, isError, mutate } = useProgressDashboard(isAuthenticated)
   const [selectedSubject, setSelectedSubject] = useState<SubjectFilterKey>("all")
   const [isStarting, setIsStarting] = useState(false)
@@ -65,10 +65,10 @@ export function WeakAreasContent() {
   const unauthorized = isError instanceof ApiClientError && isError.status === 401
 
   useEffect(() => {
-    if ((!authLoading && !isAuthenticated) || unauthorized) {
+    if ((!authLoading && authStatus === "unauthenticated") || unauthorized) {
       router.push(`/login?next=${encodeURIComponent(RETURN_PATH)}`)
     }
-  }, [authLoading, isAuthenticated, router, unauthorized])
+  }, [authLoading, authStatus, router, unauthorized])
 
   const ranking = useMemo(
     () => dashboard?.weakness_ranking ?? [],
@@ -132,9 +132,11 @@ export function WeakAreasContent() {
     }
   }
 
-  if (authLoading || (!isAuthenticated && !unauthorized)) return <WeakAreasSkeleton />
+  if (authLoading || (authStatus === "retryable-refresh-error" && !unauthorized)) {
+    return <WeakAreasSkeleton />
+  }
 
-  if (unauthorized || !isAuthenticated) {
+  if (unauthorized || authStatus === "unauthenticated") {
     return (
       <CenteredState
         icon={AlertCircle}

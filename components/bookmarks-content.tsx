@@ -27,7 +27,7 @@ export function BookmarksContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const requestedTab = searchParams.get("tab")
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { authStatus, isAuthenticated, isLoading: authLoading } = useAuth()
   const [tab, setTab] = useState<RevisionListKind>(() => tabFromSearch(requestedTab))
   const [selectedSubjectId, setSelectedSubjectId] = useState<number | undefined>()
   const [selectedChapterId, setSelectedChapterId] = useState<number | undefined>()
@@ -48,10 +48,10 @@ export function BookmarksContent() {
   )
 
   useEffect(() => {
-    if ((!authLoading && !isAuthenticated) || unauthorized) {
+    if ((!authLoading && authStatus === "unauthenticated") || unauthorized) {
       router.replace(`/login?next=${encodeURIComponent(RETURN_PATH)}`)
     }
-  }, [authLoading, isAuthenticated, router, unauthorized])
+  }, [authLoading, authStatus, router, unauthorized])
 
   useEffect(() => {
     const nextTab = tabFromSearch(requestedTab)
@@ -113,9 +113,11 @@ export function BookmarksContent() {
     }
   }
 
-  if (authLoading || (!isAuthenticated && !unauthorized)) return <BookmarksSkeleton />
+  if (authLoading || (authStatus === "retryable-refresh-error" && !unauthorized)) {
+    return <BookmarksSkeleton />
+  }
 
-  if (unauthorized || !isAuthenticated) {
+  if (unauthorized || authStatus === "unauthenticated") {
     return <CenteredState heading="Please sign in again" body="Your session has ended. Sign in again to view saved questions." />
   }
 

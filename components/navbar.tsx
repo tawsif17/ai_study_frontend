@@ -16,6 +16,7 @@ import { Menu, X, LogOut } from "@/components/icons"
 import { BrandLogo } from "@/components/brand-logo"
 import { useState } from "react"
 import type { AuthUser } from "@/lib/api"
+import { formatApiError } from "@/lib/api/client"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/auth-context"
 
@@ -100,17 +101,29 @@ function AccountMenu({
   onAfterAction,
 }: {
   user: AuthUser | null
-  logout: () => void
+  logout: () => Promise<void>
   onAfterAction?: () => void
 }) {
   const initials = getInitials(user?.full_name)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [logoutError, setLogoutError] = useState<string | null>(null)
   const accountMenuLabel = user?.full_name
     ? `Open ${user.full_name}'s account menu`
     : "Open account menu"
 
-  const handleLogout = () => {
-    logout()
-    onAfterAction?.()
+  const handleLogout = async (event: Event) => {
+    event.preventDefault()
+    if (isLoggingOut) return
+    setIsLoggingOut(true)
+    setLogoutError(null)
+    try {
+      await logout()
+      onAfterAction?.()
+    } catch (error) {
+      setLogoutError(formatApiError(error))
+    } finally {
+      setIsLoggingOut(false)
+    }
   }
 
   return (
@@ -139,10 +152,19 @@ function AccountMenu({
           <Link href="/bookmarks" onClick={onAfterAction}>Bookmarks</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="min-h-11 cursor-pointer px-3" onSelect={handleLogout}>
+        <DropdownMenuItem
+          className="min-h-11 cursor-pointer px-3"
+          disabled={isLoggingOut}
+          onSelect={(event) => void handleLogout(event)}
+        >
           <LogOut className="h-4 w-4" aria-hidden="true" />
-          Logout
+          {isLoggingOut ? "Logging outâ€¦" : "Logout"}
         </DropdownMenuItem>
+        {logoutError ? (
+          <p className="px-3 py-2 text-xs leading-5 text-destructive" role="alert">
+            {logoutError}
+          </p>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -163,7 +185,11 @@ function MobileMenu() {
   return (
     <div className="flex items-center gap-1 lg:hidden">
       {!isLoading && isAuthenticated && (
-        <AccountMenu user={user} logout={logout} onAfterAction={() => setIsOpen(false)} />
+        <AccountMenu
+          user={user}
+          logout={logout}
+          onAfterAction={() => setIsOpen(false)}
+        />
       )}
       <Button
         variant="ghost"

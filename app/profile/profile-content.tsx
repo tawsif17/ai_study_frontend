@@ -75,15 +75,15 @@ function getInitials(user: AuthUser): string {
 
 export function ProfileContent() {
   const router = useRouter()
-  const { authError, authStatus, isAuthenticated, isLoading, user, refreshUser } = useAuth()
+  const { authError, authStatus, isLoading, user, refreshUser } = useAuth()
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [refreshFailed, setRefreshFailed] = useState(false)
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!isLoading && authStatus === "unauthenticated") {
       router.replace(`/login?next=${encodeURIComponent(RETURN_PATH)}`)
     }
-  }, [isAuthenticated, isLoading, router])
+  }, [authStatus, isLoading, router])
 
   const handleRefresh = async () => {
     if (isRefreshing) return
@@ -102,7 +102,7 @@ export function ProfileContent() {
     )
   }
 
-  if (!isAuthenticated) {
+  if (authStatus === "unauthenticated") {
     return (
       <PageShell>
         <div className="flex min-h-[34rem] items-center justify-center px-4 py-12" role="status">
