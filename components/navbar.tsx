@@ -51,7 +51,8 @@ function getInitials(name: string | undefined) {
 }
 
 export function Navbar() {
-  const { isAuthenticated, logout, isLoading, user } = useAuth()
+  const { authStatus, isAuthenticated, logout, isLoading, user } = useAuth()
+  const isSessionIndeterminate = authStatus === "retryable-refresh-error"
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/70">
@@ -70,7 +71,7 @@ export function Navbar() {
 
         {/* Auth Buttons - Hidden on mobile */}
         <div className="hidden lg:flex items-center gap-3">
-          {!isLoading && (
+          {!isLoading && !isSessionIndeterminate && (
             <>
               {isAuthenticated ? (
                 <AccountMenu user={user} logout={logout} />
@@ -158,7 +159,7 @@ function AccountMenu({
           onSelect={(event) => void handleLogout(event)}
         >
           <LogOut className="h-4 w-4" aria-hidden="true" />
-          {isLoggingOut ? "Logging outâ€¦" : "Logout"}
+          {isLoggingOut ? "Logging out…" : "Logout"}
         </DropdownMenuItem>
         {logoutError ? (
           <p className="px-3 py-2 text-xs leading-5 text-destructive" role="alert">
@@ -173,7 +174,8 @@ function AccountMenu({
 function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
-  const { isAuthenticated, logout, isLoading, user } = useAuth()
+  const { authStatus, isAuthenticated, logout, isLoading, user } = useAuth()
+  const isSessionIndeterminate = authStatus === "retryable-refresh-error"
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/"
@@ -184,7 +186,7 @@ function MobileMenu() {
 
   return (
     <div className="flex items-center gap-1 lg:hidden">
-      {!isLoading && isAuthenticated && (
+      {!isLoading && !isSessionIndeterminate && isAuthenticated && (
         <AccountMenu
           user={user}
           logout={logout}
@@ -251,7 +253,7 @@ function MobileMenu() {
             >
               Pricing
             </Link>
-            {!isLoading && (
+            {!isLoading && !isSessionIndeterminate && (
               <div className="flex flex-col gap-2 pt-2 border-t border-border">
                 {!isAuthenticated && (
                   <>

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { AlertCircle, CheckCircle2 } from "lucide-react"
@@ -37,6 +37,8 @@ export function LoginContent() {
   )
   const [showResend, setShowResend] = useState(searchParams.get("registered") === "true")
   const [fieldErrors, setFieldErrors] = useState<LoginFieldErrors>({})
+  const emailInputRef = useRef<HTMLInputElement>(null)
+  const passwordInputRef = useRef<HTMLInputElement>(null)
   const [formData, setFormData] = useState({
     email: searchParams.get("email") ?? "",
     password: "",
@@ -53,7 +55,11 @@ export function LoginContent() {
       nextFieldErrors.password = "Enter your password."
     }
     setFieldErrors(nextFieldErrors)
-    if (Object.keys(nextFieldErrors).length > 0) return
+    if (Object.keys(nextFieldErrors).length > 0) {
+      if (nextFieldErrors.email) emailInputRef.current?.focus()
+      else passwordInputRef.current?.focus()
+      return
+    }
 
     setFormData((current) => ({ ...current, email: normalizedEmail }))
     setError(null)
@@ -110,6 +116,7 @@ export function LoginContent() {
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
+                  ref={emailInputRef}
                   type="email"
                   name="email"
                   autoComplete="email"
@@ -131,6 +138,7 @@ export function LoginContent() {
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
+                  ref={passwordInputRef}
                   type="password"
                   name="password"
                   autoComplete="current-password"

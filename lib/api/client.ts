@@ -77,6 +77,7 @@ export interface RequestOptions {
   body?: unknown
   params?: Record<string, string | number | undefined>
   auth?: "none" | "optional" | "required"
+  responseEnvelope?: "auto" | "required" | "raw"
   timeoutMs?: number
   signal?: AbortSignal
 }
@@ -92,13 +93,24 @@ const UNSAFE_METHODS = new Set(["POST", "PATCH", "PUT", "DELETE"])
 let csrfToken: string | null = null
 let csrfRequest: Promise<string> | null = null
 let refreshRequest: Promise<string> | null = null
-const sessionInvalidListeners = new Set<() => void>()
+let sessionGeneration = 0
+let sessionTerminationDepth = 0
+let sessionTerminationRequest: Promise<unknown> | null = null
+export interface SessionInvalidEvent {
+  forceBroadcast?: boolean
+}
+
+const sessionInvalidListeners = new Set<(event: SessionInvalidEvent) => void>()
 
 export function setCsrfToken(token: string): void {
+  sessionGeneration += 1
   csrfToken = token
+  csrfRequest = null
+  refreshRequest = null
 }
 
 export function clearSessionCredentials(): void {
+  sessionGeneration += 1
   csrfToken = null
   csrfRequest = null
   refreshRequest = null
@@ -106,17 +118,52 @@ export function clearSessionCredentials(): void {
 
 export function removeLegacyAuthToken(): void {
   if (typeof window === "undefined") return
-  localStorage.removeItem("auth_token")
+  try {
+    localStorage.removeItem("auth_token")
+  } catch {
+    // Cookie sessions do not depend on browser storage. Storage can be blocked
+    // by privacy settings, so legacy cleanup must never prevent auth bootstrap.
+  }
 }
 
-export function subscribeToSessionInvalid(listener: () => void): () => void {
+export async function runWithSessionTermination<T>(operation: () => Promise<T>): Promise<T> {
+  if (sessionTerminationRequest) return sessionTerminationRequest as Promise<T>
+
+  const pendingRequest = (async () => {
+    sessionTerminationDepth += 1
+    const pendingRefresh = refreshRequest
+    try {
+      if (pendingRefresh) {
+        try {
+          await pendingRefresh
+        } catch {
+          // Logout still needs to run when an earlier refresh has already failed.
+        }
+      }
+      return await operation()
+    } finally {
+      sessionTerminationDepth -= 1
+    }
+  })()
+  sessionTerminationRequest = pendingRequest
+
+  try {
+    return await pendingRequest
+  } finally {
+    if (sessionTerminationRequest === pendingRequest) sessionTerminationRequest = null
+  }
+}
+
+export function subscribeToSessionInvalid(
+  listener: (event: SessionInvalidEvent) => void
+): () => void {
   sessionInvalidListeners.add(listener)
   return () => sessionInvalidListeners.delete(listener)
 }
 
-export function notifySessionInvalid(): void {
+export function notifySessionInvalid(event: SessionInvalidEvent = {}): void {
   clearSessionCredentials()
-  for (const listener of sessionInvalidListeners) listener()
+  for (const listener of sessionInvalidListeners) listener(event)
 }
 
 export async function apiClient<T>(
@@ -134,7 +181,15 @@ export async function apiClientWithResponse<T>(
   const method = options.method ?? "GET"
   const auth = options.auth ?? "none"
   const unsafe = UNSAFE_METHODS.has(method)
+  const requestGeneration = sessionGeneration
   let requestCsrfToken: string | undefined
+
+  const acceptCurrentSession = (response: ApiClientResponse<T>) => {
+    if (auth !== "none" && requestGeneration !== sessionGeneration) {
+      throw new ApiAbortError()
+    }
+    return response
+  }
 
   if (unsafe && auth !== "none") {
     try {
@@ -150,12 +205,19 @@ export async function apiClientWithResponse<T>(
   }
 
   try {
-    return await executeRequest<T>(endpoint, options, requestCsrfToken)
+    return acceptCurrentSession(await executeRequest<T>(endpoint, options, requestCsrfToken))
   } catch (error) {
     if (auth === "required" && error instanceof ApiClientError && error.status === 401) {
+      if (sessionTerminationDepth > 0) {
+        notifySessionInvalid()
+        throw error
+      }
       try {
         requestCsrfToken = await refreshSession()
-        return await executeRequest<T>(endpoint, options, unsafe ? requestCsrfToken : undefined)
+        if (sessionTerminationDepth > 0) throw new ApiAbortError()
+        return acceptCurrentSession(
+          await executeRequest<T>(endpoint, options, unsafe ? requestCsrfToken : undefined)
+        )
       } catch (refreshError) {
         if (refreshError instanceof ApiClientError && refreshError.status === 401) {
           notifySessionInvalid()
@@ -172,8 +234,15 @@ export async function apiClientWithResponse<T>(
       error.message === CSRF_ERROR_MESSAGE
     ) {
       csrfToken = null
-      requestCsrfToken = await ensureCsrfToken()
-      return executeRequest<T>(endpoint, options, requestCsrfToken)
+      try {
+        requestCsrfToken = await ensureCsrfToken()
+      } catch (csrfError) {
+        if (auth === "required" && csrfError instanceof ApiClientError && csrfError.status === 401) {
+          notifySessionInvalid()
+        }
+        throw csrfError
+      }
+      return acceptCurrentSession(await executeRequest<T>(endpoint, options, requestCsrfToken))
     }
 
     throw error
@@ -184,24 +253,30 @@ async function ensureCsrfToken(): Promise<string> {
   if (csrfToken) return csrfToken
   if (csrfRequest) return csrfRequest
 
-  csrfRequest = executeRequest<{ csrfToken: string }>("/auth/csrf", {
+  const requestGeneration = sessionGeneration
+  const pendingRequest = executeRequest<{ csrfToken: string }>("/auth/csrf", {
     auth: "none",
+    responseEnvelope: "required",
   })
     .then((response) => {
+      if (requestGeneration !== sessionGeneration) throw new ApiAbortError()
       csrfToken = parseCsrfTokenData(response.data, "CSRF token")
       return csrfToken
     })
-    .finally(() => {
-      csrfRequest = null
-    })
 
-  return csrfRequest
+  csrfRequest = pendingRequest
+  try {
+    return await pendingRequest
+  } finally {
+    if (csrfRequest === pendingRequest) csrfRequest = null
+  }
 }
 
 async function refreshSession(): Promise<string> {
   if (refreshRequest) return refreshRequest
 
-  refreshRequest = (async () => {
+  const requestGeneration = sessionGeneration
+  const pendingRequest = (async () => {
     let token = await ensureCsrfToken()
     let response: ApiClientResponse<{ csrfToken: string }>
 
@@ -209,6 +284,7 @@ async function refreshSession(): Promise<string> {
       response = await executeRequest("/auth/refresh", {
         method: "POST",
         auth: "none",
+        responseEnvelope: "required",
       }, token)
     } catch (error) {
       if (
@@ -221,19 +297,24 @@ async function refreshSession(): Promise<string> {
         response = await executeRequest("/auth/refresh", {
           method: "POST",
           auth: "none",
+          responseEnvelope: "required",
         }, token)
       } else {
         throw error
       }
     }
 
+    if (requestGeneration !== sessionGeneration) throw new ApiAbortError()
     csrfToken = parseCsrfTokenData(response.data, "session refresh")
     return csrfToken
-  })().finally(() => {
-    refreshRequest = null
-  })
+  })()
 
-  return refreshRequest
+  refreshRequest = pendingRequest
+  try {
+    return await pendingRequest
+  } finally {
+    if (refreshRequest === pendingRequest) refreshRequest = null
+  }
 }
 
 function parseCsrfTokenData(input: unknown, contractName: string): string {
@@ -259,6 +340,7 @@ async function executeRequest<T>(
     method = "GET",
     body,
     params,
+    responseEnvelope = "auto",
     timeoutMs = DEFAULT_API_TIMEOUT_MS,
     signal: callerSignal,
   } = options
@@ -351,7 +433,27 @@ async function executeRequest<T>(
       throw new ApiContractError("The server returned invalid JSON", { cause: error })
     }
 
-    if (json && typeof json === "object" && "success" in json && "data" in json) {
+    if (responseEnvelope === "required") {
+      if (
+        !json ||
+        typeof json !== "object" ||
+        Array.isArray(json) ||
+        Object.keys(json).length !== 2 ||
+        !("success" in json) ||
+        json.success !== true ||
+        !("data" in json)
+      ) {
+        throw new ApiContractError("The server returned an invalid success envelope")
+      }
+      return { data: (json as { data: T }).data, status: response.status }
+    }
+    if (
+      responseEnvelope === "auto" &&
+      json &&
+      typeof json === "object" &&
+      "success" in json &&
+      "data" in json
+    ) {
       return { data: (json as { data: T }).data, status: response.status }
     }
     return { data: json as T, status: response.status }

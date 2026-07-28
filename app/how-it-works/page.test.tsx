@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import HowItWorksPage from "./page"
-import { useAuth } from "@/lib/auth-context"
+import { useAuth, type AuthStatus } from "@/lib/auth-context"
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/how-it-works",
@@ -20,11 +20,19 @@ vi.mock("@/lib/auth-context", () => ({
   useAuth: vi.fn(),
 }))
 
-function mockAuth(isAuthenticated: boolean, isLoading = false) {
+function mockAuth(
+  isAuthenticated: boolean,
+  isLoading = false,
+  authStatus: AuthStatus = isLoading
+    ? "loading"
+    : isAuthenticated
+      ? "authenticated"
+      : "unauthenticated"
+) {
   vi.mocked(useAuth).mockReturnValue({
     isAuthenticated,
     isLoading,
-    authStatus: isLoading ? "loading" : isAuthenticated ? "authenticated" : "unauthenticated",
+    authStatus,
     authError: null,
     user: null,
     login: vi.fn(),
@@ -84,6 +92,15 @@ describe("how it works final UI", () => {
       expect(button).toBeDisabled()
     })
     expect(page.getByRole("link", { name: "Choose a subject" })).toHaveAttribute("href", "/subjects")
+  })
+
+  it("keeps account actions disabled while session restoration is indeterminate", () => {
+    mockAuth(false, false, "retryable-refresh-error")
+    render(<HowItWorksPage />)
+
+    const page = within(screen.getByRole("main"))
+    expect(page.queryByRole("link", { name: "Start free" })).not.toBeInTheDocument()
+    expect(page.getByRole("button", { name: "Start free" })).toBeDisabled()
   })
 
   it("renders the approved static availability and accessible MCQ example", () => {

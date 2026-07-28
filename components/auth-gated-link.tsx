@@ -11,8 +11,9 @@ interface AuthGatedLinkProps {
 }
 
 export function AuthGatedLink({ href, className, children }: AuthGatedLinkProps) {
-  const { isAuthenticated, isLoading } = useAuth()
-  const target = !isLoading && isAuthenticated ? href : `/login?next=${encodeURIComponent(href)}`
+  const { authStatus } = useAuth()
+  const target =
+    authStatus === "unauthenticated" ? `/login?next=${encodeURIComponent(href)}` : href
 
   return (
     <Link href={target} className={className}>

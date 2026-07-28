@@ -8,7 +8,10 @@ import {
   apiClient,
   clearSessionCredentials,
   formatApiError,
+  removeLegacyAuthToken,
+  runWithSessionTermination,
   setCsrfToken,
+  subscribeToSessionInvalid,
 } from "./client"
 
 function response({
@@ -111,6 +114,37 @@ describe("apiClient failure classification", () => {
     )
 
     await expect(apiClient("/malformed")).rejects.toBeInstanceOf(ApiContractError)
+  })
+
+  it("strictly validates required success envelopes", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        response({ json: async () => ({ success: false, data: { user: {} } }) })
+      )
+      .mockResolvedValueOnce(
+        response({ json: async () => ({ success: true, data: {}, extra: true }) })
+      )
+      .mockResolvedValueOnce(response({ json: async () => ({ user: {} }) }))
+    vi.stubGlobal("fetch", fetchMock)
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      await expect(
+        apiClient("/auth/me", { responseEnvelope: "required" })
+      ).rejects.toBeInstanceOf(ApiContractError)
+    }
+  })
+
+  it("does not let blocked legacy storage cleanup stop bootstrap", () => {
+    const removeItem = vi
+      .spyOn(Storage.prototype, "removeItem")
+      .mockImplementation(() => {
+        throw new DOMException("Blocked", "SecurityError")
+      })
+
+    expect(() => removeLegacyAuthToken()).not.toThrow()
+    expect(removeItem).toHaveBeenCalledWith("auth_token")
+    removeItem.mockRestore()
   })
 
   it("keeps actionable 4xx messages but hides backend 5xx details", async () => {
@@ -263,6 +297,97 @@ describe("apiClient cookie session transport", () => {
       apiClient("/practice/42/answers", { method: "PATCH", auth: "required" })
     ).rejects.toMatchObject({ status: 403, message: "Request origin is not allowed" })
     expect(fetchMock).toHaveBeenCalledTimes(4)
+  })
+
+  it("invalidates the session when exact-CSRF recovery terminates with 401", async () => {
+    setCsrfToken("stale-csrf")
+    const onInvalid = vi.fn()
+    const unsubscribe = subscribeToSessionInvalid(onInvalid)
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        response({
+          ok: false,
+          status: 403,
+          json: async () => ({ error: { message: "CSRF token missing or invalid" } }),
+        })
+      )
+      .mockResolvedValueOnce(
+        response({
+          ok: false,
+          status: 401,
+          json: async () => ({ error: { message: "Invalid or expired session" } }),
+        })
+      )
+    vi.stubGlobal("fetch", fetchMock)
+
+    await expect(
+      apiClient("/practice/42/answers", { method: "PATCH", auth: "required" })
+    ).rejects.toMatchObject({ status: 401 })
+    expect(onInvalid).toHaveBeenCalledOnce()
+    unsubscribe()
+  })
+
+  it("rejects an authenticated response that completes after session clearing", async () => {
+    let resolveResponse: ((value: Response) => void) | undefined
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveResponse = resolve
+          })
+      )
+    )
+
+    const request = apiClient("/subjects", { auth: "required" })
+    clearSessionCredentials()
+    resolveResponse?.(
+      response({ json: async () => ({ success: true, data: { subjects: [] } }) })
+    )
+
+    await expect(request).rejects.toBeInstanceOf(ApiAbortError)
+  })
+
+  it("waits for an active refresh before beginning session termination", async () => {
+    let resolveRefresh: ((value: Response) => void) | undefined
+    let protectedAttempts = 0
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.endsWith("/auth/csrf")) {
+        return response({ json: async () => ({ success: true, data: { csrfToken: "csrf" } }) })
+      }
+      if (url.endsWith("/auth/refresh")) {
+        return new Promise<Response>((resolve) => {
+          resolveRefresh = resolve
+        })
+      }
+      protectedAttempts += 1
+      return response({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: { message: "Invalid or expired session" } }),
+      })
+    })
+    vi.stubGlobal("fetch", fetchMock)
+
+    const protectedRequest = apiClient("/subjects", { auth: "required" })
+    await vi.waitFor(() => expect(resolveRefresh).toBeTypeOf("function"))
+    const operation = vi.fn(async () => "terminated")
+    const termination = runWithSessionTermination(operation)
+    const duplicateOperation = vi.fn(async () => "duplicate")
+    const duplicateTermination = runWithSessionTermination(duplicateOperation)
+
+    expect(operation).not.toHaveBeenCalled()
+    resolveRefresh?.(
+      response({ json: async () => ({ success: true, data: { csrfToken: "rotated" } }) })
+    )
+
+    await expect(protectedRequest).rejects.toBeInstanceOf(ApiAbortError)
+    await expect(termination).resolves.toBe("terminated")
+    await expect(duplicateTermination).resolves.toBe("terminated")
+    expect(operation).toHaveBeenCalledOnce()
+    expect(duplicateOperation).not.toHaveBeenCalled()
+    expect(protectedAttempts).toBe(1)
   })
 
   it("falls back to anonymous optional auth when no cookie session exists", async () => {

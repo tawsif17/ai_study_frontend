@@ -9,10 +9,11 @@ interface AuthAwareStartFreeButtonProps {
 }
 
 export function AuthAwareStartFreeButton({ className }: AuthAwareStartFreeButtonProps) {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { authStatus, isAuthenticated, isLoading } = useAuth()
   const target = isAuthenticated ? "/subjects" : `/login?next=${encodeURIComponent("/subjects")}`
+  const isSessionIndeterminate = authStatus === "retryable-refresh-error"
 
-  if (isLoading) {
+  if (isLoading || isSessionIndeterminate) {
     return (
       <Button className={className} disabled>
         Start free

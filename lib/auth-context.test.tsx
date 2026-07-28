@@ -24,10 +24,12 @@ vi.mock("./api/client", () => {
   }
 
   return {
+    ApiAbortError: class ApiAbortError extends Error {},
     ApiClientError: MockApiClientError,
     clearSessionCredentials: vi.fn(),
     formatApiError: (error: Error) => error.message,
     removeLegacyAuthToken: vi.fn(),
+    setCsrfToken: vi.fn(),
     subscribeToSessionInvalid: vi.fn(() => () => {}),
   }
 })
@@ -47,7 +49,11 @@ function LogoutButton() {
 function LoginButton() {
   const { login } = useAuth()
   return (
-    <button onClick={() => void login({ email: "student@example.com", password: "Password123" })}>
+    <button
+      onClick={() =>
+        void login({ email: "student@example.com", password: "Password123" }).catch(() => {})
+      }
+    >
       Login
     </button>
   )
@@ -151,6 +157,16 @@ describe("AuthProvider refresh recovery", () => {
   it("clears the stored session only when refresh confirms a 401", async () => {
     const { getAuthMe } = await import("./api")
     vi.mocked(getAuthMe).mockRejectedValueOnce(new ApiClientError({ message: "Expired" }, 401))
+
+    render(<AuthProvider><AuthState /></AuthProvider>)
+
+    await waitFor(() => expect(screen.getByText("unauthenticated:false:no-user")).toBeInTheDocument())
+    expect(clearSessionCredentials).toHaveBeenCalledTimes(1)
+  })
+
+  it("clears the session when the contracted account lookup returns 404", async () => {
+    const { getAuthMe } = await import("./api")
+    vi.mocked(getAuthMe).mockRejectedValueOnce(new ApiClientError({ message: "User missing" }, 404))
 
     render(<AuthProvider><AuthState /></AuthProvider>)
 
@@ -279,6 +295,42 @@ describe("AuthProvider refresh recovery", () => {
 
     await act(async () => resolveRefresh?.({ user: authUser }))
 
+    expect(screen.getByText("unauthenticated:false:no-user")).toBeInTheDocument()
+  })
+
+  it("revokes a login response superseded by a cross-tab logout", async () => {
+    const { getAuthMe, login, logout } = await import("./api")
+    vi.stubGlobal("BroadcastChannel", undefined)
+    vi.mocked(getAuthMe).mockRejectedValueOnce(new ApiClientError({ message: "Missing" }, 401))
+    let resolveLogin: ((value: { user: typeof authUser; csrfToken: string }) => void) | undefined
+    vi.mocked(login).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveLogin = resolve
+        })
+    )
+    vi.mocked(logout).mockResolvedValueOnce({ message: "Logged out successfully" })
+
+    render(
+      <AuthProvider>
+        <AuthState />
+        <LoginButton />
+      </AuthProvider>
+    )
+    await screen.findByText("unauthenticated:false:no-user")
+    fireEvent.click(screen.getByRole("button", { name: "Login" }))
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "shikkha_buddy_auth_sync",
+        newValue: JSON.stringify({ type: "logout", sentAt: Date.now() }),
+      })
+    )
+
+    await act(async () =>
+      resolveLogin?.({ user: authUser, csrfToken: "stale-login-csrf" })
+    )
+
+    await waitFor(() => expect(logout).toHaveBeenCalledOnce())
     expect(screen.getByText("unauthenticated:false:no-user")).toBeInTheDocument()
   })
 })

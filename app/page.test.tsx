@@ -17,6 +17,7 @@ vi.mock("@/components/brand-logo", async () => {
 
 vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({
+    authStatus: "unauthenticated",
     isAuthenticated: false,
     isLoading: false,
     user: null,

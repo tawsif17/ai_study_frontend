@@ -57,12 +57,13 @@ export function PracticeConfigCard({
   availability = "available",
 }: PracticeConfigCardProps) {
   const router = useRouter()
-  const { isAuthenticated } = useAuth()
+  const { authStatus, isAuthenticated, isLoading: authLoading } = useAuth()
   const [count, setCount] = useState("10")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const controlIdPrefix = `practice-${subjectId}-${mode.toLowerCase()}`
   const isComingSoon = availability === "coming-soon"
+  const isSessionIndeterminate = authStatus === "retryable-refresh-error"
   const comingSoonFeature =
     mode === "MIXED" ? "Combined MCQ + CQ sessions" : mode === "CQ" ? "Creative Question practice" : "Additional practice options"
 
@@ -70,6 +71,8 @@ export function PracticeConfigCard({
     if (isComingSoon) {
       return
     }
+
+    if (authLoading || isSessionIndeterminate) return
 
     if (!isAuthenticated) {
       router.push("/login")
@@ -111,7 +114,7 @@ export function PracticeConfigCard({
     }
   }
 
-  const isStartDisabled = disabled || isLoading
+  const isStartDisabled = disabled || isLoading || authLoading || isSessionIndeterminate
 
   return (
     <div className="group relative flex h-full flex-col rounded-2xl border border-border bg-card p-5 transition-all duration-300 hover:border-primary/20 hover:shadow-lg sm:p-6">

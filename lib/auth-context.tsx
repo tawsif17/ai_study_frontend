@@ -12,10 +12,12 @@ import {
 import { useSWRConfig } from "swr"
 import { SessionRecoveryBanner } from "@/components/session-recovery-banner"
 import {
+  ApiAbortError,
   ApiClientError,
   clearSessionCredentials,
   formatApiError,
   removeLegacyAuthToken,
+  setCsrfToken,
   subscribeToSessionInvalid,
 } from "./api/client"
 import {
@@ -50,6 +52,10 @@ const AUTH_CHANNEL_NAME = "shikkha-buddy-auth"
 const AUTH_SYNC_STORAGE_KEY = "shikkha_buddy_auth_sync"
 
 const AuthContext = createContext<AuthContextValue | null>(null)
+
+function isTerminalAccountError(error: unknown): boolean {
+  return error instanceof ApiClientError && (error.status === 401 || error.status === 404)
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { mutate } = useSWRConfig()
@@ -98,7 +104,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const clearSession = useCallback(
-    ({ broadcast = true }: { broadcast?: boolean } = {}) => {
+    ({
+      broadcast = true,
+      forceBroadcast = false,
+    }: { broadcast?: boolean; forceBroadcast?: boolean } = {}) => {
       const hadAuthenticatedSession = authenticatedRef.current
       sessionVersionRef.current += 1
       clearSessionCredentials()
@@ -108,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthStatus("unauthenticated")
       setAuthError(null)
       clearAuthCache()
-      if (broadcast && hadAuthenticatedSession) publishAuthChange("logout")
+      if (broadcast && (hadAuthenticatedSession || forceBroadcast)) publishAuthChange("logout")
     },
     [clearAuthCache, publishAuthChange]
   )
@@ -132,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return response.user
     } catch (error) {
       if (sessionVersionRef.current !== requestVersion) return null
-      if (error instanceof ApiClientError && error.status === 401) clearSession()
+      if (isTerminalAccountError(error)) clearSession()
       else setRetryableRefreshError(error)
       return null
     }
@@ -157,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         if (active && sessionVersionRef.current === requestVersion) {
-          if (error instanceof ApiClientError && error.status === 401) clearSession()
+          if (isTerminalAccountError(error)) clearSession()
           else setRetryableRefreshError(error)
         }
       } finally {
@@ -172,7 +181,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [clearSession, setRetryableRefreshError])
 
   useEffect(
-    () => subscribeToSessionInvalid(() => clearSession()),
+    () =>
+      subscribeToSessionInvalid((event) =>
+        clearSession({ forceBroadcast: event.forceBroadcast })
+      ),
     [clearSession]
   )
 
@@ -213,7 +225,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (data: LoginRequest) => {
       const requestVersion = sessionVersionRef.current
       const response = await apiLogin(data)
-      if (sessionVersionRef.current !== requestVersion) return
+      if (sessionVersionRef.current !== requestVersion) {
+        setCsrfToken(response.csrfToken)
+        try {
+          await apiLogout()
+        } catch {
+          // A newer local or cross-tab session decision already won. Best-effort
+          // cleanup prevents the stale login response from restoring that session.
+        } finally {
+          clearSessionCredentials()
+        }
+        throw new ApiAbortError()
+      }
+      setCsrfToken(response.csrfToken)
       sessionVersionRef.current += 1
       setUser(response.user)
       authenticatedRef.current = true

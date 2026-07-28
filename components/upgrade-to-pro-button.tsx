@@ -12,7 +12,7 @@ import { getSafeNextPath } from "@/lib/safe-next-path"
 export function UpgradeToProButton() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { isAuthenticated, isLoading, user, refreshUser } = useAuth()
+  const { authStatus, isAuthenticated, isLoading, user, refreshUser } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isUnavailable, setIsUnavailable] = useState(false)
@@ -21,12 +21,15 @@ export function UpgradeToProButton() {
   const loginRedirect = `/login?next=${encodeURIComponent(`/pricing?next=${encodeURIComponent(nextPath)}`)}`
   const isAlreadyActive = user?.plan_tier === "pro"
   const isVerified = Boolean(user?.email_verified_at)
+  const isSessionIndeterminate = authStatus === "retryable-refresh-error"
   const isUnverified = isAuthenticated && !isLoading && !isAlreadyActive && !isVerified
   const resendVerificationHref = user?.email ? `/resend-verification?email=${encodeURIComponent(user.email)}` : "/resend-verification"
 
   const handleUpgrade = async () => {
     setError(null)
     setIsUnavailable(false)
+
+    if (isLoading || isSessionIndeterminate) return
 
     if (!isAuthenticated) {
       router.push(loginRedirect)
@@ -72,7 +75,7 @@ export function UpgradeToProButton() {
     }
   }
 
-  const label = isLoading
+  const label = isLoading || isSessionIndeterminate
     ? "Loading beta access..."
     : isAlreadyActive
       ? "Continue with Beta Pro"
@@ -82,7 +85,7 @@ export function UpgradeToProButton() {
           ? "Activating Beta Pro..."
           : "Activate Beta Pro"
 
-  const helperText = isLoading
+  const helperText = isLoading || isSessionIndeterminate
     ? "Checking your beta access."
     : isAlreadyActive
       ? "Beta Pro is already active for this account."
@@ -101,7 +104,7 @@ export function UpgradeToProButton() {
           aria-describedby="beta-pro-helper"
           className="min-h-11 w-full"
           onClick={handleUpgrade}
-          disabled={isLoading || isSubmitting || isUnavailable}
+          disabled={isLoading || isSessionIndeterminate || isSubmitting || isUnavailable}
         >
           {label}
         </Button>

@@ -20,11 +20,13 @@ export function BookmarkedPracticeCard({
   savedQuestionCount,
 }: BookmarkedPracticeCardProps) {
   const router = useRouter()
-  const { isAuthenticated } = useAuth()
+  const { authStatus, isAuthenticated, isLoading: authLoading } = useAuth()
   const [isStarting, setIsStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const isSessionIndeterminate = authStatus === "retryable-refresh-error"
 
   const handleStart = async () => {
+    if (authLoading || isSessionIndeterminate) return
     if (!isAuthenticated) {
       router.push(`/login?next=${encodeURIComponent(`/subjects/${subjectId}`)}`)
       return
@@ -70,7 +72,12 @@ export function BookmarkedPracticeCard({
             <p className="mt-2 text-sm font-semibold text-foreground">{savedQuestionCount} saved {savedQuestionCount === 1 ? "question" : "questions"}</p>
           </div>
         </div>
-        <Button type="button" className="min-h-11 shrink-0 gap-2" onClick={() => void handleStart()} disabled={isStarting}>
+        <Button
+          type="button"
+          className="min-h-11 shrink-0 gap-2"
+          onClick={() => void handleStart()}
+          disabled={isStarting || authLoading || isSessionIndeterminate}
+        >
           {isStarting ? "Starting..." : "Practice saved questions"}
           {!isStarting && <ArrowRight className="size-4" aria-hidden="true" />}
         </Button>

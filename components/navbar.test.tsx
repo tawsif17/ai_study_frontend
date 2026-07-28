@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { Navbar } from "./navbar"
 
 const navigationState = vi.hoisted(() => ({
+  authStatus: "authenticated",
   pathname: "/",
   logout: vi.fn(),
 }))
@@ -18,6 +19,7 @@ vi.mock("@/components/brand-logo", () => ({
 
 vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({
+    authStatus: navigationState.authStatus,
     isAuthenticated: true,
     isLoading: false,
     user: { full_name: "Nadia Rahman" },
@@ -28,6 +30,7 @@ vi.mock("@/lib/auth-context", () => ({
 describe("Navbar", () => {
   beforeEach(() => {
     navigationState.pathname = "/"
+    navigationState.authStatus = "authenticated"
     navigationState.logout.mockClear()
   })
 
@@ -89,5 +92,15 @@ describe("Navbar", () => {
     await user.click(within(screen.getByRole("menu")).getByRole("menuitem", { name: "Logout" }))
 
     expect(navigationState.logout).toHaveBeenCalledOnce()
+  })
+
+  it("does not present account actions while session restoration is indeterminate", () => {
+    navigationState.authStatus = "retryable-refresh-error"
+    render(<Navbar />)
+
+    expect(
+      screen.queryByRole("button", { name: "Open Nadia Rahman's account menu" })
+    ).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Login" })).not.toBeInTheDocument()
   })
 })

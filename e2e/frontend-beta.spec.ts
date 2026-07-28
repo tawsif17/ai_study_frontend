@@ -41,7 +41,8 @@ async function completeSignupForm(page: Page) {
   await page.getByLabel("School Name").fill("Example School")
   await page.getByLabel("City").fill("Chattogram")
   await page.getByRole("combobox", { name: "Class" }).click()
-  await page.getByRole("option", { name: "Class 9" }).click()
+  await page.keyboard.press("ArrowDown")
+  await page.keyboard.press("Enter")
 }
 
 test.beforeEach(async ({ page }) => {
@@ -137,6 +138,35 @@ test("password recovery requests a generic email, removes its token, and returns
   await page.getByRole("button", { name: "Reset password" }).click()
   await expect(page.getByText("Password reset successful. Please log in with your new password.")).toBeVisible()
   await expect(page.getByRole("link", { name: "Go to login" })).toHaveAttribute("href", "/login")
+})
+
+test("password reset broadcasts all-session revocation to authenticated tabs", async ({ context, page }) => {
+  let sessionActive = true
+  await context.route(`${API_BASE}/auth/me`, (route) =>
+    sessionActive
+      ? fulfillData(route, { user: verifiedUser })
+      : fulfillError(route, 401, "Invalid or expired session")
+  )
+  await page.route(`${API_BASE}/auth/reset-password`, async (route) => {
+    sessionActive = false
+    await fulfillData(route, {
+      message: "Password reset successful. Please log in with your new password.",
+    })
+  })
+
+  const authenticatedPage = await context.newPage()
+  await authenticatedPage.goto("/profile")
+  await expect(
+    authenticatedPage.getByRole("heading", { name: /Welcome back, Beta/ })
+  ).toBeVisible()
+
+  await page.goto("/reset-password?token=secret-reset-token")
+  await page.getByLabel("New password", { exact: true }).fill("NewPassword123")
+  await page.getByLabel("Confirm new password", { exact: true }).fill("NewPassword123")
+  await page.getByRole("button", { name: "Reset password" }).click()
+
+  await expect(page.getByText("Password reset successful. Please log in with your new password.")).toBeVisible()
+  await expect(authenticatedPage).toHaveURL(/\/login\?next=%2Fprofile$/)
 })
 
 test("temporary account restoration failure stays indeterminate and recovers", async ({ page }) => {

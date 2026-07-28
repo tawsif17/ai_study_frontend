@@ -5,7 +5,7 @@ import {
   apiClient,
   apiClientWithResponse,
   notifySessionInvalid,
-  setCsrfToken,
+  runWithSessionTermination,
 } from "./client"
 
 vi.mock("./client", () => ({
@@ -14,7 +14,7 @@ vi.mock("./client", () => ({
   apiClient: vi.fn(),
   apiClientWithResponse: vi.fn(),
   notifySessionInvalid: vi.fn(),
-  setCsrfToken: vi.fn(),
+  runWithSessionTermination: vi.fn((operation: () => Promise<unknown>) => operation()),
 }))
 
 describe("auth API contract calls", () => {
@@ -30,6 +30,7 @@ describe("auth API contract calls", () => {
     expect(apiClient).toHaveBeenCalledWith("/auth/verify-email", {
       method: "POST",
       body: { token: "abc-token" },
+      responseEnvelope: "required",
     })
   })
 
@@ -62,6 +63,7 @@ describe("auth API contract calls", () => {
         city: "Dhaka",
         studentClass: 10,
       },
+      responseEnvelope: "required",
     })
   })
 
@@ -75,6 +77,7 @@ describe("auth API contract calls", () => {
     expect(apiClient).toHaveBeenCalledWith("/auth/resend-verification", {
       method: "POST",
       body: { email: "student@example.com" },
+      responseEnvelope: "required",
     })
   })
 
@@ -85,7 +88,9 @@ describe("auth API contract calls", () => {
     expect(apiClient).toHaveBeenCalledWith("/auth/logout", {
       method: "POST",
       auth: "required",
+      responseEnvelope: "required",
     })
+    expect(runWithSessionTermination).toHaveBeenCalledOnce()
   })
 
   it("calls upgrade to pro endpoint with exact contract payload", async () => {
@@ -100,6 +105,7 @@ describe("auth API contract calls", () => {
       method: "POST",
       body: {},
       auth: "required",
+      responseEnvelope: "required",
     })
   })
 
@@ -122,6 +128,7 @@ describe("auth API contract calls", () => {
         message: "I need help with the platform.",
       },
       auth: "optional",
+      responseEnvelope: "required",
     })
   })
 
@@ -204,13 +211,13 @@ describe("revision API contract", () => {
 
     await forgotPassword({ email: " Student@Example.COM " })
     await resetPassword({ token: "reset-token", newPassword: "NewPassword123" })
-    expect(notifySessionInvalid).toHaveBeenCalledOnce()
+    expect(notifySessionInvalid).toHaveBeenCalledWith({ forceBroadcast: true })
 
     expect(apiClient).toHaveBeenNthCalledWith(1, "/auth/forgot-password", {
-      method: "POST", body: { email: "student@example.com" },
+      method: "POST", body: { email: "student@example.com" }, responseEnvelope: "required",
     })
     expect(apiClient).toHaveBeenNthCalledWith(2, "/auth/reset-password", {
-      method: "POST", body: { token: "reset-token", newPassword: "NewPassword123" },
+      method: "POST", body: { token: "reset-token", newPassword: "NewPassword123" }, responseEnvelope: "required",
     })
   })
 
@@ -263,9 +270,12 @@ describe("revision API contract", () => {
     expect(apiClient).toHaveBeenNthCalledWith(1, "/auth/login", {
       method: "POST",
       body: { email: "student@example.com", password: "Password123" },
+      responseEnvelope: "required",
     })
-    expect(apiClient).toHaveBeenNthCalledWith(2, "/auth/me", { auth: "required" })
-    expect(setCsrfToken).toHaveBeenCalledWith("signed-csrf-token")
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/auth/me", {
+      auth: "required",
+      responseEnvelope: "required",
+    })
   })
 
   it("rejects unrecognized registration success statuses and malformed auth payloads", async () => {

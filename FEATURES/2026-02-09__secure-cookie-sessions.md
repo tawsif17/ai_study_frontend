@@ -127,11 +127,14 @@ revoke a session safely.
 
 ## Verification
 
-- `npm test` passed: 45 files and 303 tests.
+- `npm test` passed: 45 files and 312 tests.
 - `npm run lint` passed without warnings.
 - `npm run build` passed with public HTTPS test values.
 - `npx tsc --noEmit --incremental false` passed.
-- Playwright passed all 9 serial Chromium scenarios against the production bundle.
-- `npm run dev` reached ready state on port 3000.
-- `npm run start` reached ready state on port 3000.
-- The contracts submodule is pinned to `100c5c0`.
+- Playwright passed all 10 Chromium scenarios against the production bundle, including cross-tab
+  password-reset revocation.
+- `npm run dev` confirmed the existing workspace development server on port 3000.
+- `npm run start -- -p 3202` reached ready state against the production build.
+- Session termination is serialized with refresh work, stale authenticated responses are rejected,
+  and required auth success envelopes are validated strictly.
+- The contracts submodule is pinned to merged contract commit `4df591a`.

@@ -57,6 +57,7 @@ describe("login page", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Sign In" }))
     expect(screen.getByLabelText("Email")).toHaveAttribute("aria-invalid", "true")
+    expect(screen.getByLabelText("Email")).toHaveFocus()
     expect(screen.getByText("Enter a valid email address.")).toHaveAttribute("id", "login-email-error")
     expect(screen.getByLabelText("Password")).toHaveAttribute("aria-invalid", "true")
     expect(mockLogin).not.toHaveBeenCalled()

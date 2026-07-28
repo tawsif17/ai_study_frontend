@@ -12,7 +12,7 @@ import {
   apiClient,
   apiClientWithResponse,
   notifySessionInvalid,
-  setCsrfToken,
+  runWithSessionTermination,
 } from "./client"
 import {
   parseAuthMeResponse,
@@ -120,6 +120,7 @@ export async function register(data: RegisterRequest): Promise<RegisterResult> {
   const response = await apiClientWithResponse<RegisterResponse>("/auth/register", {
     method: "POST",
     body: payload,
+    responseEnvelope: "required",
   })
 
   if (response.status !== 201 && response.status !== 202) {
@@ -140,25 +141,28 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
   const response = await apiClient<unknown>("/auth/login", {
     method: "POST",
     body: payload,
+    responseEnvelope: "required",
   })
-  const parsed = parseLoginResponse(response)
-  setCsrfToken(parsed.csrfToken)
-  return parsed
+  return parseLoginResponse(response)
 }
 
 export async function getAuthMe(): Promise<AuthMeResponse> {
   const response = await apiClient<unknown>("/auth/me", {
     auth: "required",
+    responseEnvelope: "required",
   })
   return parseAuthMeResponse(response)
 }
 
 export async function logout(): Promise<LogoutResponse> {
-  const response = await apiClient<unknown>("/auth/logout", {
-    method: "POST",
-    auth: "required",
+  return runWithSessionTermination(async () => {
+    const response = await apiClient<unknown>("/auth/logout", {
+      method: "POST",
+      auth: "required",
+      responseEnvelope: "required",
+    })
+    return parseLogoutResponse(response)
   })
-  return parseLogoutResponse(response)
 }
 
 export async function verifyEmail(data: VerifyEmailRequest): Promise<VerifyEmailResponse> {
@@ -166,6 +170,7 @@ export async function verifyEmail(data: VerifyEmailRequest): Promise<VerifyEmail
   const response = await apiClient<unknown>("/auth/verify-email", {
     method: "POST",
     body: payload,
+    responseEnvelope: "required",
   })
   return parseVerifyEmailResponse(response)
 }
@@ -179,6 +184,7 @@ export async function resendVerification(
   const response = await apiClient<unknown>("/auth/resend-verification", {
     method: "POST",
     body: payload,
+    responseEnvelope: "required",
   })
   return parseResendVerificationResponse(response)
 }
@@ -190,6 +196,7 @@ export async function forgotPassword(data: ForgotPasswordRequest): Promise<Forgo
   const response = await apiClient<unknown>("/auth/forgot-password", {
     method: "POST",
     body: payload,
+    responseEnvelope: "required",
   })
   return parseForgotPasswordResponse(response)
 }
@@ -199,9 +206,10 @@ export async function resetPassword(data: ResetPasswordRequest): Promise<ResetPa
   const response = await apiClient<unknown>("/auth/reset-password", {
     method: "POST",
     body: payload,
+    responseEnvelope: "required",
   })
   const parsed = parseResetPasswordResponse(response)
-  notifySessionInvalid()
+  notifySessionInvalid({ forceBroadcast: true })
   return parsed
 }
 
@@ -210,6 +218,7 @@ export async function upgradeToPro(): Promise<UpgradeToProResponse> {
     method: "POST",
     body: {},
     auth: "required",
+    responseEnvelope: "required",
   })
   return parseUpgradeToProResponse(response)
 }
@@ -227,6 +236,7 @@ export async function submitContact(
     method: "POST",
     body: payload,
     auth: "optional",
+    responseEnvelope: "required",
   })
 }
 
