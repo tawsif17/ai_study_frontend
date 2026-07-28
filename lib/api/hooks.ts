@@ -2,6 +2,7 @@
 
 import useSWR from "swr"
 import {
+  getDistricts,
   getExamTypes,
   getProgressDashboard,
   getQuestions,
@@ -10,6 +11,7 @@ import {
   getSubjectChapters,
   getSubjects,
   type Chapter,
+  type DistrictName,
   type ExamType,
   type QuestionListItem,
   type QuestionsListRequest,
@@ -20,6 +22,26 @@ import {
   type Subject,
   type ProgressDashboardResponse,
 } from "./index"
+
+export function useDistricts() {
+  const { data, error, isLoading, isValidating, mutate } = useSWR<DistrictName[]>(
+    "bangladesh-districts",
+    getDistricts,
+    {
+      revalidateOnFocus: false,
+      revalidateIfStale: false,
+      dedupingInterval: 5 * 60 * 1000,
+    }
+  )
+
+  return {
+    districts: data,
+    isLoading,
+    isValidating,
+    isError: error,
+    mutate,
+  }
+}
 
 async function examTypesFetcher(): Promise<ExamType[]> {
   return getExamTypes()

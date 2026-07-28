@@ -16,6 +16,7 @@ import {
 } from "./client"
 import {
   parseAuthMeResponse,
+  parseDistrictsResponse,
   parseLogoutResponse,
   parseForgotPasswordResponse,
   parseLoginResponse,
@@ -57,6 +58,7 @@ import type {
   ChaptersResponse,
   ContactSubmitRequest,
   ContactSubmitResponse,
+  DistrictName,
   ForgotPasswordRequest,
   ForgotPasswordResponse,
   CompleteResultsResponse,
@@ -238,6 +240,17 @@ export async function submitContact(
     auth: "optional",
     responseEnvelope: "required",
   })
+}
+
+// ============================================
+// LOCATIONS API
+// ============================================
+
+export async function getDistricts(): Promise<DistrictName[]> {
+  const response = await apiClient<unknown>("/locations/districts", {
+    responseEnvelope: "required",
+  })
+  return parseDistrictsResponse(response).districts
 }
 
 // ============================================

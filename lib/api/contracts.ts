@@ -1,11 +1,12 @@
 import { z } from "zod"
 import { ApiClientError, ApiContractError } from "./client"
-import { questionReportReasonOptions } from "./types"
+import { BANGLADESH_DISTRICT_NAMES, questionReportReasonOptions } from "./types"
 import type {
   ContactSubmitRequest,
   AuthMeResponse,
   AuthUser,
   CsrfResponse,
+  DistrictsResponse,
   LoginRequest,
   LoginResponse,
   LogoutResponse,
@@ -47,7 +48,9 @@ const registerRequestSchema = z
       .regex(/[0-9]/, "Password must include at least one number"),
     fullName: z.string().min(1),
     school: z.string().min(1),
-    city: z.string().min(1),
+    city: z.enum(BANGLADESH_DISTRICT_NAMES, {
+      errorMap: () => ({ message: "City must be a valid Bangladesh district" }),
+    }),
     studentClass: z.number().int(),
   })
   .strict()
@@ -223,6 +226,18 @@ const refreshResponseSchema: z.ZodType<RefreshResponse> = csrfResponseSchema
 const logoutResponseSchema: z.ZodType<LogoutResponse> = z
   .object({ message: z.literal("Logged out successfully") })
   .strict()
+const districtsResponseSchema: z.ZodType<DistrictsResponse> = z
+  .object({
+    districts: z
+      .array(z.enum(BANGLADESH_DISTRICT_NAMES))
+      .length(BANGLADESH_DISTRICT_NAMES.length)
+      .refine(
+        (districts) =>
+          districts.every((district, index) => district === BANGLADESH_DISTRICT_NAMES[index]),
+        "Districts must match the canonical ascending contract order"
+      ),
+  })
+  .strict()
 const upgradeToProResponseSchema: z.ZodType<UpgradeToProResponse> = z
   .object({ message: z.string().min(1), plan_tier: z.literal("pro") })
   .strict()
@@ -339,6 +354,9 @@ export const parseRefreshResponse = (input: unknown) =>
 
 export const parseLogoutResponse = (input: unknown) =>
   parseResponse(logoutResponseSchema, input, "logout")
+
+export const parseDistrictsResponse = (input: unknown) =>
+  parseResponse(districtsResponseSchema, input, "districts")
 
 export const parseVerifyEmailResponse = (input: unknown) =>
   parseResponse(verifyEmailResponseSchema, input, "email verification")

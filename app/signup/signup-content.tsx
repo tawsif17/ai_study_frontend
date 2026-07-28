@@ -12,27 +12,45 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { GraduationCap } from "@/components/icons"
 import { useAuth } from "@/lib/auth-context"
-import { formatApiError } from "@/lib/api/client"
+import { ApiClientError, formatApiError } from "@/lib/api/client"
+import { useDistricts } from "@/lib/api/hooks"
+import type { DistrictName } from "@/lib/api"
 import {
   isUncertainSignupDeliveryError,
   isValidVerificationEmail,
   normalizeVerificationEmail,
 } from "@/lib/verification-form-recovery"
+import { DistrictCombobox } from "./district-combobox"
 
 type SignupField = "name" | "email" | "password" | "school" | "city" | "class"
 type SignupFieldErrors = Partial<Record<SignupField, string>>
 
 export function SignupContent() {
   const { register } = useAuth()
+  const {
+    districts,
+    isLoading: districtsLoading,
+    isValidating: districtsValidating,
+    isError: districtsError,
+    mutate: retryDistricts,
+  } = useDistricts()
 
   const [isLoading, setIsLoading] = useState(false)
+  const [districtOpen, setDistrictOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [registrationComplete, setRegistrationComplete] = useState(false)
   const [submittedEmail, setSubmittedEmail] = useState("")
   const [deliveryUncertain, setDeliveryUncertain] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<SignupFieldErrors>({})
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string
+    email: string
+    password: string
+    school: string
+    city: DistrictName | ""
+    class: string
+  }>({
     name: "",
     email: "",
     password: "",
@@ -44,6 +62,7 @@ export function SignupContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const normalizedEmail = normalizeVerificationEmail(formData.email)
+    const selectedDistrict = formData.city
     const nextFieldErrors: SignupFieldErrors = {}
     if (!formData.name.trim()) nextFieldErrors.name = "Enter your full name."
     if (!isValidVerificationEmail(normalizedEmail)) nextFieldErrors.email = "Enter a valid email address."
@@ -51,10 +70,13 @@ export function SignupContent() {
       nextFieldErrors.password = "Use at least 8 characters with uppercase, lowercase, and a number."
     }
     if (!formData.school.trim()) nextFieldErrors.school = "Enter your school name."
-    if (!formData.city.trim()) nextFieldErrors.city = "Enter your city."
+    if (!selectedDistrict || !districts?.includes(selectedDistrict)) {
+      nextFieldErrors.city = "Select a valid Bangladesh district."
+    }
     if (!formData.class) nextFieldErrors.class = "Select your class."
     setFieldErrors(nextFieldErrors)
     if (Object.keys(nextFieldErrors).length > 0) return
+    if (!selectedDistrict) return
 
     setSubmittedEmail(normalizedEmail)
     setFormData((current) => ({ ...current, email: normalizedEmail }))
@@ -69,7 +91,7 @@ export function SignupContent() {
         password: formData.password,
         fullName: formData.name,
         school: formData.school,
-        city: formData.city,
+        city: selectedDistrict,
         studentClass: Number.parseInt(formData.class, 10),
       })
       if (response.status === 202) {
@@ -83,6 +105,22 @@ export function SignupContent() {
       setRegistrationComplete(true)
       setFormData((current) => ({ ...current, password: "" }))
     } catch (err) {
+      if (
+        err instanceof ApiClientError &&
+        err.status === 400 &&
+        err.message === "City must be a valid Bangladesh district"
+      ) {
+        setFormData((current) => ({ ...current, city: "" }))
+        setFieldErrors((current) => ({ ...current, city: err.message }))
+        try {
+          await retryDistricts()
+        } catch {
+          // The hook exposes the retry failure alongside the district control.
+        } finally {
+          setDistrictOpen(true)
+        }
+        return
+      }
       const uncertain = isUncertainSignupDeliveryError(err)
       setDeliveryUncertain(uncertain)
       setError(
@@ -240,25 +278,61 @@ export function SignupContent() {
                 {fieldErrors.school && <p id="signup-school-error" className="text-sm text-destructive">{fieldErrors.school}</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <Input
+                  <Label htmlFor="city">District</Label>
+                  <DistrictCombobox
                     id="city"
-                    type="text"
-                    name="address-level2"
-                    autoComplete="address-level2"
-                    placeholder="Your city"
                     value={formData.city}
-                    onChange={(e) => {
-                      setFormData({ ...formData, city: e.target.value })
+                    districts={districts ?? []}
+                    open={districtOpen}
+                    onOpenChange={setDistrictOpen}
+                    onValueChange={(value) => {
+                      setFormData((current) => ({ ...current, city: value }))
                       setFieldErrors((current) => ({ ...current, city: undefined }))
                     }}
-                    aria-invalid={Boolean(fieldErrors.city)}
-                    aria-describedby={fieldErrors.city ? "signup-city-error" : undefined}
-                    required
-                    disabled={isLoading}
+                    invalid={Boolean(fieldErrors.city)}
+                    describedBy={[
+                      fieldErrors.city ? "signup-city-error" : "",
+                      districtsLoading || districtsValidating ? "signup-district-loading" : "",
+                      districtsError ? "signup-district-load-error" : "",
+                    ].filter(Boolean).join(" ") || undefined}
+                    disabled={
+                      isLoading ||
+                      districtsLoading ||
+                      districtsValidating ||
+                      Boolean(districtsError) ||
+                      !districts
+                    }
                   />
+                  {(districtsLoading || districtsValidating) && (
+                    <p
+                      id="signup-district-loading"
+                      className="text-sm text-muted-foreground"
+                      role="status"
+                    >
+                      {districtsValidating && !districtsLoading
+                        ? "Refreshing districts..."
+                        : "Loading districts..."}
+                    </p>
+                  )}
+                  {districtsError && !districtsValidating && (
+                    <div
+                      id="signup-district-load-error"
+                      className="space-y-2 text-sm text-destructive"
+                      role="alert"
+                    >
+                      <p>We couldn&apos;t load the district list. Check your connection and retry.</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void retryDistricts()}
+                      >
+                        Retry districts
+                      </Button>
+                    </div>
+                  )}
                   {fieldErrors.city && <p id="signup-city-error" className="text-sm text-destructive">{fieldErrors.city}</p>}
                 </div>
 
@@ -284,7 +358,17 @@ export function SignupContent() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full rounded-lg" disabled={isLoading}>
+              <Button
+                type="submit"
+                className="w-full rounded-lg"
+                disabled={
+                  isLoading ||
+                  districtsLoading ||
+                  districtsValidating ||
+                  Boolean(districtsError) ||
+                  !districts
+                }
+              >
                 {isLoading ? "Creating account..." : "Create Account"}
               </Button>
 
