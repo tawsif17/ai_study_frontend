@@ -11,6 +11,10 @@ class ResizeObserverMock {
 
 globalThis.ResizeObserver = ResizeObserverMock
 
+if (!HTMLElement.prototype.scrollIntoView) {
+  HTMLElement.prototype.scrollIntoView = vi.fn()
+}
+
 if (!globalThis.localStorage || typeof globalThis.localStorage.clear !== "function") {
   const store = new Map<string, string>()
 

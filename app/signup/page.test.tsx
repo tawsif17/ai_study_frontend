@@ -5,9 +5,12 @@ import { axe } from "vitest-axe"
 import SignupPage from "./page"
 import { useAuth } from "@/lib/auth-context"
 import { ApiClientError, ApiNetworkError } from "@/lib/api/client"
+import { useDistricts } from "@/lib/api/hooks"
+import { BANGLADESH_DISTRICT_NAMES, type DistrictName } from "@/lib/api"
 
 const mockPush = vi.fn()
 const mockRegister = vi.fn()
+const mockRetryDistricts = vi.fn()
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
@@ -49,6 +52,44 @@ vi.mock("@/lib/auth-context", () => ({
   useAuth: vi.fn(),
 }))
 
+vi.mock("@/lib/api/hooks", () => ({
+  useDistricts: vi.fn(),
+}))
+
+vi.mock("./district-combobox", () => ({
+  DistrictCombobox: ({
+    id,
+    value,
+    districts,
+    onValueChange,
+    disabled,
+    invalid,
+    describedBy,
+  }: {
+    id: string
+    value: DistrictName | ""
+    districts: DistrictName[]
+    onValueChange: (value: DistrictName) => void
+    disabled?: boolean
+    invalid?: boolean
+    describedBy?: string
+  }) => (
+    <select
+      id={id}
+      value={value}
+      onChange={(event) => onValueChange(event.target.value as DistrictName)}
+      disabled={disabled}
+      aria-invalid={invalid}
+      aria-describedby={describedBy}
+    >
+      <option value="">Select a district</option>
+      {districts.map((district) => (
+        <option key={district} value={district}>{district}</option>
+      ))}
+    </select>
+  ),
+}))
+
 function fillValidSignupForm() {
   fireEvent.change(screen.getByLabelText("Full Name"), { target: { value: "Student Name" } })
   fireEvent.change(screen.getByLabelText("Email"), { target: { value: "student@example.com" } })
@@ -56,7 +97,7 @@ function fillValidSignupForm() {
   fireEvent.change(screen.getByLabelText("School Name"), {
     target: { value: "Example High School" },
   })
-  fireEvent.change(screen.getByLabelText("City"), { target: { value: "Dhaka" } })
+  fireEvent.change(screen.getByLabelText("District"), { target: { value: "Dhaka" } })
   fireEvent.change(screen.getByLabelText("Class"), { target: { value: "10" } })
 }
 
@@ -74,6 +115,13 @@ describe("signup page", () => {
       logout: vi.fn(),
       refreshUser: vi.fn(),
       retryAuth: vi.fn(),
+    })
+    vi.mocked(useDistricts).mockReturnValue({
+      districts: [...BANGLADESH_DISTRICT_NAMES],
+      isLoading: false,
+      isValidating: false,
+      isError: undefined,
+      mutate: mockRetryDistricts,
     })
   })
 
@@ -167,7 +215,7 @@ describe("signup page", () => {
     expect(screen.getByLabelText("Email")).toBeDisabled()
     expect(screen.getByLabelText("Password")).toBeDisabled()
     expect(screen.getByLabelText("School Name")).toBeDisabled()
-    expect(screen.getByLabelText("City")).toBeDisabled()
+    expect(screen.getByLabelText("District")).toBeDisabled()
     expect(screen.getByLabelText("Class")).toBeDisabled()
 
     resolveRegister?.({
@@ -226,6 +274,56 @@ describe("signup page", () => {
     expect(screen.getByLabelText("Password")).toHaveAttribute("aria-invalid", "true")
     expect(screen.getByText("Select your class.")).toBeInTheDocument()
     expect(mockRegister).not.toHaveBeenCalled()
+  })
+
+  it("keeps other fields editable while districts load and blocks submission", () => {
+    vi.mocked(useDistricts).mockReturnValue({
+      districts: undefined,
+      isLoading: true,
+      isValidating: true,
+      isError: undefined,
+      mutate: mockRetryDistricts,
+    })
+
+    render(<SignupPage />)
+
+    expect(screen.getByText("Loading districts...")).toBeInTheDocument()
+    expect(screen.getByLabelText("District")).toBeDisabled()
+    expect(screen.getByLabelText("Full Name")).toBeEnabled()
+    expect(screen.getByRole("button", { name: "Create Account" })).toBeDisabled()
+  })
+
+  it("retries district loading without discarding entered values", async () => {
+    vi.mocked(useDistricts).mockReturnValue({
+      districts: undefined,
+      isLoading: false,
+      isValidating: false,
+      isError: new ApiNetworkError(),
+      mutate: mockRetryDistricts,
+    })
+    mockRetryDistricts.mockResolvedValueOnce([...BANGLADESH_DISTRICT_NAMES])
+
+    render(<SignupPage />)
+    fireEvent.change(screen.getByLabelText("Full Name"), { target: { value: "Student Name" } })
+    fireEvent.click(screen.getByRole("button", { name: "Retry districts" }))
+
+    expect(mockRetryDistricts).toHaveBeenCalledOnce()
+    expect(screen.getByLabelText("Full Name")).toHaveValue("Student Name")
+  })
+
+  it("clears and refreshes a district rejected as stale by registration", async () => {
+    mockRegister.mockRejectedValueOnce(
+      new ApiClientError({ message: "City must be a valid Bangladesh district" }, 400)
+    )
+    mockRetryDistricts.mockResolvedValueOnce([...BANGLADESH_DISTRICT_NAMES])
+
+    render(<SignupPage />)
+    fillValidSignupForm()
+    fireEvent.click(screen.getByRole("button", { name: "Create Account" }))
+
+    expect(await screen.findByText("City must be a valid Bangladesh district")).toBeInTheDocument()
+    expect(screen.getByLabelText("District")).toHaveValue("")
+    expect(mockRetryDistricts).toHaveBeenCalledOnce()
   })
 
   it("has no detectable accessibility violations", async () => {

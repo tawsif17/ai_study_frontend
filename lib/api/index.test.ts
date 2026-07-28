@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { forgotPassword, getAuthMe, getCompleteResults, getPracticeItems, getProgressDashboard, getRevisionItems, getRevisionSummary, login, logout, register, removeBookmark, reportQuestion, resendVerification, resetPassword, saveBookmark, submitContact, upgradeToPro, verifyEmail } from "./index"
+import { forgotPassword, getAuthMe, getCompleteResults, getDistricts, getPracticeItems, getProgressDashboard, getRevisionItems, getRevisionSummary, login, logout, register, removeBookmark, reportQuestion, resendVerification, resetPassword, saveBookmark, submitContact, upgradeToPro, verifyEmail } from "./index"
+import { BANGLADESH_DISTRICT_NAMES } from "./types"
 import {
   ApiContractError,
   apiClient,
@@ -63,6 +64,17 @@ describe("auth API contract calls", () => {
         city: "Dhaka",
         studentClass: 10,
       },
+      responseEnvelope: "required",
+    })
+  })
+
+  it("loads canonical districts through the exact public endpoint", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce({
+      districts: [...BANGLADESH_DISTRICT_NAMES],
+    })
+
+    await expect(getDistricts()).resolves.toEqual([...BANGLADESH_DISTRICT_NAMES])
+    expect(apiClient).toHaveBeenCalledWith("/locations/districts", {
       responseEnvelope: "required",
     })
   })

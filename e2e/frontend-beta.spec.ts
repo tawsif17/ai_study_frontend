@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from "@playwright/test"
+import { BANGLADESH_DISTRICT_NAMES } from "../lib/api/types"
 
 const API_BASE = "**/api"
 const now = "2026-07-22T12:00:00.000Z"
@@ -34,14 +35,30 @@ async function fulfillError(route: Route, status: number, message: string) {
   })
 }
 
-async function completeSignupForm(page: Page) {
+async function mockDistricts(page: Page) {
+  await page.route(`${API_BASE}/auth/csrf`, (route) =>
+    fulfillError(route, 401, "Authentication session missing or invalid")
+  )
+  await page.route(`${API_BASE}/locations/districts`, (route) =>
+    fulfillData(route, { districts: [...BANGLADESH_DISTRICT_NAMES] })
+  )
+}
+
+async function completeSignupForm(page: Page, verifyScrollable = false) {
   await page.getByLabel("Full Name").fill("Beta Student")
   await page.getByLabel("Email").fill("  Student@Example.com ")
   await page.getByLabel("Password").fill("StrongPass1")
   await page.getByLabel("School Name").fill("Example School")
-  await page.getByLabel("City").fill("Chattogram")
+  await page.getByRole("combobox", { name: "District" }).click()
+  if (verifyScrollable) {
+    const listbox = page.getByRole("listbox")
+    await expect(listbox).toHaveCSS("overflow-y", "auto")
+    expect(await listbox.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true)
+  }
+  await page.getByRole("combobox", { name: "Search districts" }).fill("chat")
+  await page.getByRole("option", { name: "Chattogram" }).click()
   await page.getByRole("combobox", { name: "Class" }).click()
-  await page.keyboard.press("ArrowDown")
+  await page.keyboard.press("Home")
   await page.keyboard.press("Enter")
 }
 
@@ -52,14 +69,25 @@ test.beforeEach(async ({ page }) => {
 })
 
 test("signup 201 stays in place and offers prefilled verification recovery", async ({ page }) => {
-  await page.route(`${API_BASE}/auth/register`, (route) =>
-    fulfillData(route, { message: "Registration successful. Please verify your email." }, 201)
-  )
+  await mockDistricts(page)
+  let registrationPayload: unknown
+  await page.route(`${API_BASE}/auth/register`, async (route) => {
+    registrationPayload = route.request().postDataJSON()
+    await fulfillData(route, { message: "Registration successful. Please verify your email." }, 201)
+  })
 
   await page.goto("/signup")
-  await completeSignupForm(page)
+  await completeSignupForm(page, true)
   await page.getByRole("button", { name: "Create Account" }).click()
 
+  expect(registrationPayload).toEqual({
+    email: "student@example.com",
+    password: "StrongPass1",
+    fullName: "Beta Student",
+    school: "Example School",
+    city: "Chattogram",
+    studentClass: 9,
+  })
   await expect(page).toHaveURL(/\/signup$/)
   await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible()
   await expect(page.getByText("student@example.com")).toBeVisible()
@@ -70,6 +98,7 @@ test("signup 201 stays in place and offers prefilled verification recovery", asy
 })
 
 test("signup 202 preserves the private-beta request confirmation", async ({ page }) => {
+  await mockDistricts(page)
   await page.route(`${API_BASE}/auth/register`, (route) =>
     fulfillData(route, { message: "Your beta access request has been received." }, 202)
   )
@@ -81,6 +110,28 @@ test("signup 202 preserves the private-beta request confirmation", async ({ page
   await expect(page.getByText("Request received")).toBeVisible()
   await expect(page.getByText("Your beta access request has been received.")).toBeVisible()
   await expect(page.getByRole("heading", { name: "Check your email" })).toHaveCount(0)
+})
+
+test("signup retries district loading without losing entered form values", async ({ page }) => {
+  let districtAttempts = 0
+  await page.route(`${API_BASE}/auth/csrf`, (route) =>
+    fulfillError(route, 401, "Authentication session missing or invalid")
+  )
+  await page.route(`${API_BASE}/locations/districts`, (route) => {
+    districtAttempts += 1
+    return districtAttempts === 1
+      ? fulfillError(route, 500, "District lookup unavailable")
+      : fulfillData(route, { districts: [...BANGLADESH_DISTRICT_NAMES] })
+  })
+
+  await page.goto("/signup")
+  await page.getByLabel("Full Name").fill("Beta Student")
+  await expect(page.getByText(/couldn't load the district list/i)).toBeVisible()
+  await page.getByRole("button", { name: "Retry districts" }).click()
+
+  await expect(page.getByRole("combobox", { name: "District" })).toBeEnabled()
+  await expect(page.getByLabel("Full Name")).toHaveValue("Beta Student")
+  expect(districtAttempts).toBe(2)
 })
 
 test("unverified login exposes the normalized resend destination", async ({ page }) => {
