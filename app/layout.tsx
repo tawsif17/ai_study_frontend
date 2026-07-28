@@ -13,11 +13,11 @@ export const metadata: Metadata = {
   applicationName: "Shikkha Buddy",
   title: "Shikkha Buddy - SSC Science Practice for Bangladesh",
   description:
-    "Practice SSC General Math, Physics and Chemistry with guided question sessions, explanations, and a focused study flow.",
+    "Practise AI-generated SSC MCQs for General Math, Physics, and Chemistry, then review correct answers after submitting a session.",
   openGraph: {
     title: "Shikkha Buddy - SSC Science Practice for Bangladesh",
     description:
-      "Practice SSC General Math, Physics and Chemistry with guided question sessions, explanations, and a focused study flow.",
+      "Practise AI-generated SSC MCQs for General Math, Physics, and Chemistry, then review correct answers after submitting a session.",
     images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Shikkha Buddy SSC practice" }],
     siteName: "Shikkha Buddy",
     type: "website",
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Shikkha Buddy - SSC Science Practice for Bangladesh",
     description:
-      "Practice SSC General Math, Physics and Chemistry with guided question sessions, explanations, and a focused study flow.",
+      "Practise AI-generated SSC MCQs for General Math, Physics, and Chemistry, then review correct answers after submitting a session.",
     images: ["/opengraph-image"],
   },
   icons: {

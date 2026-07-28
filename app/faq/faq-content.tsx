@@ -33,7 +33,7 @@ const frequentlyAsked: FAQItem[] = [
     value: "beta-pro",
     question: "What is Beta Pro?",
     answer:
-      "Beta Pro is optional access for verified beta users. It includes more MCQ practice and Weak Area Analysis and does not create a paid subscription. Board-only MCQ sets are coming soon.",
+      "Beta Pro is optional access for verified beta users. It includes explanations, Bookmarks and Mistakes revision, Weak Area Analysis, and Board-only MCQ sets. It does not create a paid subscription.",
   },
   {
     value: "beta-payment",
@@ -45,7 +45,7 @@ const frequentlyAsked: FAQItem[] = [
     value: "board-only",
     question: "How do Board-only MCQ sets work?",
     answer:
-      "Board-only MCQ sets are planned for a future beta update. They are not currently selectable.",
+      "Board-only MCQ sets are a Beta Pro revision feature for focused past-board-question practice. They will be selectable when this beta feature is released.",
   },
 ]
 
@@ -54,7 +54,7 @@ const usingShikkhaBuddy: FAQItem[] = [
     value: "ai-mistakes",
     question: "Can AI-generated content contain mistakes?",
     answer:
-      "Yes. AI-generated questions, feedback, and explanations may contain mistakes. Check important answers against textbooks, teachers, or other trusted learning materials.",
+      "Yes. AI-generated questions, answers, and Beta Pro explanations may contain mistakes. Check important answers against textbooks, teachers, or other trusted learning materials.",
   },
   {
     value: "data-use",

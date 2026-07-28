@@ -28,7 +28,7 @@ const sections = [
       "Account signup, login, or email verification issues.",
       "Questions not loading or practice sessions not starting.",
       "A possible mistake in a question, option, answer, or explanation.",
-      "Questions about Free and Pro access in the current beta release.",
+      "Questions about Free AI-generated MCQ practice or Beta Pro revision features.",
     ],
   },
   {

@@ -64,8 +64,8 @@ const journeySteps: Array<{
     icon: Target,
   },
   {
-    title: "Review mistakes",
-    description: "Use explanations to plan the next revision.",
+    title: "Review answers",
+    description: "See the correct answers after you submit the session.",
     icon: CircleCheck,
   },
 ]
@@ -86,15 +86,15 @@ const sessionSteps: Array<{
   },
   {
     number: 2,
-    title: "Read the explanation",
-    description: "See why the answer is right or wrong.",
+    title: "Review the answer",
+    description: "See the correct answer after you submit.",
     icon: MessageSquareText,
     iconClass: "bg-emerald-500/10 text-emerald-700",
   },
   {
     number: 3,
-    title: "Mark what to review",
-    description: "Use mistakes to decide your next chapter.",
+    title: "Revise with Beta Pro",
+    description: "Use explanations, Bookmarks and Mistakes, and Weak Area Analysis.",
     icon: Bookmark,
     iconClass: "bg-orange-500/10 text-orange-600",
   },
@@ -104,11 +104,11 @@ const availabilityRows = [
   { type: "MCQ Practice", status: "Available now", bestFor: "Focused chapter revision", tone: "available" },
   { type: "CQ Practice", status: "Coming soon", bestFor: "Full creative-question practice", tone: "coming" },
   { type: "Mixed Practice", status: "Coming soon", bestFor: "MCQ + CQ practice sets", tone: "coming" },
-  { type: "Board-only MCQ sets", status: "Coming soon", bestFor: "Stricter exam revision", tone: "coming" },
-  { type: "Weak Area Analysis", status: "Pro", bestFor: "Identifying chapters that need more practice", tone: "pro" },
+  { type: "Board-only MCQ sets", status: "Beta Pro", bestFor: "Focused past-board-question revision", tone: "pro" },
+  { type: "Weak Area Analysis", status: "Beta Pro", bestFor: "Identifying chapters that need more practice", tone: "pro" },
 ] as const
 
-const reviewPoints = ["See correct answers", "Review missed questions", "Practice again by chapter"]
+const reviewPoints = ["See correct answers", "Beta Pro: read explanations", "Beta Pro: revise saved questions and mistakes"]
 
 export default function HowItWorksPage() {
   return (
@@ -229,7 +229,7 @@ export default function HowItWorksPage() {
           <div>
             <h3 className="text-lg font-bold text-foreground">Turn answers into the next revision step</h3>
             <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-              After each session, review missed questions, read explanations, and choose the next chapter with more confidence.
+              After each session, review the correct answers. Beta Pro adds explanations, saved-question revision, and Weak Area Analysis for deeper revision.
             </p>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
               {reviewPoints.map((point) => (
@@ -257,7 +257,7 @@ export default function HowItWorksPage() {
           <div className="text-center sm:text-left">
             <h2 className="text-xl font-bold text-foreground">Try the flow in a free MCQ session</h2>
             <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-              Start with one subject and one chapter. Beta Pro includes Weak Area Analysis for more focused revision. Board-only MCQ sets are coming soon.
+              Start with one subject and one chapter. Beta Pro adds explanations, Bookmarks and Mistakes revision, Weak Area Analysis, and Board-only MCQ sets.
             </p>
             <AuthAwareStartFreeButton className="mt-4 h-11 rounded-lg px-6 shadow-primary" />
             <p className="mt-2 text-xs text-muted-foreground">No credit card required.</p>
@@ -335,7 +335,7 @@ function AvailabilityStatus({ type, tone, label }: { type: string; tone: (typeof
   if (tone === "pro") {
     return (
       <Badge asChild className="border-transparent bg-orange-500/10 text-orange-600 hover:bg-orange-500/10">
-        <Link href="/pricing" aria-label={`${type}, Pro option, opens pricing`}>{label}</Link>
+        <Link href="/pricing" aria-label={`${type}, ${label} option, opens pricing`}>{label}</Link>
       </Badge>
     )
   }

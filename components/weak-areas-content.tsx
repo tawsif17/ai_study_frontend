@@ -238,7 +238,7 @@ export function WeakAreasContent() {
                 <div className="rounded-xl border border-border bg-card px-5 py-10 text-center">
                   <BookOpen className="mx-auto h-8 w-8 text-primary" aria-hidden="true" />
                   <h3 className="mt-3 text-lg font-semibold text-foreground">No assessed chapters for {subjectFilters.find((item) => item.key === selectedSubject)?.label}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">Complete and submit more MCQ practice for this subject, or return to all ranked chapters.</p>
+                  <p className="mt-2 text-sm text-muted-foreground">Complete and submit another MCQ session for this subject, or return to all ranked chapters.</p>
                   <Button variant="outline" className="mt-5" onClick={() => setSelectedSubject("all")}>Show all subjects</Button>
                 </div>
               )}

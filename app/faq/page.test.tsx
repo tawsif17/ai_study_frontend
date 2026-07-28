@@ -118,12 +118,12 @@ describe("FAQ page", () => {
     await user.click(screen.getByRole("button", { name: "What is Beta Pro?" }))
     expect(
       screen.getByText(
-        "Beta Pro is optional access for verified beta users. It includes more MCQ practice and Weak Area Analysis and does not create a paid subscription. Board-only MCQ sets are coming soon.",
+        "Beta Pro is optional access for verified beta users. It includes explanations, Bookmarks and Mistakes revision, Weak Area Analysis, and Board-only MCQ sets. It does not create a paid subscription.",
       ),
     ).toBeVisible()
 
     await user.click(screen.getByRole("button", { name: "Can AI-generated content contain mistakes?" }))
-    expect(screen.getByText(/AI-generated questions, feedback, and explanations may contain mistakes/)).toBeVisible()
+    expect(screen.getByText(/AI-generated questions, answers, and Beta Pro explanations may contain mistakes/)).toBeVisible()
     expect(screen.queryByText(/guaranteed|always accurate|improve your grades/i)).not.toBeInTheDocument()
   })
 })

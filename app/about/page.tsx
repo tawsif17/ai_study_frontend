@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 const sections = [
   {
     title: "What Shikkha Buddy is",
-    body: "Shikkha Buddy is a focused practice platform for Bangladesh SSC science students. It is designed to help students choose a subject, practice questions, review explanations, and return to study with a clearer next step.",
+    body: "Shikkha Buddy is a focused practice platform for Bangladesh SSC science students. Students can choose a subject, practise AI-generated MCQs, and review correct answers after submitting a session. Beta Pro adds deeper revision features.",
   },
   {
     title: "Who it is for",

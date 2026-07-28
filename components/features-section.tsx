@@ -16,14 +16,14 @@ const features: Feature[] = [
   },
   {
     icon: Zap,
-    title: "Answer explanations",
-    description: "See why an answer is right or wrong.",
+    title: "Correct answers",
+    description: "See the correct answer after you submit.",
     tone: "bg-[#dcfae6] text-[#12b76a]",
   },
   {
     icon: TrendingUp,
-    title: "Mistake review",
-    description: "Know what to revise next.",
+    title: "Beta Pro revision",
+    description: "Explanations, saved questions, and Weak Area Analysis.",
     tone: "bg-[#fff4e5] text-[#f79009]",
   },
 ]
