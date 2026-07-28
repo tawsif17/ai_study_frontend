@@ -65,6 +65,7 @@ vi.mock("./district-combobox", () => ({
     disabled,
     invalid,
     describedBy,
+    open,
   }: {
     id: string
     value: DistrictName | ""
@@ -73,6 +74,7 @@ vi.mock("./district-combobox", () => ({
     disabled?: boolean
     invalid?: boolean
     describedBy?: string
+    open: boolean
   }) => (
     <select
       id={id}
@@ -81,6 +83,7 @@ vi.mock("./district-combobox", () => ({
       disabled={disabled}
       aria-invalid={invalid}
       aria-describedby={describedBy}
+      data-open={open}
     >
       <option value="">Select a district</option>
       {districts.map((district) => (
@@ -323,7 +326,22 @@ describe("signup page", () => {
 
     expect(await screen.findByText("City must be a valid Bangladesh district")).toBeInTheDocument()
     expect(screen.getByLabelText("District")).toHaveValue("")
+    expect(screen.getByLabelText("District")).toHaveAttribute("data-open", "true")
     expect(mockRetryDistricts).toHaveBeenCalledOnce()
+  })
+
+  it("does not reopen stale district options when refreshing them fails", async () => {
+    mockRegister.mockRejectedValueOnce(
+      new ApiClientError({ message: "City must be a valid Bangladesh district" }, 400)
+    )
+    mockRetryDistricts.mockRejectedValueOnce(new ApiNetworkError())
+
+    render(<SignupPage />)
+    fillValidSignupForm()
+    fireEvent.click(screen.getByRole("button", { name: "Create Account" }))
+
+    expect(await screen.findByText("City must be a valid Bangladesh district")).toBeInTheDocument()
+    expect(screen.getByLabelText("District")).toHaveAttribute("data-open", "false")
   })
 
   it("has no detectable accessibility violations", async () => {

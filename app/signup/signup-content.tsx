@@ -112,12 +112,12 @@ export function SignupContent() {
       ) {
         setFormData((current) => ({ ...current, city: "" }))
         setFieldErrors((current) => ({ ...current, city: err.message }))
+        setDistrictOpen(false)
         try {
-          await retryDistricts()
+          const refreshedDistricts = await retryDistricts()
+          if (refreshedDistricts) setDistrictOpen(true)
         } catch {
           // The hook exposes the retry failure alongside the district control.
-        } finally {
-          setDistrictOpen(true)
         }
         return
       }

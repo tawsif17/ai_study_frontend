@@ -82,8 +82,8 @@ exact canonical Bangladesh district returned by `GET /api/locations/districts`.
 
 ## Verification
 
-- `npm test` passed: 47 files and 327 tests.
-- `npm run test:coverage` passed: 87.86% statements, 80.8% branches, 83.85% functions,
+- `npm test` passed: 47 files and 328 tests.
+- `npm run test:coverage` passed: 87.87% statements, 80.78% branches, 83.85% functions,
   and 90.14% lines.
 - `npm run lint` passed without warnings.
 - `npx tsc --noEmit --incremental false` passed.
@@ -93,4 +93,5 @@ exact canonical Bangladesh district returned by `GET /api/locations/districts`.
 - The existing workspace development server remains available on port 3000; a second dev invocation
   reached ready state before detecting that existing instance.
 - `npm run start -- -p 3202` reached ready state against the production build.
+- A failed stale-district refresh keeps the obsolete combobox closed until fresh data is available.
 - The contracts submodule is pinned to `77f43ae`.
