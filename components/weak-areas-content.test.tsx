@@ -21,6 +21,7 @@ const payload = {
   exam_type_id: 1,
   subject_id: 7,
   mode: "MCQ" as const,
+  question_pool: "STANDARD" as const,
   mcq_count: 25,
   selection: { type: "CHAPTERS" as const, chapter_ids: [11] },
 }
@@ -28,10 +29,11 @@ const payload = {
 const populated: ProgressDashboardResponse = {
   message: null,
   proficiency: { score: 68, trend_vs_last_week: 6 },
+  weak_areas_access: { unlocked: true, required_plan: null, minimum_attempts: 5, threshold_met: true, message: null },
   weakness_ranking: [
     { subject_id: 7, subject_name: "Physics", chapter_id: 11, chapter_name: "Light", accuracy: 42, questions_attempted: 12, message: null },
     { subject_id: 8, subject_name: "Chemistry", chapter_id: 12, chapter_name: "Atomic Structure", accuracy: 55, questions_attempted: 9, message: null },
-    { subject_id: 9, subject_name: "Higher Math", chapter_id: 13, chapter_name: "Geometry", accuracy: 67, questions_attempted: 3, message: "Need more practice to judge this area" },
+    { subject_id: 9, subject_name: "Higher Math", chapter_id: 13, chapter_name: "Geometry", accuracy: 67, questions_attempted: 5, message: null },
     { subject_id: 10, subject_name: "Biology", chapter_id: 14, chapter_name: "Cells", accuracy: 20, questions_attempted: 10, message: null },
   ],
   recommendation: { label: "Recommended: 25 MCQs from Light", generate_payload: payload },
@@ -62,12 +64,11 @@ describe("WeakAreasContent", () => {
     expect(screen.queryByText("Refund Policy")).not.toBeInTheDocument()
   })
 
-  it("filters locally and exposes low-data wording", () => {
+  it("filters threshold-qualified rows locally", () => {
     render(<WeakAreasContent />)
     fireEvent.click(screen.getByRole("tab", { name: "Higher Math" }))
     expect(screen.getByText("Geometry")).toBeInTheDocument()
-    expect(screen.getByText("More practice needed")).toBeInTheDocument()
-    expect(screen.getByText("Need more practice to judge this area")).toBeInTheDocument()
+    expect(screen.getByText("67%")).toBeInTheDocument()
     expect(screen.queryByText("Light")).not.toBeInTheDocument()
     expect(vi.mocked(useProgressDashboard).mock.calls.every(([enabled]) => enabled === true)).toBe(true)
   })
@@ -94,11 +95,48 @@ describe("WeakAreasContent", () => {
     expect(screen.getByRole("link", { name: "Practise Light" })).toHaveAttribute("href", "/subjects/7")
   })
 
-  it("renders the no-submitted-data state when no ranked subjects are returned", () => {
-    mockDashboard({ dashboard: { message: "Not enough data yet", proficiency: null, weakness_ranking: [], recommendation: null } })
+  it("renders the contract threshold state when no chapter has enough attempts", () => {
+    mockDashboard({ dashboard: {
+      message: "Not enough data yet",
+      proficiency: null,
+      weak_areas_access: {
+        unlocked: false,
+        required_plan: null,
+        minimum_attempts: 5,
+        threshold_met: false,
+        message: "Complete at least 5 questions in a chapter to unlock Weak Areas",
+      },
+      weakness_ranking: [],
+      recommendation: null,
+    } })
     render(<WeakAreasContent />)
-    expect(screen.getByRole("heading", { name: "Your weak areas will appear here" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Complete more chapter practice" })).toBeInTheDocument()
+    expect(screen.getByText("Complete at least 5 questions in a chapter to unlock Weak Areas")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Choose a subject" })).toHaveAttribute("href", "/subjects")
+  })
+
+  it("preserves proficiency while locking Weak Areas for Free accounts", () => {
+    mockDashboard({ dashboard: {
+      ...populated,
+      weak_areas_access: {
+        unlocked: false,
+        required_plan: "pro",
+        minimum_attempts: 5,
+        threshold_met: null,
+        message: "Upgrade to Beta Pro to unlock Weak Areas",
+      },
+      weakness_ranking: [],
+      recommendation: null,
+    } })
+    render(<WeakAreasContent />)
+    expect(screen.getByText("68%")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Weak Areas is in Beta Pro" })).toBeInTheDocument()
+    expect(screen.getByText("Upgrade to Beta Pro to unlock Weak Areas")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "View Beta Pro" })).toHaveAttribute(
+      "href",
+      "/pricing?next=%2Fdashboard%2Fweak-areas"
+    )
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument()
   })
 
   it.each([

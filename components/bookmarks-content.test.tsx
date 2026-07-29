@@ -5,10 +5,25 @@ import { BookmarksContent } from "./bookmarks-content"
 import { removeBookmark } from "@/lib/api"
 import { useChapters, useRevisionItems, useRevisionSummary } from "@/lib/api/hooks"
 import { useAuth } from "@/lib/auth-context"
+import type { AuthUser } from "@/lib/api"
 
 const replace = vi.fn()
 const mutateItems = vi.fn()
 const mutateSummary = vi.fn()
+const proUser: AuthUser = {
+  id: "u1",
+  email: "student@example.com",
+  full_name: "Student",
+  role: "student",
+  plan_tier: "pro",
+  school: null,
+  city: null,
+  student_class: null,
+  email_verified_at: "2026-07-29T00:00:00.000Z",
+  last_login_at: null,
+  created_at: "",
+  updated_at: "",
+}
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace }),
@@ -45,10 +60,33 @@ const bookmarkItem = {
 describe("BookmarksContent", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useAuth).mockReturnValue({ isAuthenticated: true, isLoading: false, authStatus: "authenticated", authError: null, user: null, login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn(), retryAuth: vi.fn() })
+    vi.mocked(useAuth).mockReturnValue({ isAuthenticated: true, isLoading: false, authStatus: "authenticated", authError: null, user: proUser, login: vi.fn(), register: vi.fn(), logout: vi.fn(), refreshUser: vi.fn(), retryAuth: vi.fn() })
     vi.mocked(useRevisionSummary).mockReturnValue({ summary, isLoading: false, isError: undefined, mutate: mutateSummary })
     vi.mocked(useRevisionItems).mockReturnValue({ revisionItems: { page: 1, page_size: 20, total: 1, items: [bookmarkItem] }, isLoading: false, isError: undefined, mutate: mutateItems })
     vi.mocked(useChapters).mockReturnValue({ chapters: [{ id: 7, subject_id: 2, chapter_name: "Light", order_no: 1 }], isLoading: false, isError: undefined, mutate: vi.fn() })
+  })
+
+  it("shows a Beta Pro lock without enabling revision requests for Free accounts", () => {
+    vi.mocked(useAuth).mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      authStatus: "authenticated",
+      authError: null,
+      user: { ...proUser, plan_tier: "free" },
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
+      retryAuth: vi.fn(),
+    })
+    render(<BookmarksContent />)
+    expect(screen.getByRole("heading", { name: "Bookmarks and Mistakes are in Beta Pro" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "View Beta Pro" })).toHaveAttribute(
+      "href",
+      "/pricing?next=%2Fbookmarks"
+    )
+    expect(useRevisionSummary).toHaveBeenCalledWith(false)
+    expect(useRevisionItems).toHaveBeenCalledWith("bookmarks", expect.any(Object), false)
   })
 
   it("shows manual saves with their correct answer and explanation, then removes only the bookmark", async () => {

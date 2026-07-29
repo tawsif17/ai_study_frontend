@@ -69,15 +69,13 @@ describe("how it works final UI", () => {
     expect(screen.getByRole("link", { name: "Weak Area Analysis, Beta Pro option, opens pricing" })).toHaveAttribute("href", "/pricing")
   })
 
-  it("sends authenticated users from the Start free CTA to subjects", () => {
+  it("shows Practice for authenticated users and sends them to subjects", () => {
     mockAuth(true)
     render(<HowItWorksPage />)
 
-    const startFreeLinks = within(screen.getByRole("main")).getAllByRole("link", { name: "Start free" })
-    expect(startFreeLinks).toHaveLength(1)
-    startFreeLinks.forEach((link) => {
-      expect(link).toHaveAttribute("href", "/subjects")
-    })
+    const page = within(screen.getByRole("main"))
+    expect(page.queryByRole("link", { name: "Start free" })).not.toBeInTheDocument()
+    expect(page.getByRole("link", { name: "Practice" })).toHaveAttribute("href", "/subjects")
   })
 
   it("prevents navigation until authentication has finished loading", () => {

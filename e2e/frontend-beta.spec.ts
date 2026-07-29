@@ -44,6 +44,68 @@ async function mockDistricts(page: Page) {
   )
 }
 
+async function fulfillJson(route: Route, data: unknown, status = 200) {
+  await route.fulfill({
+    status,
+    contentType: "application/json",
+    body: JSON.stringify(data),
+  })
+}
+
+async function mockSubjectSetup(page: Page, planTier: "free" | "pro") {
+  await page.route(`${API_BASE}/auth/me`, (route) =>
+    fulfillData(route, { user: { ...verifiedUser, plan_tier: planTier } })
+  )
+  await page.route(`${API_BASE}/exam-types`, (route) =>
+    fulfillJson(route, [{ id: 1, code: "SSC", name: "Secondary School Certificate" }])
+  )
+  await page.route(`${API_BASE}/subjects?*`, (route) =>
+    fulfillData(route, {
+      exam_type: "SSC",
+      subjects: [{
+        id: 2,
+        name: "Physics",
+        exam_type_id: 1,
+        exam_type_code: "SSC",
+        exam_type_name: "Secondary School Certificate",
+      }],
+    })
+  )
+  await page.route(`${API_BASE}/questions?*`, (route) =>
+    fulfillData(route, {
+      questions: [{
+        id: 9,
+        exam_type_id: 1,
+        subject_id: 2,
+        chapter_id: 7,
+        question_type: "MCQ",
+        stem_text: "What is 2 + 2?",
+        difficulty: 1,
+        source: "Dhaka Board 2025",
+        source_badge: "Dhaka Board · 2025",
+        language: "en",
+        created_at: now,
+      }],
+    })
+  )
+  await page.route(`${API_BASE}/subjects/2/chapters`, (route) =>
+    fulfillData(route, {
+      subject_id: "2",
+      chapters: [{ id: 7, subject_id: 2, chapter_name: "Motion", order_no: 1 }],
+    })
+  )
+  if (planTier === "pro") {
+    await page.route(`${API_BASE}/revision/summary`, (route) =>
+      fulfillData(route, {
+        bookmark_total: 0,
+        active_mistake_total: 0,
+        saved_question_total: 0,
+        subjects: [],
+      })
+    )
+  }
+}
+
 async function completeSignupForm(page: Page, verifyScrollable = false) {
   await page.getByLabel("Full Name").fill("Beta Student")
   await page.getByLabel("Email").fill("  Student@Example.com ")
@@ -274,13 +336,22 @@ test("practice saves an answer, submits, and transitions to results", async ({ p
     if (path === "/api/auth/csrf") return fulfillData(route, { csrfToken: "practice-csrf" })
     if (path === "/api/practice/42/summary") {
       return fulfillData(route, {
-        practice_session_id: 42,
-        exam_type_id: 1,
-        subject_id: 2,
-        mode: "MCQ",
-        attempt_status: submitted ? "SUBMITTED" : "IN_PROGRESS",
-        mcq_total: 1,
-        cq_total: 0,
+        session: {
+          id: 42,
+          user_id: verifiedUser.id,
+          exam_type_id: 1,
+          subject_id: 2,
+          selection_mode: "CHAPTERS",
+          syllabus_version_id: null,
+          mode: "MCQ",
+          question_pool: "STANDARD",
+          mcq_requested: 1,
+          cq_requested: 0,
+          attempt_status: submitted ? "SUBMITTED" : "IN_PROGRESS",
+          created_at: now,
+          submitted_at: submitted ? now : null,
+        },
+        totals: { mcq_total: 1, cq_total: 0 },
       })
     }
     if (path === "/api/practice/42/items") {
@@ -290,7 +361,7 @@ test("practice saves an answer, submits, and transitions to results", async ({ p
         page: 1,
         page_size: 20,
         total_in_section: 1,
-        items: [{ section_order_no: 1, order_no: 1, practice_item_id: 7, question_id: 9 }],
+        items: [{ section_order_no: 1, order_no: 1, practice_item_id: 7, question_id: 9, section: "MCQ" }],
       })
     }
     if (path === "/api/practice/42/answers" && request.method() === "GET") {
@@ -303,15 +374,26 @@ test("practice saves an answer, submits, and transitions to results", async ({ p
     }
     if (path === "/api/questions/9") {
       return fulfillData(route, {
-        id: 9,
-        question_type: "MCQ",
-        stem_text: "What is 2 + 2?",
-        explanation: "Two pairs make four.",
-        language: "en",
+        question: {
+          id: 9,
+          exam_type_id: 1,
+          subject_id: 2,
+          chapter_id: 7,
+          question_type: "MCQ",
+          stem_text: "What is 2 + 2?",
+          difficulty: 1,
+          source: "Dhaka Board 2025",
+          source_badge: "Dhaka Board · 2025",
+          language: "en",
+          status: "PUBLISHED",
+          created_at: now,
+          updated_at: now,
+        },
+        parts: [],
         media: [],
         options: [
-          { label: "A", option_text: "3" },
-          { label: "B", option_text: "4" },
+          { id: 1, question_id: 9, label: "A", option_text: "3" },
+          { id: 2, question_id: 9, label: "B", option_text: "4" },
         ],
       })
     }
@@ -327,6 +409,11 @@ test("practice saves an answer, submits, and transitions to results", async ({ p
         page: 1,
         page_size: 20,
         total_in_section: 1,
+        explanation_access: {
+          unlocked: false,
+          required_plan: "pro",
+          message: "Upgrade to Beta Pro to unlock explanations and revision.",
+        },
         items: [{
           section_order_no: 1,
           order_no: 1,
@@ -335,9 +422,10 @@ test("practice saves an answer, submits, and transitions to results", async ({ p
             id: 9,
             question_type: "MCQ",
             stem_text: "What is 2 + 2?",
-            explanation: "Two pairs make four.",
+            explanation: null,
             difficulty: 1,
-            source: null,
+            source: "Dhaka Board 2025",
+            source_badge: "Dhaka Board · 2025",
             language: "en",
           },
           user_answer: { selected_option_label: "B" },
@@ -364,6 +452,7 @@ test("practice saves an answer, submits, and transitions to results", async ({ p
 
   await page.goto("/practice/42")
   await expect(page.getByText("What is 2 + 2?")).toBeVisible()
+  await expect(page.getByText("Dhaka Board · 2025")).toBeVisible()
   await page.getByRole("button", { name: /4/ }).click()
   await expect(page.getByText("Saved")).toBeVisible()
   await page.getByRole("button", { name: "Submit" }).click()
@@ -371,7 +460,136 @@ test("practice saves an answer, submits, and transitions to results", async ({ p
   await expect.poll(() => saved).toBe(true)
   await expect.poll(() => submitted).toBe(true)
   await expect(page.getByText("Correct").first()).toBeVisible()
-  await expect(page.getByText("Two pairs make four.")).toBeVisible()
+  await expect(page.getByText("Upgrade to Beta Pro to unlock explanations and revision.")).toBeVisible()
+  await expect(page.getByText("Two pairs make four.")).toHaveCount(0)
+})
+
+test("Free Board-only selection opens Beta Pro without generating practice", async ({ page }) => {
+  await mockSubjectSetup(page, "free")
+  let generationCalls = 0
+  await page.route(`${API_BASE}/practice/generate`, async (route) => {
+    generationCalls += 1
+    await fulfillError(route, 403, "Board-only practice requires Beta Pro.")
+  })
+
+  await page.goto("/subjects/2")
+  await page.getByRole("checkbox", { name: "Motion" }).check()
+  await page.getByRole("radio", { name: /Board-only/i }).click()
+
+  await expect(page).toHaveURL(/\/pricing\?next=%2Fsubjects%2F2$/)
+  expect(generationCalls).toBe(0)
+})
+
+for (const count of [10, 20, 25]) {
+  test(`Free Standard generation submits exactly ${count} MCQs`, async ({ page }) => {
+    await mockSubjectSetup(page, "free")
+    await page.route(`${API_BASE}/auth/csrf`, (route) =>
+      fulfillData(route, { csrfToken: `standard-${count}-csrf` })
+    )
+    const practiceId = 200 + count
+    let generationPayload: unknown
+    await page.route(`${API_BASE}/practice/generate`, async (route) => {
+      generationPayload = route.request().postDataJSON()
+      expect(route.request().headers()["x-csrf-token"]).toBe(`standard-${count}-csrf`)
+      await fulfillData(route, {
+        practice_session_id: practiceId,
+        mcq_total: count,
+        cq_total: 0,
+        ...(count === 20
+          ? { warning: { code: "MIX_DEVIATION", message: "The available Board mix was adjusted." } }
+          : {}),
+      }, 201)
+    })
+    await page.route(`${API_BASE}/practice/${practiceId}/summary`, (route) =>
+      fulfillData(route, {
+        session: {
+          id: practiceId,
+          user_id: verifiedUser.id,
+          exam_type_id: 1,
+          subject_id: 2,
+          selection_mode: "CHAPTERS",
+          syllabus_version_id: null,
+          mode: "MCQ",
+          question_pool: "STANDARD",
+          mcq_requested: count,
+          cq_requested: 0,
+          attempt_status: "IN_PROGRESS",
+          created_at: now,
+          submitted_at: null,
+        },
+        totals: { mcq_total: count, cq_total: 0 },
+      })
+    )
+
+    await page.goto("/subjects/2")
+    await page.getByRole("checkbox", { name: "Motion" }).check()
+    if (count !== 10) {
+      await page.getByRole("combobox", { name: "Number of questions" }).click()
+      await page.getByRole("option", { name: `${count} questions` }).click()
+    }
+    await page.getByRole("button", { name: "Start Practice" }).click()
+
+    await expect.poll(() => generationPayload).toEqual({
+      exam_type_id: 1,
+      subject_id: 2,
+      selection: { type: "CHAPTERS", chapter_ids: [7] },
+      mode: "MCQ",
+      question_pool: "STANDARD",
+      mcq_count: count,
+      cq_count: 0,
+      language: "en",
+    })
+    await expect(page).toHaveURL(new RegExp(`/practice/${practiceId}`))
+    if (count === 20) {
+      await expect(page.getByText("The available Board mix was adjusted.")).toBeVisible()
+    }
+  })
+}
+
+test("Beta Pro generates the exact Board-only practice request", async ({ page }) => {
+  await mockSubjectSetup(page, "pro")
+  await page.route(`${API_BASE}/auth/csrf`, (route) =>
+    fulfillData(route, { csrfToken: "board-only-csrf" })
+  )
+  let generationPayload: unknown
+  await page.route(`${API_BASE}/practice/generate`, async (route) => {
+    generationPayload = route.request().postDataJSON()
+    expect(route.request().headers()["x-csrf-token"]).toBe("board-only-csrf")
+    await fulfillData(route, { practice_session_id: 123, mcq_total: 10, cq_total: 0 }, 201)
+  })
+
+  await page.goto("/subjects/2")
+  await page.getByRole("checkbox", { name: "Motion" }).check()
+  await page.getByRole("radio", { name: /Board-only/i }).click()
+  await page.getByRole("button", { name: "Start Practice" }).click()
+
+  await expect.poll(() => generationPayload).toEqual({
+    exam_type_id: 1,
+    subject_id: 2,
+    selection: { type: "CHAPTERS", chapter_ids: [7] },
+    mode: "MCQ",
+    question_pool: "BOARD_ONLY",
+    mcq_count: 10,
+    cq_count: 0,
+    language: "en",
+  })
+  await expect(page).toHaveURL(/\/practice\/123/)
+})
+
+test("homepage acquisition CTAs switch to Practice after authentication", async ({ page }) => {
+  await page.goto("/")
+  const signedOutMain = page.getByRole("main")
+  await expect(signedOutMain.getByRole("link", { name: "Start free", exact: true })).toHaveCount(2)
+  await expect(signedOutMain.getByRole("link", { name: "Start free practice", exact: true })).toHaveCount(1)
+
+  await page.route(`${API_BASE}/auth/me`, (route) => fulfillData(route, { user: verifiedUser }))
+  await page.reload()
+
+  const authenticatedMain = page.getByRole("main")
+  await expect(authenticatedMain.getByRole("link", { name: "Practice", exact: true })).toHaveCount(3)
+  await expect(authenticatedMain.getByRole("link", { name: "Start free", exact: true })).toHaveCount(0)
+  await expect(authenticatedMain.getByRole("link", { name: "Start free practice", exact: true })).toHaveCount(0)
+  await expect(authenticatedMain.getByRole("link", { name: "Start Practice", exact: true })).toHaveCount(3)
 })
 
 test("auth and recovery pages expose a keyboard skip path and reachable controls", async ({ page }) => {

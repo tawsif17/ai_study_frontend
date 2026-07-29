@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest"
-import { ApiContractError } from "./client"
+import { ApiClientError, ApiContractError } from "./client"
 import {
+  entitlementErrorMessages,
+  matchEntitlementErrorByExactMessage,
   parseDistrictsResponse,
   parseForgotPasswordResponse,
   parseResetPasswordResponse,
+  validatePracticeGenerateRequest,
   validateRegisterRequest,
 } from "./contracts"
 import {
@@ -83,5 +86,73 @@ describe("password recovery contracts", () => {
     expect(() =>
       parseResetPasswordResponse({ message: "Password updated." })
     ).toThrow(ApiContractError)
+  })
+})
+
+describe("practice entitlement request contracts", () => {
+  const chapterRequest = {
+    exam_type_id: 1,
+    subject_id: 2,
+    mode: "MCQ" as const,
+    question_pool: "STANDARD" as const,
+    mcq_count: 10,
+    selection: { type: "CHAPTERS" as const, chapter_ids: [7] },
+  }
+
+  it("accepts Standard and Board-only chapter practice", () => {
+    expect(validatePracticeGenerateRequest(chapterRequest)).toEqual(chapterRequest)
+    expect(
+      validatePracticeGenerateRequest({ ...chapterRequest, question_pool: "BOARD_ONLY" })
+    ).toEqual({ ...chapterRequest, question_pool: "BOARD_ONLY" })
+  })
+
+  it("requires Board-only to use MCQ chapter selection", () => {
+    expect(() =>
+      validatePracticeGenerateRequest({
+        ...chapterRequest,
+        mode: "CQ",
+        question_pool: "BOARD_ONLY",
+      })
+    ).toThrow("BOARD_ONLY question_pool supports only MCQ mode")
+    expect(() =>
+      validatePracticeGenerateRequest({
+        ...chapterRequest,
+        question_pool: "BOARD_ONLY",
+        selection: { type: "FULL_SYLLABUS" },
+      })
+    ).toThrow("BOARD_ONLY question_pool requires CHAPTERS selection")
+  })
+
+  it("forbids question_pool and other generation inputs for Bookmarked practice", () => {
+    expect(
+      validatePracticeGenerateRequest({
+        exam_type_id: 1,
+        subject_id: 2,
+        mode: "MCQ",
+        selection: { type: "BOOKMARKED" },
+      })
+    ).toEqual({
+      exam_type_id: 1,
+      subject_id: 2,
+      mode: "MCQ",
+      selection: { type: "BOOKMARKED" },
+    })
+    expect(() =>
+      validatePracticeGenerateRequest({
+        ...chapterRequest,
+        selection: { type: "BOOKMARKED" },
+      })
+    ).toThrow("question_pool is not allowed for BOOKMARKED selection")
+  })
+
+  it("classifies only the Board-only entitlement addition by its exact message", () => {
+    const error = new ApiClientError(
+      { message: entitlementErrorMessages.boardOnlyProRequired },
+      403
+    )
+    expect(matchEntitlementErrorByExactMessage(error)).toEqual({
+      type: "boardOnlyProRequired",
+      message: entitlementErrorMessages.boardOnlyProRequired,
+    })
   })
 })

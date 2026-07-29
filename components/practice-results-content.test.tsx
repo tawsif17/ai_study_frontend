@@ -10,7 +10,7 @@ import { useCompletePracticeResults } from "@/lib/api/practice-hooks"
 import { useSubjects } from "@/lib/api/hooks"
 import { reportQuestion } from "@/lib/api"
 import { ApiClientError } from "@/lib/api/client"
-import type { ResultItem } from "@/lib/api/types"
+import type { ExplanationAccess, ResultItem } from "@/lib/api/types"
 
 const mockPush = vi.fn()
 const mockMutate = vi.fn()
@@ -31,11 +31,16 @@ vi.mock("@/lib/api", () => ({
   reportQuestion: vi.fn(),
 }))
 
+vi.mock("@/components/bookmark-practice-item-button", () => ({
+  BookmarkPracticeItemButton: () => <button type="button">Bookmark</button>,
+}))
+
 const summary = {
   practice_session_id: 42,
   exam_type_id: 1,
   subject_id: 5,
   mode: "MCQ" as const,
+  question_pool: "STANDARD" as const,
   attempt_status: "SUBMITTED" as const,
   mcq_total: 3,
   cq_total: 0,
@@ -58,6 +63,7 @@ function resultItem(
       explanation: `Explanation ${number}`,
       difficulty: 1,
       source: "Sample",
+      source_badge: null,
       language: "en",
     },
     user_answer: { selected_option_label: selected },
@@ -74,12 +80,16 @@ function resultItem(
   }
 }
 
-function mockResults(items: ResultItem[]) {
+function mockResults(
+  items: ResultItem[],
+  explanationAccess: ExplanationAccess = { unlocked: true, required_plan: null, message: null }
+) {
   vi.mocked(useCompletePracticeResults).mockReturnValue({
     results: {
       practice_session_id: 42,
       section: "MCQ",
       total_in_section: items.length,
+      explanation_access: explanationAccess,
       items,
     },
     isLoading: false,
@@ -145,6 +155,38 @@ describe("PracticeResultsContent", () => {
     expect(screen.getByRole("progressbar", { name: "Session accuracy" })).toHaveAttribute("aria-valuenow", "33")
     expect(screen.queryByText("Light")).not.toBeInTheDocument()
     expect(useSubjects).toHaveBeenCalledWith("SSC", true)
+  })
+
+  it("displays the contract-provided Board badge and pool identity", () => {
+    mockResults([
+      resultItem(1, "correct", {
+        question: {
+          ...resultItem(1, "correct").question,
+          source_badge: "Dhaka Board · 2025",
+        },
+      }),
+    ])
+    render(<PracticeResultsContent practiceId={42} summary={{ ...summary, question_pool: "BOARD_ONLY" }} />)
+    expect(screen.getByText("Board-only")).toBeInTheDocument()
+    expect(screen.getByText("Dhaka Board · 2025")).toBeInTheDocument()
+  })
+
+  it("keeps scoring visible while replacing Free explanations and revision with upgrade guidance", () => {
+    mockResults(
+      [resultItem(1, "incorrect")],
+      {
+        unlocked: false,
+        required_plan: "pro" as const,
+        message: "Upgrade to Beta Pro to unlock explanations and revision.",
+      }
+    )
+    render(<PracticeResultsContent practiceId={42} summary={summary} />)
+    expect(screen.getByRole("progressbar", { name: "Session accuracy" })).toHaveAttribute("aria-valuenow", "0")
+    expect(screen.getByText("Correct option 1")).toBeInTheDocument()
+    expect(screen.getByText("Upgrade to Beta Pro to unlock explanations and revision.")).toBeInTheDocument()
+    expect(screen.queryByText("Explanation 1")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Bookmark" })).not.toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Your mistakes are still recorded" })).toBeInTheDocument()
   })
 
   it("falls back to a factual generic heading when the catalogue name is unavailable", () => {
@@ -254,6 +296,7 @@ describe("PracticeResultsContent", () => {
         explanation: null,
         difficulty: null,
         source: null,
+        source_badge: null,
         language: "en",
       },
       mcq: { correct_option_label: null, is_correct: null, options: [] },

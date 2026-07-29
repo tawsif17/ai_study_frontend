@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { forgotPassword, getAuthMe, getCompleteResults, getDistricts, getPracticeItems, getProgressDashboard, getRevisionItems, getRevisionSummary, login, logout, register, removeBookmark, reportQuestion, resendVerification, resetPassword, saveBookmark, submitContact, upgradeToPro, verifyEmail } from "./index"
+import { forgotPassword, generatePractice, getAnswers, getAuthMe, getCompleteResults, getDistricts, getPracticeItems, getPracticeSummary, getProgressDashboard, getQuestionById, getQuestions, getRevisionItems, getRevisionSummary, login, logout, register, removeBookmark, reportQuestion, resendVerification, resetPassword, saveAnswers, saveBookmark, submitContact, submitPractice, upgradeToPro, verifyEmail } from "./index"
 import { BANGLADESH_DISTRICT_NAMES } from "./types"
 import {
   ApiContractError,
@@ -199,6 +199,13 @@ describe("progress dashboard API contract", () => {
     const dashboard = {
       message: null,
       proficiency: { score: 68, trend_vs_last_week: 6 },
+      weak_areas_access: {
+        unlocked: true,
+        required_plan: null,
+        minimum_attempts: 5,
+        threshold_met: true,
+        message: null,
+      },
       weakness_ranking: [],
       recommendation: null,
     }
@@ -207,6 +214,165 @@ describe("progress dashboard API contract", () => {
     await expect(getProgressDashboard()).resolves.toEqual(dashboard)
     expect(apiClient).toHaveBeenCalledWith("/profile/progress-dashboard", {
       auth: "required",
+      responseEnvelope: "required",
+    })
+  })
+})
+
+describe("practice entitlement API contracts", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("sends the exact Board-only generation request", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce({
+      practice_session_id: 123,
+      mcq_total: 20,
+      cq_total: 0,
+    })
+    await generatePractice({
+      exam_type_id: 1,
+      subject_id: 2,
+      mode: "MCQ",
+      question_pool: "BOARD_ONLY",
+      mcq_count: 20,
+      cq_count: 0,
+      language: "en",
+      selection: { type: "CHAPTERS", chapter_ids: [7] },
+    })
+    expect(apiClient).toHaveBeenCalledWith("/practice/generate", {
+      method: "POST",
+      body: {
+        exam_type_id: 1,
+        subject_id: 2,
+        mode: "MCQ",
+        question_pool: "BOARD_ONLY",
+        mcq_count: 20,
+        cq_count: 0,
+        language: "en",
+        selection: { type: "CHAPTERS", chapter_ids: [7] },
+      },
+      auth: "required",
+      responseEnvelope: "required",
+    })
+  })
+
+  it("loads and normalizes the required question pool from the session summary", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce({
+      session: {
+        id: 123,
+        user_id: "user-1",
+        exam_type_id: 1,
+        subject_id: 2,
+        selection_mode: "CHAPTERS",
+        syllabus_version_id: null,
+        mode: "MCQ",
+        question_pool: "BOARD_ONLY",
+        mcq_requested: 20,
+        cq_requested: 0,
+        attempt_status: "IN_PROGRESS",
+        created_at: "2026-07-29T00:00:00.000Z",
+        submitted_at: null,
+      },
+      totals: { mcq_total: 20, cq_total: 0 },
+    })
+    await expect(getPracticeSummary(123)).resolves.toMatchObject({
+      practice_session_id: 123,
+      question_pool: "BOARD_ONLY",
+    })
+    expect(apiClient).toHaveBeenCalledWith("/practice/123/summary", {
+      auth: "required",
+      responseEnvelope: "required",
+    })
+  })
+
+  it("requires Board badges through the exact question endpoints", async () => {
+    const listItem = {
+      id: 9001,
+      exam_type_id: 1,
+      subject_id: 2,
+      chapter_id: 7,
+      question_type: "MCQ",
+      stem_text: "2 + 2 = ?",
+      difficulty: 1,
+      source: "Dhaka Board 2025",
+      source_badge: "Dhaka Board · 2025",
+      language: "en",
+      created_at: "2026-07-29T00:00:00.000Z",
+    }
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce({ questions: [listItem] })
+      .mockResolvedValueOnce({
+        question: {
+          ...listItem,
+          status: "PUBLISHED",
+          updated_at: "2026-07-29T00:00:00.000Z",
+        },
+        options: [{ id: 1, question_id: 9001, label: "A", option_text: "4" }],
+        parts: [],
+        media: [],
+      })
+
+    await expect(getQuestions({ exam_type_id: 1, subject_id: 2 })).resolves.toEqual({
+      questions: [listItem],
+    })
+    await expect(getQuestionById(9001)).resolves.toMatchObject({
+      id: 9001,
+      source_badge: "Dhaka Board · 2025",
+    })
+    expect(apiClient).toHaveBeenNthCalledWith(1, "/questions", {
+      params: {
+        exam_type_id: 1,
+        subject_id: 2,
+        chapter_id: undefined,
+        question_type: undefined,
+        language: undefined,
+      },
+      auth: "required",
+      responseEnvelope: "required",
+    })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/questions/9001", {
+      responseEnvelope: "required",
+    })
+  })
+
+  it("normalizes the public prompt-only CQ detail shape", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce({
+      question: {
+        id: 9002,
+        exam_type_id: 1,
+        subject_id: 2,
+        chapter_id: 7,
+        question_type: "CQ",
+        stem_text: "Explain refraction.",
+        difficulty: 2,
+        source: null,
+        source_badge: null,
+        language: "en",
+        status: "PUBLISHED",
+        created_at: "2026-07-29T00:00:00.000Z",
+        updated_at: "2026-07-29T00:00:00.000Z",
+      },
+      options: [],
+      parts: [{
+        id: 10,
+        question_id: 9002,
+        label: "a",
+        order_no: 1,
+        prompt_text: "Define refraction.",
+        marks: 2,
+      }],
+      media: [],
+    })
+
+    await expect(getQuestionById(9002)).resolves.toMatchObject({
+      id: 9002,
+      parts: [{
+        label: "a",
+        order_no: 1,
+        prompt_text: "Define refraction.",
+        marks: 2,
+      }],
     })
   })
 })
@@ -361,6 +527,7 @@ describe("practice items pagination", () => {
     question_id: 100 + number,
     order_no: number,
     section_order_no: number,
+    section: "MCQ" as const,
   })
 
   it("loads, combines, and orders every page in a 25-question session", async () => {
@@ -391,10 +558,12 @@ describe("practice items pagination", () => {
     expect(apiClient).toHaveBeenNthCalledWith(1, "/practice/12/items", {
       params: { section: "MCQ", page: 1, page_size: 20 },
       auth: "required",
+      responseEnvelope: "required",
     })
     expect(apiClient).toHaveBeenNthCalledWith(2, "/practice/12/items", {
       params: { section: "MCQ", page: 2, page_size: 20 },
       auth: "required",
+      responseEnvelope: "required",
     })
   })
 
@@ -413,6 +582,7 @@ describe("practice items pagination", () => {
     expect(apiClient).toHaveBeenCalledWith("/practice/12/items", {
       params: { section: "MCQ", page: 1, page_size: 20 },
       auth: "required",
+      responseEnvelope: "required",
     })
   })
 
@@ -432,6 +602,48 @@ describe("practice items pagination", () => {
   })
 })
 
+describe("active practice response envelopes", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("requires documented envelopes for answer reads, writes, and submission", async () => {
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce({ saved: true })
+      .mockResolvedValueOnce({ answers: [] })
+      .mockResolvedValueOnce({
+        practice_session_id: 12,
+        mcq_total: 10,
+        mcq_correct: 8,
+        mcq_score: 8,
+      })
+
+    await saveAnswers(12, {
+      answers: [{ practice_item_id: 7, answer_type: "MCQ", selected_option_label: "A" }],
+    })
+    await getAnswers(12)
+    await submitPractice(12)
+
+    expect(apiClient).toHaveBeenNthCalledWith(1, "/practice/12/answers", {
+      method: "PATCH",
+      body: {
+        answers: [{ practice_item_id: 7, answer_type: "MCQ", selected_option_label: "A" }],
+      },
+      auth: "required",
+      responseEnvelope: "required",
+    })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/practice/12/answers", {
+      auth: "required",
+      responseEnvelope: "required",
+    })
+    expect(apiClient).toHaveBeenNthCalledWith(3, "/practice/12/submit", {
+      method: "POST",
+      auth: "required",
+      responseEnvelope: "required",
+    })
+  })
+})
+
 describe("complete practice results pagination", () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -448,6 +660,7 @@ describe("complete practice results pagination", () => {
       explanation: null,
       difficulty: 1,
       source: null,
+      source_badge: null,
       language: "en" as const,
     },
     user_answer: { selected_option_label: "A" },
@@ -465,6 +678,7 @@ describe("complete practice results pagination", () => {
     page: pageNumber,
     page_size: 20,
     total_in_section: total,
+    explanation_access: { unlocked: true, required_plan: null, message: null },
     items,
   })
 
@@ -478,6 +692,7 @@ describe("complete practice results pagination", () => {
     expect(apiClient).toHaveBeenCalledWith("/practice/12/results", {
       params: { section: "MCQ", page: 1, page_size: 20 },
       auth: "required",
+      responseEnvelope: "required",
     })
   })
 
@@ -512,6 +727,18 @@ describe("complete practice results pagination", () => {
     expect(apiClient).toHaveBeenCalledTimes(3)
   })
 
+  it("does not reject a contract-valid result set based on an undocumented count cap", async () => {
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce(page(1, 51, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))))
+      .mockResolvedValueOnce(page(2, 51, Array.from({ length: 20 }, (_, index) => resultItem(index + 21))))
+      .mockResolvedValueOnce(page(3, 51, Array.from({ length: 11 }, (_, index) => resultItem(index + 41))))
+
+    await expect(getCompleteResults(12)).resolves.toMatchObject({
+      total_in_section: 51,
+      items: expect.arrayContaining([resultItem(51)]),
+    })
+  })
+
   it("loads exactly one remaining page for a 25-question session", async () => {
     vi.mocked(apiClient)
       .mockResolvedValueOnce(page(1, 25, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))))
@@ -521,10 +748,12 @@ describe("complete practice results pagination", () => {
     expect(apiClient).toHaveBeenNthCalledWith(1, "/practice/12/results", {
       params: { section: "MCQ", page: 1, page_size: 20 },
       auth: "required",
+      responseEnvelope: "required",
     })
     expect(apiClient).toHaveBeenNthCalledWith(2, "/practice/12/results", {
       params: { section: "MCQ", page: 2, page_size: 20 },
       auth: "required",
+      responseEnvelope: "required",
     })
     expect(apiClient).toHaveBeenCalledTimes(2)
   })
@@ -571,13 +800,6 @@ describe("complete practice results pagination", () => {
 
     vi.mocked(apiClient).mockReset()
     vi.mocked(apiClient)
-      .mockResolvedValueOnce({ ...page(1, 51, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))) })
-
-    await expect(getCompleteResults(12)).rejects.toThrow("response is inconsistent")
-    expect(apiClient).toHaveBeenCalledTimes(1)
-
-    vi.mocked(apiClient).mockReset()
-    vi.mocked(apiClient)
       .mockResolvedValueOnce({ ...page(1, 21, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))), page_size: 21 })
 
     await expect(getCompleteResults(12)).rejects.toThrow("response is inconsistent")
@@ -588,6 +810,21 @@ describe("complete practice results pagination", () => {
     vi.mocked(apiClient)
       .mockResolvedValueOnce(page(1, 21, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))))
       .mockResolvedValueOnce(page(2, 22, [resultItem(21)]))
+
+    await expect(getCompleteResults(12)).rejects.toThrow("response is inconsistent")
+  })
+
+  it("rejects inconsistent explanation access across result pages", async () => {
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce(page(1, 21, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))))
+      .mockResolvedValueOnce({
+        ...page(2, 21, [resultItem(21)]),
+        explanation_access: {
+          unlocked: false,
+          required_plan: "pro",
+          message: "Upgrade to Beta Pro to unlock explanations and revision.",
+        },
+      })
 
     await expect(getCompleteResults(12)).rejects.toThrow("response is inconsistent")
   })

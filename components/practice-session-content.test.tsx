@@ -21,6 +21,7 @@ vi.mock("swr", () => ({
       id: 44,
       question_type: "MCQ",
       stem_text: "What is 2 + 2?",
+      source_badge: "Dhaka Board · 2025",
       language: "en",
       options: [
         { label: "A", option_text: "4" },
@@ -40,9 +41,23 @@ vi.mock("@/lib/api/practice-hooks", () => ({
 
 vi.mock("@/lib/api", () => ({
   getQuestionById: vi.fn(),
+  matchEntitlementErrorByExactMessage: vi.fn(
+    (error: { status?: number; message?: string }) =>
+      error?.status === 403 &&
+      error.message === "This subject requires pro plan for practice. Upgrade to pro to continue."
+        ? { type: "subjectProRequired", message: error.message }
+        : error?.status === 403 &&
+            error.message === "Daily practice session limit reached for free plan. Upgrade to pro for unlimited sessions."
+          ? { type: "dailyLimitReached", message: error.message }
+          : null
+  ),
   reportQuestion: vi.fn(),
   saveAnswers: vi.fn(),
   submitPractice: vi.fn(),
+}))
+
+vi.mock("@/components/bookmark-practice-item-button", () => ({
+  BookmarkPracticeItemButton: () => <button type="button">Bookmark</button>,
 }))
 
 describe("PracticeSessionContent", () => {
@@ -57,7 +72,7 @@ describe("PracticeSessionContent", () => {
     })
     mockMutate.mockResolvedValue(undefined)
     vi.mocked(usePracticeItems).mockReturnValue({
-      items: [{ section_order_no: 1, order_no: 1, practice_item_id: 7, question_id: 44 }],
+      items: [{ section_order_no: 1, order_no: 1, practice_item_id: 7, question_id: 44, section: "MCQ" }],
       isLoading: false,
       isError: undefined,
       mutate: vi.fn(),
@@ -79,6 +94,7 @@ describe("PracticeSessionContent", () => {
           exam_type_id: 1,
           subject_id: 5,
           mode: "MCQ",
+          question_pool: "STANDARD",
           attempt_status: "IN_PROGRESS",
           mcq_total: 1,
           cq_total: 0,
@@ -96,6 +112,7 @@ describe("PracticeSessionContent", () => {
           exam_type_id: 1,
           subject_id: 5,
           mode: "MCQ",
+          question_pool: "STANDARD",
           attempt_status: "IN_PROGRESS",
           mcq_total: 1,
           cq_total: 0,
@@ -105,6 +122,8 @@ describe("PracticeSessionContent", () => {
 
     expect(screen.getByText("Q1")).toBeInTheDocument()
     expect(screen.getByText("What is 2 + 2?")).toBeInTheDocument()
+    expect(screen.getByText("Dhaka Board · 2025")).toBeInTheDocument()
+    expect(screen.getByText("Standard mix")).toBeInTheDocument()
     expect(screen.queryByText(/Question ID/i)).not.toBeInTheDocument()
     expect(screen.queryByText("44")).not.toBeInTheDocument()
   })
@@ -128,6 +147,7 @@ describe("PracticeSessionContent", () => {
           exam_type_id: 1,
           subject_id: 5,
           mode: "MCQ",
+          question_pool: "STANDARD",
           attempt_status: "IN_PROGRESS",
           mcq_total: 1,
           cq_total: 0,
@@ -176,6 +196,7 @@ describe("PracticeSessionContent", () => {
           exam_type_id: 1,
           subject_id: 5,
           mode: "MCQ",
+          question_pool: "STANDARD",
           attempt_status: "IN_PROGRESS",
           mcq_total: 1,
           cq_total: 0,
@@ -259,6 +280,7 @@ describe("PracticeSessionContent", () => {
           exam_type_id: 1,
           subject_id: 5,
           mode: "MCQ",
+          question_pool: "STANDARD",
           attempt_status: "IN_PROGRESS",
           mcq_total: 1,
           cq_total: 0,
@@ -288,12 +310,54 @@ describe("PracticeSessionContent", () => {
     expect(reloadItems).toHaveBeenCalledTimes(1)
   })
 
+  it("treats a current-plan item entitlement failure as terminal", () => {
+    vi.mocked(usePracticeItems).mockReturnValue({
+      items: undefined,
+      isLoading: false,
+      isError: new ApiClientError(
+        { message: "This subject requires pro plan for practice. Upgrade to pro to continue." },
+        403
+      ),
+      mutate: vi.fn(),
+    })
+
+    renderSession()
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Practice session unavailable")
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "This subject requires pro plan for practice. Upgrade to pro to continue."
+    )
+    expect(screen.getByRole("link", { name: "Back to subjects" })).toHaveAttribute(
+      "href",
+      "/subjects"
+    )
+    expect(screen.queryByRole("button", { name: "Retry loading questions" })).not.toBeInTheDocument()
+  })
+
+  it("treats a current-plan saved-answer entitlement failure as terminal", () => {
+    vi.mocked(usePracticeAnswers).mockReturnValue({
+      answers: undefined,
+      isLoading: false,
+      isError: new ApiClientError(
+        { message: "This subject requires pro plan for practice. Upgrade to pro to continue." },
+        403
+      ),
+      mutate: vi.fn(),
+    })
+
+    renderSession()
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Practice session unavailable")
+    expect(screen.queryByRole("button", { name: "Retry loading answers" })).not.toBeInTheDocument()
+  })
+
   it("exposes all 25 questions and preserves an answer across the former page boundary", async () => {
     const items = Array.from({ length: 25 }, (_, index) => ({
       section_order_no: index + 1,
       order_no: index + 1,
       practice_item_id: index + 1,
       question_id: index + 101,
+      section: "MCQ" as const,
     }))
     vi.mocked(usePracticeItems).mockReturnValue({
       items,
@@ -310,6 +374,7 @@ describe("PracticeSessionContent", () => {
           exam_type_id: 1,
           subject_id: 5,
           mode: "MCQ",
+          question_pool: "STANDARD",
           attempt_status: "IN_PROGRESS",
           mcq_total: 25,
           cq_total: 0,
@@ -337,6 +402,7 @@ describe("PracticeSessionContent", () => {
         order_no: index + 1,
         practice_item_id: index + 1,
         question_id: index + 101,
+        section: "MCQ" as const,
       })),
       isLoading: false,
       isError: undefined,
@@ -372,6 +438,7 @@ describe("PracticeSessionContent", () => {
           exam_type_id: 1,
           subject_id: 5,
           mode: "MIXED",
+          question_pool: "STANDARD",
           attempt_status: "IN_PROGRESS",
           mcq_total: 5,
           cq_total: 2,
@@ -403,9 +470,29 @@ describe("PracticeSessionContent", () => {
     })
   })
 
+  it("ends active practice when saving is forbidden by the current plan", async () => {
+    const user = userEvent.setup()
+    vi.mocked(saveAnswers).mockRejectedValueOnce(
+      new ApiClientError(
+        { message: "This subject requires pro plan for practice. Upgrade to pro to continue." },
+        403
+      )
+    )
+
+    renderSession()
+    await user.click(screen.getByRole("button", { name: /5/ }))
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Practice session unavailable")
+    expect(screen.getByRole("link", { name: "Back to subjects" })).toHaveAttribute(
+      "href",
+      "/subjects"
+    )
+    expect(screen.queryByRole("button", { name: "Retry saving" })).not.toBeInTheDocument()
+  })
+
   it("treats an unconfirmed save response as failed instead of showing Saved", async () => {
     const user = userEvent.setup()
-    vi.mocked(saveAnswers).mockResolvedValueOnce({ saved: false })
+    vi.mocked(saveAnswers).mockResolvedValueOnce({ saved: false } as never)
 
     renderSession()
     await user.click(screen.getByRole("button", { name: /5/ }))
@@ -449,6 +536,46 @@ describe("PracticeSessionContent", () => {
     await waitFor(() => expect(submitPractice).toHaveBeenCalledTimes(1))
     expect(mockMutate).toHaveBeenCalledWith(["practice-summary", 99])
     expect(mockRefresh).toHaveBeenCalledTimes(1)
+  })
+
+  it("ends active practice when submission is forbidden by the current plan", async () => {
+    const user = userEvent.setup()
+    vi.mocked(submitPractice).mockRejectedValueOnce(
+      new ApiClientError(
+        { message: "This subject requires pro plan for practice. Upgrade to pro to continue." },
+        403
+      )
+    )
+
+    renderSession()
+    await user.click(screen.getByRole("button", { name: "Submit" }))
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Practice session unavailable")
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "This subject requires pro plan for practice. Upgrade to pro to continue."
+    )
+  })
+
+  it("preserves the active session when the daily submission limit is reached", async () => {
+    const user = userEvent.setup()
+    vi.mocked(submitPractice).mockRejectedValueOnce(
+      new ApiClientError(
+        {
+          message:
+            "Daily practice session limit reached for free plan. Upgrade to pro for unlimited sessions.",
+        },
+        403
+      )
+    )
+
+    renderSession()
+    await user.click(screen.getByRole("button", { name: "Submit" }))
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Daily practice session limit reached for free plan. Upgrade to pro for unlimited sessions."
+    )
+    expect(screen.queryByRole("heading", { name: "Practice session unavailable" })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Submit" })).toBeEnabled()
   })
 
   it("keeps submission locked when summary refresh fails and retries only the results transition", async () => {
@@ -605,6 +732,7 @@ describe("PracticeSessionContent", () => {
           exam_type_id: 1,
           subject_id: 5,
           mode: "MCQ",
+          question_pool: "STANDARD",
           attempt_status: "IN_PROGRESS",
           mcq_total: 1,
           cq_total: 0,

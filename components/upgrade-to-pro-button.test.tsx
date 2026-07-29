@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context"
 
 const mockPush = vi.fn()
 const mockGet = vi.fn()
+const mockCacheMutate = vi.fn().mockResolvedValue(undefined)
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
@@ -20,6 +21,9 @@ vi.mock("@/lib/api", () => ({
 
 vi.mock("@/lib/auth-context", () => ({
   useAuth: vi.fn(),
+}))
+vi.mock("swr", () => ({
+  useSWRConfig: () => ({ mutate: mockCacheMutate }),
 }))
 
 const verifiedFreeUser = {
@@ -115,6 +119,7 @@ describe("Beta Pro activation button", () => {
 
     await waitFor(() => {
       expect(refreshUser).toHaveBeenCalledTimes(1)
+      expect(mockCacheMutate).toHaveBeenCalledWith(expect.any(Function), undefined, { revalidate: false })
       expect(sessionStorage.getItem("beta-pro-activation-confirmed")).toBe("/subjects/5")
       expect(mockPush).toHaveBeenCalledWith("/pricing/success?next=%2Fsubjects%2F5")
     })

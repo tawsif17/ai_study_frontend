@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import HomePage from "./page"
+import { useAuth } from "@/lib/auth-context"
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/",
@@ -16,19 +17,30 @@ vi.mock("@/components/brand-logo", async () => {
 })
 
 vi.mock("@/lib/auth-context", () => ({
-  useAuth: () => ({
-    authStatus: "unauthenticated",
-    isAuthenticated: false,
+  useAuth: vi.fn(),
+}))
+
+function mockAuth(isAuthenticated: boolean) {
+  vi.mocked(useAuth).mockReturnValue({
+    authStatus: isAuthenticated ? "authenticated" : "unauthenticated",
+    authError: null,
+    isAuthenticated,
     isLoading: false,
     user: null,
     login: vi.fn(),
     register: vi.fn(),
     logout: vi.fn(),
     refreshUser: vi.fn(),
-  }),
-}))
+    retryAuth: vi.fn(),
+  })
+}
 
 describe("homepage final UI", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockAuth(false)
+  })
+
   it("renders the approved homepage sections and navigation targets", () => {
     render(<HomePage />)
 
@@ -82,5 +94,15 @@ describe("homepage final UI", () => {
     expect(screen.queryByRole("link", { name: /facebook/i })).not.toBeInTheDocument()
     expect(screen.queryByRole("link", { name: /instagram/i })).not.toBeInTheDocument()
     expect(screen.queryByRole("link", { name: /youtube/i })).not.toBeInTheDocument()
+  })
+
+  it("uses Practice for public acquisition CTAs after login", () => {
+    mockAuth(true)
+    render(<HomePage />)
+
+    expect(screen.getAllByRole("link", { name: "Practice" })).toHaveLength(4)
+    expect(screen.queryByRole("link", { name: "Start free practice" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Start free" })).not.toBeInTheDocument()
+    expect(screen.getAllByRole("link", { name: "Start Practice" })).toHaveLength(3)
   })
 })

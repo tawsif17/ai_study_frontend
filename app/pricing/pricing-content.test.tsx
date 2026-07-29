@@ -1,7 +1,8 @@
 import type React from "react"
 import { render, screen, within } from "@testing-library/react"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { PricingContent } from "./pricing-content"
+import { useAuth } from "@/lib/auth-context"
 
 vi.mock("@/components/page-shell", () => ({
   PageShell: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
@@ -11,7 +12,29 @@ vi.mock("@/components/upgrade-to-pro-button", () => ({
   UpgradeToProButton: () => <button type="button">Activate Beta Pro</button>,
 }))
 
+vi.mock("@/lib/auth-context", () => ({ useAuth: vi.fn() }))
+
+function mockAuth(isAuthenticated: boolean) {
+  vi.mocked(useAuth).mockReturnValue({
+    isAuthenticated,
+    isLoading: false,
+    authStatus: isAuthenticated ? "authenticated" : "unauthenticated",
+    authError: null,
+    user: null,
+    login: vi.fn(),
+    register: vi.fn(),
+    logout: vi.fn(),
+    refreshUser: vi.fn(),
+    retryAuth: vi.fn(),
+  })
+}
+
 describe("PricingContent", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockAuth(false)
+  })
+
   it("shows the approved Beta Pro feature information", () => {
     render(<PricingContent />)
 
@@ -33,5 +56,13 @@ describe("PricingContent", () => {
 
     expect(screen.queryByText(/Tk 499/i)).not.toBeInTheDocument()
     expect(screen.getAllByText("No payment during beta").length).toBeGreaterThanOrEqual(2)
+  })
+
+  it("shows Practice instead of Start free after login", () => {
+    mockAuth(true)
+    render(<PricingContent />)
+
+    expect(screen.getByRole("link", { name: "Practice" })).toHaveAttribute("href", "/subjects")
+    expect(screen.queryByRole("link", { name: "Start free" })).not.toBeInTheDocument()
   })
 })
