@@ -137,4 +137,6 @@ revoke a session safely.
 - `npm run start -- -p 3202` reached ready state against the production build.
 - Session termination is serialized with refresh work, stale authenticated responses are rejected,
   and required auth success envelopes are validated strictly.
-- The contracts submodule is pinned to merged contract commit `4df591a`.
+- Secure cookie sessions were originally verified against merged contract commit `4df591a`; the
+  current frontend repository pin is `77f43ae`, which includes that contract unchanged alongside
+  later contract features.

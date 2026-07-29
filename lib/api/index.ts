@@ -374,13 +374,15 @@ export async function getRevisionItems(
       page_size: query.page_size,
     },
     auth: "required",
+    responseEnvelope: "required",
   })
-  return parseRevisionListResponse(response)
+  return parseRevisionListResponse(response, kind)
 }
 
 export async function getRevisionSummary(): Promise<RevisionSummaryResponse> {
   const response = await apiClient<unknown>("/revision/summary", {
     auth: "required",
+    responseEnvelope: "required",
   })
   return parseRevisionSummaryResponse(response)
 }
@@ -389,6 +391,7 @@ export async function saveBookmark(practiceItemId: number): Promise<SaveBookmark
   const response = await apiClient<unknown>(`/revision/bookmarks/practice-items/${practiceItemId}`, {
     method: "PUT",
     auth: "required",
+    responseEnvelope: "required",
   })
   return parseSaveBookmarkResponse(response)
 }
@@ -397,6 +400,7 @@ export async function removeBookmark(questionId: number): Promise<RemoveBookmark
   const response = await apiClient<unknown>(`/revision/bookmarks/questions/${questionId}`, {
     method: "DELETE",
     auth: "required",
+    responseEnvelope: "required",
   })
   return parseRemoveBookmarkResponse(response)
 }

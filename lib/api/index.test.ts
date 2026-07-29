@@ -323,8 +323,12 @@ describe("revision API contract", () => {
     expect(apiClient).toHaveBeenNthCalledWith(1, "/revision/bookmarks", {
       params: { subject_id: 2, chapter_id: 7, page: 2, page_size: 20 },
       auth: "required",
+      responseEnvelope: "required",
     })
-    expect(apiClient).toHaveBeenNthCalledWith(2, "/revision/summary", { auth: "required" })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/revision/summary", {
+      auth: "required",
+      responseEnvelope: "required",
+    })
   })
 
   it("saves from a practice item and removes only a manual bookmark", async () => {
@@ -334,8 +338,16 @@ describe("revision API contract", () => {
     await saveBookmark(9)
     await removeBookmark(42)
 
-    expect(apiClient).toHaveBeenNthCalledWith(1, "/revision/bookmarks/practice-items/9", { method: "PUT", auth: "required" })
-    expect(apiClient).toHaveBeenNthCalledWith(2, "/revision/bookmarks/questions/42", { method: "DELETE", auth: "required" })
+    expect(apiClient).toHaveBeenNthCalledWith(1, "/revision/bookmarks/practice-items/9", {
+      method: "PUT",
+      auth: "required",
+      responseEnvelope: "required",
+    })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/revision/bookmarks/questions/42", {
+      method: "DELETE",
+      auth: "required",
+      responseEnvelope: "required",
+    })
   })
 })
 

@@ -9,6 +9,7 @@ import type {
   RemoveBookmarkResponse,
   ResultsJumpResponse,
   ResultsResponse,
+  RevisionListKind,
   RevisionListResponse,
   RevisionSummaryResponse,
   SaveAnswersResponse,
@@ -42,7 +43,7 @@ const revisionMediaSchema = z
     media_type: z.string(),
     mime_type: z.string().nullable(),
   })
-  .passthrough()
+  .strict()
 
 const revisionItemSchema = z
   .object({
@@ -53,23 +54,32 @@ const revisionItemSchema = z
     language: z.string(),
     correct_answer: z
       .object({ label: z.string(), option_text: z.string() })
-      .passthrough(),
-    subject: z.object({ id: z.number().int(), name: z.string() }).passthrough(),
-    chapter: z.object({ id: z.number().int(), name: z.string() }).passthrough().nullable(),
+      .strict(),
+    subject: z.object({ id: z.number().int(), name: z.string() }).strict(),
+    chapter: z.object({ id: z.number().int(), name: z.string() }).strict().nullable(),
     media: z.array(revisionMediaSchema),
     bookmarked_at: z.string().optional(),
     last_mistaken_at: z.string().optional(),
   })
-  .passthrough()
+  .strict()
 
-const revisionListResponseSchema: z.ZodType<RevisionListResponse> = z
+const bookmarkRevisionListResponseSchema: z.ZodType<RevisionListResponse> = z
   .object({
     page: z.number().int().positive(),
     page_size: z.number().int().positive(),
     total: z.number().int().nonnegative(),
-    items: z.array(revisionItemSchema),
+    items: z.array(revisionItemSchema.extend({ bookmarked_at: z.string() }).strict()),
   })
-  .passthrough()
+  .strict()
+
+const mistakeRevisionListResponseSchema: z.ZodType<RevisionListResponse> = z
+  .object({
+    page: z.number().int().positive(),
+    page_size: z.number().int().positive(),
+    total: z.number().int().nonnegative(),
+    items: z.array(revisionItemSchema.extend({ last_mistaken_at: z.string() }).strict()),
+  })
+  .strict()
 
 const revisionSummarySubjectSchema = z
   .object({
@@ -79,7 +89,7 @@ const revisionSummarySubjectSchema = z
     active_mistake_count: z.number().int().nonnegative(),
     saved_question_count: z.number().int().nonnegative(),
   })
-  .passthrough()
+  .strict()
 
 const revisionSummaryResponseSchema: z.ZodType<RevisionSummaryResponse> = z
   .object({
@@ -88,22 +98,22 @@ const revisionSummaryResponseSchema: z.ZodType<RevisionSummaryResponse> = z
     saved_question_total: z.number().int().nonnegative(),
     subjects: z.array(revisionSummarySubjectSchema),
   })
-  .passthrough()
+  .strict()
 
 const saveBookmarkResponseSchema: z.ZodType<SaveBookmarkResponse> = z
   .object({
     question_id: z.number().int(),
-    bookmarked: z.boolean(),
+    bookmarked: z.literal(true),
     bookmarked_at: z.string(),
   })
-  .passthrough()
+  .strict()
 
 const removeBookmarkResponseSchema: z.ZodType<RemoveBookmarkResponse> = z
   .object({
     question_id: z.number().int(),
     bookmarked: z.literal(false),
   })
-  .passthrough()
+  .strict()
 
 const practiceSelectionSchema = z
   .object({
@@ -299,8 +309,14 @@ function parseResponse<T>(schema: z.ZodType<T>, input: unknown, name: string): T
 
 export const parsePracticeGenerateResponse = (input: unknown) =>
   parseResponse(practiceGenerateResponseSchema, input, "practice generation")
-export const parseRevisionListResponse = (input: unknown) =>
-  parseResponse(revisionListResponseSchema, input, "revision list")
+export const parseRevisionListResponse = (input: unknown, kind: RevisionListKind) =>
+  parseResponse(
+    kind === "bookmarks"
+      ? bookmarkRevisionListResponseSchema
+      : mistakeRevisionListResponseSchema,
+    input,
+    `${kind} revision list`
+  )
 export const parseRevisionSummaryResponse = (input: unknown) =>
   parseResponse(revisionSummaryResponseSchema, input, "revision summary")
 export const parseSaveBookmarkResponse = (input: unknown) =>

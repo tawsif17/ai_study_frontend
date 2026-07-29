@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest"
 import { ApiContractError } from "./client"
-import { parseDistrictsResponse, validateRegisterRequest } from "./contracts"
+import {
+  parseDistrictsResponse,
+  parseForgotPasswordResponse,
+  parseResetPasswordResponse,
+  validateRegisterRequest,
+} from "./contracts"
 import {
   BANGLADESH_DISTRICT_NAMES,
   type DistrictName,
@@ -52,5 +57,31 @@ describe("district contracts", () => {
         city: "dhaka",
       } as unknown as RegisterRequest)
     ).toThrow("City must be a valid Bangladesh district")
+  })
+})
+
+describe("password recovery contracts", () => {
+  it("accepts only the documented success messages", () => {
+    expect(
+      parseForgotPasswordResponse({
+        message: "If the account is eligible, a password reset email has been sent.",
+      })
+    ).toEqual({
+      message: "If the account is eligible, a password reset email has been sent.",
+    })
+    expect(
+      parseResetPasswordResponse({
+        message: "Password reset successful. Please log in with your new password.",
+      })
+    ).toEqual({
+      message: "Password reset successful. Please log in with your new password.",
+    })
+
+    expect(() =>
+      parseForgotPasswordResponse({ message: "Password reset email sent." })
+    ).toThrow(ApiContractError)
+    expect(() =>
+      parseResetPasswordResponse({ message: "Password updated." })
+    ).toThrow(ApiContractError)
   })
 })

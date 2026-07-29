@@ -211,8 +211,16 @@ const messageResponseSchema = z.object({ message: z.string().min(1) }).strict()
 const registerResponseSchema: z.ZodType<RegisterResponse> = messageResponseSchema
 const verifyEmailResponseSchema: z.ZodType<VerifyEmailResponse> = messageResponseSchema
 const resendVerificationResponseSchema: z.ZodType<ResendVerificationResponse> = messageResponseSchema
-const forgotPasswordResponseSchema: z.ZodType<ForgotPasswordResponse> = messageResponseSchema
-const resetPasswordResponseSchema: z.ZodType<ResetPasswordResponse> = messageResponseSchema
+const forgotPasswordResponseSchema: z.ZodType<ForgotPasswordResponse> = z
+  .object({
+    message: z.literal("If the account is eligible, a password reset email has been sent."),
+  })
+  .strict()
+const resetPasswordResponseSchema: z.ZodType<ResetPasswordResponse> = z
+  .object({
+    message: z.literal("Password reset successful. Please log in with your new password."),
+  })
+  .strict()
 const loginResponseSchema: z.ZodType<LoginResponse> = z
   .object({ user: verifiedAuthUserSchema, csrfToken: z.string().min(1) })
   .strict()
