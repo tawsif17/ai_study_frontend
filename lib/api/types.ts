@@ -251,6 +251,7 @@ export interface QuestionListItem {
   stem_text: string | null
   difficulty: number | null
   source: string | null
+  source_badge: string | null
   language: string
   created_at: string
 }
@@ -290,6 +291,7 @@ export interface QuestionReportResponse {
 // ============================================
 
 export type PracticeMode = "MCQ" | "CQ" | "MIXED"
+export type QuestionPool = "STANDARD" | "BOARD_ONLY"
 export type SelectionType = "CHAPTERS" | "FULL_SYLLABUS" | "BOOKMARKED"
 export type AttemptStatus = "IN_PROGRESS" | "SUBMITTED"
 export type Section = "MCQ" | "CQ"
@@ -305,6 +307,7 @@ export interface PracticeGenerateRequest {
   exam_type_id: number
   subject_id: number
   mode: PracticeMode
+  question_pool?: QuestionPool
   selection: PracticeSelection
   mcq_count?: number
   mcqCount?: number
@@ -422,9 +425,18 @@ export interface ProgressRecommendation {
   generate_payload: PracticeGenerateRequest
 }
 
+export interface WeakAreasAccess {
+  unlocked: boolean
+  required_plan: "pro" | null
+  minimum_attempts: 5
+  threshold_met: boolean | null
+  message: string | null
+}
+
 export interface ProgressDashboardResponse {
   message: string | null
   proficiency: ProgressProficiency | null
+  weak_areas_access: WeakAreasAccess
   weakness_ranking: WeaknessRankingEntry[]
   recommendation: ProgressRecommendation | null
 }
@@ -434,6 +446,7 @@ export interface PracticeSummaryResponse {
   exam_type_id: number
   subject_id: number
   mode: PracticeMode
+  question_pool: QuestionPool
   attempt_status: AttemptStatus
   mcq_total?: number
   cq_total?: number
@@ -444,6 +457,7 @@ export interface PracticeItem {
   order_no: number
   practice_item_id: number
   question_id: number
+  section: Section
 }
 
 export interface PracticeItemsPageResponse {
@@ -480,7 +494,7 @@ export interface SaveAnswersRequest {
 }
 
 export interface SaveAnswersResponse {
-  saved: boolean
+  saved: true
 }
 
 export interface StoredAnswer {
@@ -517,34 +531,22 @@ export interface McqOption {
 
 export interface QuestionPart {
   label: string
-  order_no?: number
-  prompt_text?: string
+  order_no: number
+  prompt_text: string
   marks: number
-  sample_answer?: string
-  explanation?: string
-  reference_text?: string
 }
 
-export interface QuestionDetailBase {
+export interface QuestionDetail {
   id: number
-  question_type: "MCQ" | "CREATIVE" | "SHORT"
-  stem_text: string
-  explanation?: string
-  language: Language
+  question_type: string
+  stem_text: string | null
+  source?: string | null
+  source_badge: string | null
+  language: string
+  options?: McqOption[]
+  parts?: QuestionPart[]
   media?: unknown[]
 }
-
-export interface McqQuestionDetail extends QuestionDetailBase {
-  question_type: "MCQ"
-  options: McqOption[]
-}
-
-export interface CqQuestionDetail extends QuestionDetailBase {
-  question_type: "CREATIVE" | "SHORT"
-  parts?: QuestionPart[]
-}
-
-export type QuestionDetail = McqQuestionDetail | CqQuestionDetail
 
 export interface QuestionData {
   id: number
@@ -553,7 +555,14 @@ export interface QuestionData {
   explanation: string | null
   difficulty: number | null
   source: string | null
-  language: Language
+  source_badge: string | null
+  language: string
+}
+
+export interface ExplanationAccess {
+  unlocked: boolean
+  required_plan: "pro" | null
+  message: string | null
 }
 
 export interface McqResultData {
@@ -583,14 +592,16 @@ export interface ResultsResponse {
   page: number
   page_size: number
   total_in_section: number
+  explanation_access: ExplanationAccess
   items: ResultItem[]
 }
 
 export type CompleteResultsResponse = Pick<
   ResultsResponse,
-  "practice_session_id" | "section" | "total_in_section" | "items"
+  "practice_session_id" | "section" | "total_in_section" | "explanation_access" | "items"
 >
 
 export interface ResultsJumpResponse {
+  explanation_access: ExplanationAccess
   item: ResultItem
 }

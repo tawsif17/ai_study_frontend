@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
+import { useAuth } from "@/lib/auth-context"
 
 // Map subject names to their visual styles
 function getSubjectStyles(subjectName: string) {
@@ -70,8 +71,10 @@ interface SubjectDetailContentProps {
 
 export function SubjectDetailContent({ subjectId, subjectName, examTypeId, questionCount }: SubjectDetailContentProps) {
   const [selectedChapterIds, setSelectedChapterIds] = useState<number[]>([])
+  const { user } = useAuth()
   const { chapters, isLoading: chaptersLoading } = useChapters(subjectId)
-  const { summary: revisionSummary, isLoading: revisionSummaryLoading } = useRevisionSummary()
+  const canUseRevision = user?.plan_tier === "pro"
+  const { summary: revisionSummary, isLoading: revisionSummaryLoading } = useRevisionSummary(canUseRevision)
   
   const styles = getSubjectStyles(subjectName)
   const SubjectIcon = styles.Icon
@@ -179,7 +182,7 @@ export function SubjectDetailContent({ subjectId, subjectName, examTypeId, quest
               </p>
             )}
 
-            {revisionSummaryLoading ? (
+            {canUseRevision && revisionSummaryLoading ? (
               <Skeleton className="mt-6 h-32 w-full" />
             ) : savedQuestionCount > 0 ? (
               <div className="mt-6">

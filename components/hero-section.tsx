@@ -26,7 +26,9 @@ export function HeroSection() {
           </p>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
             <Button size="lg" className="h-14 rounded-lg px-9 text-base shadow-primary" asChild>
-              <AuthGatedLink href="/subjects">Start free</AuthGatedLink>
+              <AuthGatedLink href="/subjects" authenticatedChildren="Practice">
+                Start free
+              </AuthGatedLink>
             </Button>
             <Button
               size="lg"

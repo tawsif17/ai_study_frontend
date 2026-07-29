@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useSWRConfig } from "swr"
 import { Button } from "@/components/ui/button"
 import { upgradeToPro } from "@/lib/api"
 import { ApiClientError, formatApiError } from "@/lib/api/client"
@@ -12,6 +13,7 @@ import { getSafeNextPath } from "@/lib/safe-next-path"
 export function UpgradeToProButton() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { mutate } = useSWRConfig()
   const { authStatus, isAuthenticated, isLoading, user, refreshUser } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -60,6 +62,14 @@ export function UpgradeToProButton() {
         return
       }
 
+      await mutate(
+        (key) =>
+          key === "revision-summary" ||
+          (Array.isArray(key) &&
+            ["practice-results", "progress-dashboard", "revision-items"].includes(String(key[0]))),
+        undefined,
+        { revalidate: false }
+      )
       sessionStorage.setItem("beta-pro-activation-confirmed", nextPath)
       router.push(`/pricing/success?next=${encodeURIComponent(nextPath)}`)
     } catch (err) {

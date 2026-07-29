@@ -141,7 +141,9 @@ function StartPracticingSection() {
             </ul>
 
             <Button className="mt-8 h-14 w-full rounded-lg text-base shadow-primary" asChild>
-              <AuthGatedLink href="/subjects">Start free practice</AuthGatedLink>
+              <AuthGatedLink href="/subjects" authenticatedChildren="Practice">
+                Start free practice
+              </AuthGatedLink>
             </Button>
           </div>
 
@@ -315,7 +317,9 @@ function FinalCtaSection() {
               Start with AI-generated MCQs and correct answers. Beta Pro adds explanations, Bookmarks and Mistakes revision, Weak Area Analysis, and Board-only MCQ sets.
             </p>
             <Button className="mt-5 h-11 w-full rounded-lg px-10 shadow-primary sm:w-auto" asChild>
-              <AuthGatedLink href="/subjects">Start free</AuthGatedLink>
+              <AuthGatedLink href="/subjects" authenticatedChildren="Practice">
+                Start free
+              </AuthGatedLink>
             </Button>
             <p className="mt-2 text-xs text-muted-foreground">No credit card required.</p>
           </div>

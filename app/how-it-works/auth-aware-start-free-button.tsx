@@ -23,7 +23,7 @@ export function AuthAwareStartFreeButton({ className }: AuthAwareStartFreeButton
 
   return (
     <Button className={className} asChild>
-      <Link href={target}>Start free</Link>
+      <Link href={target}>{isAuthenticated ? "Practice" : "Start free"}</Link>
     </Button>
   )
 }

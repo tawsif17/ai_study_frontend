@@ -27,7 +27,8 @@ export function BookmarksContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const requestedTab = searchParams.get("tab")
-  const { authStatus, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { authStatus, isAuthenticated, isLoading: authLoading, user } = useAuth()
+  const canUseRevision = user?.plan_tier === "pro"
   const [tab, setTab] = useState<RevisionListKind>(() => tabFromSearch(requestedTab))
   const [selectedSubjectId, setSelectedSubjectId] = useState<number | undefined>()
   const [selectedChapterId, setSelectedChapterId] = useState<number | undefined>()
@@ -35,16 +36,19 @@ export function BookmarksContent() {
   const [removingQuestionId, setRemovingQuestionId] = useState<number | null>(null)
   const [removeError, setRemoveError] = useState<string | null>(null)
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
-  const { summary, isLoading: summaryLoading, isError: summaryError, mutate: mutateSummary } = useRevisionSummary(isAuthenticated)
+  const { summary, isLoading: summaryLoading, isError: summaryError, mutate: mutateSummary } = useRevisionSummary(isAuthenticated && canUseRevision)
   const { chapters, isLoading: chaptersLoading } = useChapters(selectedSubjectId)
   const { revisionItems, isLoading: itemsLoading, isError: itemsError, mutate: mutateItems } = useRevisionItems(
     tab,
     { subject_id: selectedSubjectId, chapter_id: selectedChapterId, page, page_size: PAGE_SIZE },
-    isAuthenticated
+    isAuthenticated && canUseRevision
   )
 
   const unauthorized = [summaryError, itemsError].some(
     (error) => error instanceof ApiClientError && error.status === 401
+  )
+  const revisionLocked = !canUseRevision || [summaryError, itemsError].some(
+    (error) => error instanceof ApiClientError && error.status === 403
   )
 
   useEffect(() => {
@@ -119,6 +123,16 @@ export function BookmarksContent() {
 
   if (unauthorized || authStatus === "unauthenticated") {
     return <CenteredState heading="Please sign in again" body="Your session has ended. Sign in again to view saved questions." />
+  }
+
+  if (revisionLocked) {
+    return (
+      <CenteredState
+        heading="Bookmarks and Mistakes are in Beta Pro"
+        body="Activate Beta Pro to save questions, review active mistakes, and practise your saved revision set."
+        action={<Button asChild><Link href={`/pricing?next=${encodeURIComponent(RETURN_PATH)}`}>View Beta Pro</Link></Button>}
+      />
+    )
   }
 
   if (summaryLoading) return <BookmarksSkeleton />

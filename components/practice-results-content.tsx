@@ -20,7 +20,7 @@ import { BookmarkPracticeItemButton } from "@/components/bookmark-practice-item-
 import { useSubjects } from "@/lib/api/hooks"
 import { useCompletePracticeResults } from "@/lib/api/practice-hooks"
 import { ApiClientError } from "@/lib/api/client"
-import type { PracticeSummaryResponse, ResultItem } from "@/lib/api/types"
+import type { ExplanationAccess, PracticeSummaryResponse, QuestionPool, ResultItem } from "@/lib/api/types"
 import { cn } from "@/lib/utils"
 
 interface PracticeResultsContentProps {
@@ -116,7 +116,7 @@ function NavigatorStatusIcon({ status, className }: { status: ResultStatus; clas
     return <CheckCircle2 className={cn("text-emerald-700", className)} aria-hidden="true" />
   }
   if (status === "unanswered") {
-    return <span className={cn("inline-flex items-center justify-center rounded-full border-2 border-muted-foreground text-muted-foreground", className)} aria-hidden="true">âˆ’</span>
+    return <span className={cn("inline-flex items-center justify-center rounded-full border-2 border-muted-foreground text-muted-foreground", className)} aria-hidden="true">&minus;</span>
   }
   return <span className={cn("rounded-full bg-amber-500", className)} aria-hidden="true" />
 }
@@ -168,6 +168,8 @@ export function PracticeResultsContent({ practiceId, summary }: PracticeResultsC
       key={`${practiceId}-${results.total_in_section}`}
       items={results.items}
       subjectName={subjectName}
+      explanationAccess={results.explanation_access}
+      questionPool={summary.question_pool}
     />
   )
 }
@@ -251,7 +253,17 @@ function ResultsErrorState({
   )
 }
 
-function ResultsWorkspace({ items, subjectName }: { items: ResultItem[]; subjectName?: string }) {
+function ResultsWorkspace({
+  items,
+  subjectName,
+  explanationAccess,
+  questionPool,
+}: {
+  items: ResultItem[]
+  subjectName?: string
+  explanationAccess: ExplanationAccess
+  questionPool: QuestionPool
+}) {
   const summary = useMemo(() => calculateSessionResultSummary(items), [items])
   const initialIndex = getInitialQuestionIndex(items)
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
@@ -291,7 +303,12 @@ function ResultsWorkspace({ items, subjectName }: { items: ResultItem[]; subject
 
       <div className="mb-6 grid items-end gap-6 lg:grid-cols-[minmax(0,1fr)_32rem]">
         <header>
-          <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Results</span>
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Results</span>
+            <span className="inline-flex rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground">
+              {questionPool === "BOARD_ONLY" ? "Board-only" : "Standard mix"}
+            </span>
+          </div>
           <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">{heading}</h1>
           <p className="mt-2 text-base text-muted-foreground">Review your answers one question at a time.</p>
           <p className="mt-2 text-sm font-medium text-muted-foreground">{summary.totalQuestions} MCQs</p>
@@ -314,12 +331,13 @@ function ResultsWorkspace({ items, subjectName }: { items: ResultItem[]; subject
           currentIndex={currentIndex}
           totalQuestions={items.length}
           headingRef={questionHeadingRef}
+          explanationAccess={explanationAccess}
           onPrevious={() => moveToQuestion(currentIndex - 1)}
           onNext={() => moveToQuestion(currentIndex + 1)}
         />
       </div>
 
-      {summary.incorrectCount > 0 && (
+      {summary.incorrectCount > 0 && explanationAccess.unlocked && (
         <aside className="mt-6 flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/[0.035] p-4 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="mistakes-saved-heading">
           <div>
             <h2 id="mistakes-saved-heading" className="font-semibold text-foreground">Incorrect answers are saved to Mistakes</h2>
@@ -327,6 +345,19 @@ function ResultsWorkspace({ items, subjectName }: { items: ResultItem[]; subject
           </div>
           <Link href="/bookmarks?tab=mistakes" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-md px-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
             View mistakes
+            <ChevronRight className="size-4" aria-hidden="true" />
+          </Link>
+        </aside>
+      )}
+
+      {summary.incorrectCount > 0 && !explanationAccess.unlocked && (
+        <aside className="mt-6 flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/[0.035] p-4 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="mistakes-locked-heading">
+          <div>
+            <h2 id="mistakes-locked-heading" className="font-semibold text-foreground">Your mistakes are still recorded</h2>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">Activate Beta Pro to review these questions in Mistakes and practise them again.</p>
+          </div>
+          <Link href="/pricing?next=%2Fbookmarks%3Ftab%3Dmistakes" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-md px-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+            View Beta Pro
             <ChevronRight className="size-4" aria-hidden="true" />
           </Link>
         </aside>
@@ -465,6 +496,7 @@ function QuestionReviewPanel({
   currentIndex,
   totalQuestions,
   headingRef,
+  explanationAccess,
   onPrevious,
   onNext,
 }: {
@@ -472,6 +504,7 @@ function QuestionReviewPanel({
   currentIndex: number
   totalQuestions: number
   headingRef: React.RefObject<HTMLHeadingElement | null>
+  explanationAccess: ExplanationAccess
   onPrevious: () => void
   onNext: () => void
 }) {
@@ -504,12 +537,17 @@ function QuestionReviewPanel({
           </span>
         </div>
         <div className="flex items-center gap-1">
-          {item.mcq && <BookmarkPracticeItemButton practiceItemId={item.practice_item_id} compact />}
+          {item.mcq && explanationAccess.unlocked && <BookmarkPracticeItemButton practiceItemId={item.practice_item_id} compact />}
           <QuestionReportDialog questionId={item.question?.id} />
         </div>
       </div>
 
-      <p className="mt-6 text-lg font-semibold leading-7 text-foreground sm:text-xl sm:leading-8">{questionText}</p>
+      {item.question.source_badge && (
+        <span className="mt-5 inline-flex rounded-full border border-primary/25 bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary">
+          {item.question.source_badge}
+        </span>
+      )}
+      <p className="mt-4 text-lg font-semibold leading-7 text-foreground sm:text-xl sm:leading-8">{questionText}</p>
 
       {status === "unanswered" && (
         <p className="mt-4 flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium text-foreground">
@@ -564,17 +602,33 @@ function QuestionReviewPanel({
         </div>
       )}
 
-      <section className="mt-5 rounded-xl border border-primary/20 bg-primary/[0.035] p-4" aria-labelledby={`explanation-heading-${item.practice_item_id}`}>
-        <div className="flex gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-card text-primary">
-            <Lightbulb className="size-5" aria-hidden="true" />
-          </span>
-          <div>
-            <h3 id={`explanation-heading-${item.practice_item_id}`} className="font-semibold text-foreground">Explanation</h3>
-            <p className="mt-1 text-sm italic leading-6 text-muted-foreground">{explanation}</p>
+      {explanationAccess.unlocked ? (
+        <section className="mt-5 rounded-xl border border-primary/20 bg-primary/[0.035] p-4" aria-labelledby={`explanation-heading-${item.practice_item_id}`}>
+          <div className="flex gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-card text-primary">
+              <Lightbulb className="size-5" aria-hidden="true" />
+            </span>
+            <div>
+              <h3 id={`explanation-heading-${item.practice_item_id}`} className="font-semibold text-foreground">Explanation</h3>
+              <p className="mt-1 text-sm italic leading-6 text-muted-foreground">{explanation}</p>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : (
+        <section className="mt-5 rounded-xl border border-primary/20 bg-primary/[0.035] p-4" aria-labelledby={`explanation-heading-${item.practice_item_id}`}>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 id={`explanation-heading-${item.practice_item_id}`} className="font-semibold text-foreground">Explanation · Beta Pro</h3>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                {explanationAccess.message ?? "Activate Beta Pro to unlock explanations and revision."}
+              </p>
+            </div>
+            <Button asChild className="min-h-11 shrink-0">
+              <Link href="/pricing">View Beta Pro</Link>
+            </Button>
+          </div>
+        </section>
+      )}
 
       <div className="mt-5 grid items-center gap-3 border-t border-border pt-5 sm:grid-cols-[1fr_auto_1fr]">
         <Button type="button" variant="outline" className="min-h-11 justify-center gap-2 bg-transparent sm:justify-self-start" onClick={onPrevious} disabled={currentIndex === 0}>

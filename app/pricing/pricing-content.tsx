@@ -1,4 +1,3 @@
-import Link from "next/link"
 import { Suspense } from "react"
 import { PageShell } from "@/components/page-shell"
 import { Badge } from "@/components/ui/badge"
@@ -6,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowRight, BookOpen, Check, CheckCircle, Sparkles, Target, Zap } from "@/components/icons"
 import { UpgradeToProButton } from "@/components/upgrade-to-pro-button"
+import { AuthGatedLink } from "@/components/auth-gated-link"
 
 const subjects = "General Math, Physics & Chemistry"
 
@@ -128,7 +128,13 @@ export function PricingContent() {
                 ))}
               </ul>
               <Button asChild className="min-h-11 w-full" variant="outline">
-                <Link href="/subjects">Start free</Link>
+                <AuthGatedLink
+                  href="/subjects"
+                  unauthenticatedHref="/subjects"
+                  authenticatedChildren="Practice"
+                >
+                  Start free
+                </AuthGatedLink>
               </Button>
               <p className="mt-3 text-center text-xs text-muted-foreground">No credit card required.</p>
             </CardContent>

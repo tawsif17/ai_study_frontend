@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect, useRef } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -21,7 +22,11 @@ import {
 } from "@/components/ui/alert-dialog"
 import useSWR, { useSWRConfig } from "swr"
 import { usePracticeItems, usePracticeAnswers } from "@/lib/api/practice-hooks"
-import { submitPractice, getQuestionById } from "@/lib/api"
+import {
+  getQuestionById,
+  matchEntitlementErrorByExactMessage,
+  submitPractice,
+} from "@/lib/api"
 import type { PracticeSummaryResponse, QuestionDetail } from "@/lib/api/types"
 import { ApiClientError, formatApiError } from "@/lib/api/client"
 import { PracticeAnswerSaveQueueError } from "@/lib/practice-answer-save-queue"
@@ -60,6 +65,7 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
   const [submissionAccepted, setSubmissionAccepted] = useState(false)
   const [resultsTransitionError, setResultsTransitionError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [sessionAccessError, setSessionAccessError] = useState<ApiClientError | null>(null)
   const submitInFlightRef = useRef(false)
   const mountedRef = useRef(true)
   const saveStatusRef = useRef<HTMLDivElement>(null)
@@ -142,7 +148,10 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
       await submitPractice(practiceId)
       await transitionToResults()
     } catch (error) {
-      if (error instanceof ApiClientError && error.status === 409) {
+      const accessError = getSessionAccessError(error)
+      if (accessError) {
+        setSessionAccessError(accessError)
+      } else if (error instanceof ApiClientError && error.status === 409) {
         await transitionToResults()
       } else if (mountedRef.current) {
         if (error instanceof PracticeAnswerSaveQueueError) {
@@ -185,6 +194,16 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
     questionId ? ["question-detail", questionId] : null,
     () => getQuestionById(questionId!)
   )
+
+  const currentAccessError =
+    sessionAccessError ??
+    getSessionAccessError(itemsError) ??
+    getSessionAccessError(answersError) ??
+    getSessionAccessError(saveError)
+
+  if (currentAccessError) {
+    return <PracticeAccessUnavailable error={currentAccessError} />
+  }
 
   if (itemsError) {
     return (
@@ -268,9 +287,14 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <Badge variant="secondary" className="text-sm">
-            {summary.mode} Practice
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary" className="text-sm">
+              {summary.mode} Practice
+            </Badge>
+            <Badge variant="outline">
+              {summary.question_pool === "BOARD_ONLY" ? "Board-only" : "Standard mix"}
+            </Badge>
+          </div>
           <span className="text-sm text-muted-foreground">
             {answeredCount} of {totalItems} answered
           </span>
@@ -334,7 +358,14 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
                   <Skeleton className="h-4 w-5/6" />
                 </div>
               ) : question ? (
-                <p className="text-muted-foreground mb-4">{question.stem_text || "Question text unavailable."}</p>
+                <>
+                  {question.source_badge && (
+                    <Badge variant="outline" className="mb-3 border-primary/25 bg-primary/5 text-primary">
+                      {question.source_badge}
+                    </Badge>
+                  )}
+                  <p className="text-muted-foreground mb-4">{question.stem_text || "Question text unavailable."}</p>
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Unable to load question details right now.
@@ -376,7 +407,7 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
                       </button>
                     )
                   })}
-                  {question && question.question_type === "MCQ" && question.options.length === 0 && (
+                  {question && question.question_type === "MCQ" && (question.options?.length ?? 0) === 0 && (
                     <p className="text-sm text-muted-foreground">No options available for this question.</p>
                   )}
                 </div>
@@ -405,9 +436,6 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
                           </div>
                           {part.prompt_text && (
                             <p className="text-sm text-card-foreground mt-2">{part.prompt_text}</p>
-                          )}
-                          {!part.prompt_text && part.reference_text && (
-                            <p className="text-xs text-muted-foreground mt-1">{part.reference_text}</p>
                           )}
                         </div>
                       ))}
@@ -572,6 +600,35 @@ export function PracticeSessionContent({ practiceId, summary }: PracticeSessionC
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  )
+}
+
+function getSessionAccessError(error: unknown): ApiClientError | null {
+  const apiError = error instanceof ApiClientError
+    ? error
+    : (
+    error instanceof PracticeAnswerSaveQueueError &&
+    error.originalError instanceof ApiClientError &&
+    error.originalError.status === 403
+      ? error.originalError
+      : null
+    )
+
+  if (!apiError) return null
+
+  const entitlement = matchEntitlementErrorByExactMessage(apiError)
+  return entitlement && entitlement.type !== "dailyLimitReached" ? apiError : null
+}
+
+function PracticeAccessUnavailable({ error }: { error: ApiClientError }) {
+  return (
+    <div className="container mx-auto px-4 py-12 text-center" role="alert">
+      <h1 className="text-xl font-semibold text-foreground">Practice session unavailable</h1>
+      <p className="mx-auto mt-2 max-w-xl text-muted-foreground">{formatApiError(error)}</p>
+      <Button asChild className="mt-5 min-h-11">
+        <Link href="/subjects">Back to subjects</Link>
+      </Button>
     </div>
   )
 }

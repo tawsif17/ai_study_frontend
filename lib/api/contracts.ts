@@ -33,6 +33,7 @@ export const entitlementErrorMessages = {
   subjectProRequired: "This subject requires pro plan for practice. Upgrade to pro to continue.",
   trialGraceExpiredDowngraded:
     "Trial ended and grace period expired. Your plan is now free. Upgrade to pro to continue.",
+  boardOnlyProRequired: "Board-only practice requires Beta Pro.",
 } as const
 
 export type EntitlementErrorType = keyof typeof entitlementErrorMessages
@@ -109,6 +110,7 @@ const practiceGenerateRequestSchema = z
     exam_type_id: z.number().int(),
     subject_id: z.number().int(),
     mode: z.enum(["MCQ", "CQ", "MIXED"]),
+    question_pool: z.enum(["STANDARD", "BOARD_ONLY"]).optional(),
     selection: z
       .object({
         type: z.enum(["CHAPTERS", "FULL_SYLLABUS", "BOOKMARKED"]),
@@ -134,6 +136,23 @@ const practiceGenerateRequestSchemaWithRules = practiceGenerateRequestSchema.sup
       })
     }
 
+    if (value.question_pool === "BOARD_ONLY") {
+      if (value.mode !== "MCQ") {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["mode"],
+          message: "BOARD_ONLY question_pool supports only MCQ mode",
+        })
+      }
+      if (value.selection.type !== "CHAPTERS") {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["selection", "type"],
+          message: "BOARD_ONLY question_pool requires CHAPTERS selection",
+        })
+      }
+    }
+
     if (value.selection.type !== "BOOKMARKED") return
 
     if (value.mode !== "MCQ") {
@@ -152,7 +171,7 @@ const practiceGenerateRequestSchemaWithRules = practiceGenerateRequestSchema.sup
       })
     }
 
-    for (const field of ["mcq_count", "mcqCount", "mcq_requested", "cq_count", "cqCount", "cq_requested", "language"] as const) {
+    for (const field of ["question_pool", "mcq_count", "mcqCount", "mcq_requested", "cq_count", "cqCount", "cq_requested", "language"] as const) {
       if (value[field] !== undefined) {
         context.addIssue({
           code: z.ZodIssueCode.custom,

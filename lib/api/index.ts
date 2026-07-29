@@ -42,6 +42,8 @@ import {
   parsePracticeItemsResponse,
   parsePracticeSummaryResponse,
   parseProgressDashboardResponse,
+  parseQuestionDetailResponse,
+  parseQuestionsListResponse,
   parseRemoveBookmarkResponse,
   parseResultsJumpResponse,
   parseResultsResponse,
@@ -67,14 +69,12 @@ import type {
   LoginRequest,
   LoginResponse,
   LogoutResponse,
-  McqOption,
   PracticeGenerateRequest,
   PracticeGenerateResponse,
   ProgressDashboardResponse,
   PracticeItem,
   PracticeSummaryResponse,
   QuestionDetail,
-  QuestionPart,
   QuestionReportRequest,
   QuestionReportResponse,
   QuestionsListRequest,
@@ -284,7 +284,7 @@ export async function getSubjectChapters(subjectId: number): Promise<Chapter[]> 
 
 export async function getQuestions(query: QuestionsListRequest): Promise<QuestionsListResponse> {
   const params = validateQuestionsListRequest(query)
-  return apiClient<QuestionsListResponse>("/questions", {
+  const response = await apiClient<unknown>("/questions", {
     params: {
       exam_type_id: params.exam_type_id,
       subject_id: params.subject_id,
@@ -293,35 +293,33 @@ export async function getQuestions(query: QuestionsListRequest): Promise<Questio
       language: params.language,
     },
     auth: "required",
+    responseEnvelope: "required",
   })
+  return parseQuestionsListResponse(response)
 }
 
 export async function getQuestionById(questionId: number): Promise<QuestionDetail> {
-  type QuestionDetailsEnvelope = {
-    question: QuestionDetail
-    options?: McqOption[]
-    parts?: (QuestionPart & { marks: number | string })[]
-    media?: unknown[]
-  }
-  const response = await apiClient<QuestionDetail | QuestionDetailsEnvelope>(`/questions/${questionId}`)
+  const rawResponse = await apiClient<unknown>(`/questions/${questionId}`, {
+    responseEnvelope: "required",
+  })
+  const response = parseQuestionDetailResponse(rawResponse)
 
-  if ("question" in response) {
-    return {
-      ...(response.question ?? {}),
-      ...(response.options ? { options: response.options } : {}),
-      ...(response.parts
-        ? {
-            parts: response.parts.map((part) => ({
-              ...part,
-              marks: typeof part.marks === "string" ? Number.parseFloat(part.marks) : part.marks,
-            })),
-          }
-        : {}),
-      ...(response.media ? { media: response.media } : {}),
-    } as QuestionDetail
+  return {
+    id: response.question.id,
+    question_type: response.question.question_type,
+    stem_text: response.question.stem_text,
+    source: response.question.source,
+    source_badge: response.question.source_badge,
+    language: response.question.language,
+    options: response.options.map(({ label, option_text }) => ({ label, option_text })),
+    parts: response.parts.map(({ label, order_no, prompt_text, marks }) => ({
+      label,
+      order_no,
+      prompt_text,
+      marks,
+    })),
+    media: response.media,
   }
-
-  return response
 }
 
 export async function reportQuestion(
@@ -354,6 +352,7 @@ export async function generatePractice(
     method: "POST",
     body: payload,
     auth: "required",
+    responseEnvelope: "required",
   })
   return parsePracticeGenerateResponse(response)
 }
@@ -408,6 +407,7 @@ export async function removeBookmark(questionId: number): Promise<RemoveBookmark
 export async function getProgressDashboard(): Promise<ProgressDashboardResponse> {
   const response = await apiClient<unknown>("/profile/progress-dashboard", {
     auth: "required",
+    responseEnvelope: "required",
   })
   return parseProgressDashboardResponse(response)
 }
@@ -417,22 +417,20 @@ export async function getPracticeSummary(
 ): Promise<PracticeSummaryResponse> {
   const rawResponse = await apiClient<unknown>(`/practice/${practiceId}/summary`, {
     auth: "required",
+    responseEnvelope: "required",
   })
   const response: RawPracticeSummaryResponse = parsePracticeSummaryResponse(rawResponse)
 
-  if ("session" in response) {
-    return {
-      practice_session_id: response.session.id,
-      exam_type_id: response.session.exam_type_id,
-      subject_id: response.session.subject_id,
-      mode: response.session.mode,
-      attempt_status: response.session.attempt_status,
-      mcq_total: response.totals?.mcq_total,
-      cq_total: response.totals?.cq_total,
-    }
+  return {
+    practice_session_id: response.session.id,
+    exam_type_id: response.session.exam_type_id,
+    subject_id: response.session.subject_id,
+    mode: response.session.mode,
+    question_pool: response.session.question_pool,
+    attempt_status: response.session.attempt_status,
+    mcq_total: response.totals.mcq_total,
+    cq_total: response.totals.cq_total,
   }
-
-  return response
 }
 
 export async function getPracticeItems(
@@ -444,6 +442,7 @@ export async function getPracticeItems(
     const response = await apiClient<unknown>(`/practice/${practiceId}/items`, {
       params: { section, page, page_size: pageSize },
       auth: "required",
+      responseEnvelope: "required",
     })
     return parsePracticeItemsResponse(response)
   }
@@ -483,6 +482,7 @@ export async function saveAnswers(
     method: "PATCH",
     body: data,
     auth: "required",
+    responseEnvelope: "required",
   })
   return parseSaveAnswersResponse(response)
 }
@@ -490,6 +490,7 @@ export async function saveAnswers(
 export async function getAnswers(practiceId: number): Promise<GetAnswersResponse> {
   const response = await apiClient<unknown>(`/practice/${practiceId}/answers`, {
     auth: "required",
+    responseEnvelope: "required",
   })
   return parseGetAnswersResponse(response)
 }
@@ -498,6 +499,7 @@ export async function submitPractice(practiceId: number): Promise<SubmitResponse
   const response = await apiClient<unknown>(`/practice/${practiceId}/submit`, {
     method: "POST",
     auth: "required",
+    responseEnvelope: "required",
   })
   return parseSubmitResponse(response)
 }
@@ -515,6 +517,7 @@ export async function getResults(
       page_size: pageSize,
     },
     auth: "required",
+    responseEnvelope: "required",
   })
   return parseResultsResponse(response)
 }
@@ -524,10 +527,6 @@ export async function getCompleteResults(
   section: Section = "MCQ"
 ): Promise<CompleteResultsResponse> {
   const pageSize = 20
-  // The existing practice contract accepts at most 50 MCQs per session. Keep
-  // this client-side check so malformed metadata cannot trigger unbounded
-  // pagination before a learner sees a score.
-  const maxMcqResults = 50
   const firstPage = await getResults(practiceId, section, 1, pageSize)
 
   if (
@@ -536,7 +535,6 @@ export async function getCompleteResults(
     firstPage.page !== 1 ||
     !Number.isSafeInteger(firstPage.total_in_section) ||
     firstPage.total_in_section < 0 ||
-    firstPage.total_in_section > maxMcqResults ||
     !Number.isSafeInteger(firstPage.page_size) ||
     firstPage.page_size < 1 ||
     firstPage.page_size > pageSize
@@ -558,6 +556,9 @@ export async function getCompleteResults(
       page.practice_session_id !== firstPage.practice_session_id ||
       page.section !== firstPage.section ||
       page.total_in_section !== firstPage.total_in_section ||
+      page.explanation_access.unlocked !== firstPage.explanation_access.unlocked ||
+      page.explanation_access.required_plan !== firstPage.explanation_access.required_plan ||
+      page.explanation_access.message !== firstPage.explanation_access.message ||
       page.page !== index + 1
     ) {
       throw new Error("The complete results response is inconsistent. Please retry.")
@@ -595,6 +596,7 @@ export async function getCompleteResults(
     practice_session_id: firstPage.practice_session_id,
     section: firstPage.section,
     total_in_section: firstPage.total_in_section,
+    explanation_access: firstPage.explanation_access,
     items,
   }
 }
@@ -610,6 +612,7 @@ export async function jumpToResult(
       number,
     },
     auth: "required",
+    responseEnvelope: "required",
   })
   return parseResultsJumpResponse(response)
 }

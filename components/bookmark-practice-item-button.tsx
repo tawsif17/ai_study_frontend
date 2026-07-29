@@ -1,11 +1,13 @@
 "use client"
 
 import { Bookmark, BookmarkCheck } from "lucide-react"
+import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { useSWRConfig } from "swr"
 import { Button } from "@/components/ui/button"
 import { saveBookmark } from "@/lib/api"
 import { formatApiError } from "@/lib/api/client"
+import { useAuth } from "@/lib/auth-context"
 
 interface BookmarkPracticeItemButtonProps {
   practiceItemId: number
@@ -17,6 +19,7 @@ export function BookmarkPracticeItemButton({
   compact = false,
 }: BookmarkPracticeItemButtonProps) {
   const { mutate } = useSWRConfig()
+  const { user } = useAuth()
   const currentPracticeItemId = useRef(practiceItemId)
   const [isSaved, setIsSaved] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -51,6 +54,24 @@ export function BookmarkPracticeItemButton({
       }
     }
   }
+
+  if (user?.plan_tier === "free") {
+    return (
+      <Button
+        asChild
+        variant="ghost"
+        size={compact ? "sm" : "default"}
+        className="min-h-10 gap-2 text-primary hover:bg-primary/5 hover:text-primary"
+      >
+        <Link href="/pricing">
+          <Bookmark className="size-4" aria-hidden="true" />
+          Bookmark · Beta Pro
+        </Link>
+      </Button>
+    )
+  }
+
+  if (!user) return null
 
   return (
     <div className="flex flex-col items-end gap-1">

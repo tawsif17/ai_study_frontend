@@ -8,16 +8,27 @@ interface AuthGatedLinkProps {
   href: string
   className?: string
   children: React.ReactNode
+  authenticatedChildren?: React.ReactNode
+  unauthenticatedHref?: string
 }
 
-export function AuthGatedLink({ href, className, children }: AuthGatedLinkProps) {
-  const { authStatus } = useAuth()
-  const target =
-    authStatus === "unauthenticated" ? `/login?next=${encodeURIComponent(href)}` : href
+export function AuthGatedLink({
+  href,
+  className,
+  children,
+  authenticatedChildren,
+  unauthenticatedHref,
+}: AuthGatedLinkProps) {
+  const { authStatus, isAuthenticated } = useAuth()
+  const target = isAuthenticated
+    ? href
+    : authStatus === "unauthenticated"
+      ? unauthenticatedHref ?? `/login?next=${encodeURIComponent(href)}`
+      : href
 
   return (
     <Link href={target} className={className}>
-      {children}
+      {isAuthenticated ? authenticatedChildren ?? children : children}
     </Link>
   )
 }

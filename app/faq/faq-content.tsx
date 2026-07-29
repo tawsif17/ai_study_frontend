@@ -4,6 +4,7 @@ import Link from "next/link"
 import { CircleHelp } from "lucide-react"
 import { PageShell } from "@/components/page-shell"
 import { Button } from "@/components/ui/button"
+import { AuthGatedLink } from "@/components/auth-gated-link"
 import {
   Accordion,
   AccordionContent,
@@ -45,7 +46,7 @@ const frequentlyAsked: FAQItem[] = [
     value: "board-only",
     question: "How do Board-only MCQ sets work?",
     answer:
-      "Board-only MCQ sets are a Beta Pro revision feature for focused past-board-question practice. They will be selectable when this beta feature is released.",
+      "Board-only MCQ sets are available with Beta Pro for focused past-board-question practice. Choose MCQ practice, select one or more chapters, and then choose the Board-only question pool.",
   },
 ]
 
@@ -163,7 +164,13 @@ export function FAQContent() {
                 <Link href="/contact">Contact support</Link>
               </Button>
               <Button className="min-h-11 rounded-lg px-6 shadow-primary" asChild>
-                <Link href="/signup">Start free</Link>
+                <AuthGatedLink
+                  href="/subjects"
+                  unauthenticatedHref="/signup"
+                  authenticatedChildren="Practice"
+                >
+                  Start free
+                </AuthGatedLink>
               </Button>
             </div>
           </div>
