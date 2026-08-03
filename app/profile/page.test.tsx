@@ -29,6 +29,8 @@ const user = {
   school: "Sample Model School",
   city: "Dhaka",
   student_class: 10,
+  academic_group: "SCIENCE" as const,
+  curriculum_version: "ENGLISH" as const,
   email_verified_at: "2026-07-01T00:00:00.000Z",
   last_login_at: "2026-07-16T00:00:00.000Z",
   created_at: "2026-06-01T00:00:00.000Z",
@@ -66,6 +68,8 @@ describe("profile page", () => {
     expect(screen.getByText("nadia@example.com")).toBeInTheDocument()
     expect(screen.getByText("Sample Model School")).toBeInTheDocument()
     expect(screen.getByText("Class 10")).toBeInTheDocument()
+    expect(screen.getByText("Science")).toBeInTheDocument()
+    expect(screen.getByText("English Version")).toBeInTheDocument()
     expect(screen.getByText("Dhaka")).toBeInTheDocument()
     expect(screen.getByText("Email verified")).toBeInTheDocument()
 

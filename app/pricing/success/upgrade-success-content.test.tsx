@@ -29,6 +29,8 @@ const activeUser = {
   school: null,
   city: null,
   student_class: null,
+  academic_group: "SCIENCE",
+  curriculum_version: "ENGLISH",
   email_verified_at: "2026-07-13T00:00:00.000Z",
   last_login_at: null,
   created_at: "",

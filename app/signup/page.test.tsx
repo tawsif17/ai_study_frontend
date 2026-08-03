@@ -1,4 +1,4 @@
-import type React from "react"
+import React from "react"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { axe } from "vitest-axe"
@@ -32,7 +32,9 @@ vi.mock("@/components/ui/select", () => ({
     disabled?: boolean
   }>) => (
     <select
-      id="class"
+      id={React.Children.toArray(children).find(
+        (child): child is React.ReactElement<{ id?: string }> => React.isValidElement(child) && Boolean(child.props.id)
+      )?.props.id}
       value={value}
       onChange={(event) => onValueChange(event.target.value)}
       disabled={disabled}
@@ -102,6 +104,8 @@ function fillValidSignupForm() {
   })
   fireEvent.change(screen.getByLabelText("District"), { target: { value: "Dhaka" } })
   fireEvent.change(screen.getByLabelText("Class"), { target: { value: "10" } })
+  fireEvent.change(screen.getByLabelText("Academic Group"), { target: { value: "SCIENCE" } })
+  fireEvent.change(screen.getByLabelText("Curriculum Version"), { target: { value: "ENGLISH" } })
 }
 
 describe("signup page", () => {
@@ -147,6 +151,8 @@ describe("signup page", () => {
         school: "Example High School",
         city: "Dhaka",
         studentClass: 10,
+        academicGroup: "SCIENCE",
+        curriculumVersion: "ENGLISH",
       })
     })
     expect(await screen.findByRole("heading", { name: "Check your email" })).toBeInTheDocument()
@@ -220,6 +226,8 @@ describe("signup page", () => {
     expect(screen.getByLabelText("School Name")).toBeDisabled()
     expect(screen.getByLabelText("District")).toBeDisabled()
     expect(screen.getByLabelText("Class")).toBeDisabled()
+    expect(screen.getByLabelText("Academic Group")).toBeDisabled()
+    expect(screen.getByLabelText("Curriculum Version")).toBeDisabled()
 
     resolveRegister?.({
       data: { message: "Thank you for your interest!" },
@@ -276,6 +284,8 @@ describe("signup page", () => {
     expect(screen.getByLabelText("Email")).toHaveAttribute("aria-invalid", "true")
     expect(screen.getByLabelText("Password")).toHaveAttribute("aria-invalid", "true")
     expect(screen.getByText("Select your class.")).toBeInTheDocument()
+    expect(screen.getByText("Select your academic group.")).toBeInTheDocument()
+    expect(screen.getByText("Select your curriculum version.")).toBeInTheDocument()
     expect(mockRegister).not.toHaveBeenCalled()
   })
 

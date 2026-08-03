@@ -48,6 +48,8 @@ describe("auth API contract calls", () => {
       school: "Example High School",
       city: "Dhaka",
       studentClass: 10,
+      academicGroup: "SCIENCE",
+      curriculumVersion: "ENGLISH",
     })
 
     expect(response).toEqual({
@@ -63,6 +65,8 @@ describe("auth API contract calls", () => {
         school: "Example High School",
         city: "Dhaka",
         studentClass: 10,
+        academicGroup: "SCIENCE",
+        curriculumVersion: "ENGLISH",
       },
       responseEnvelope: "required",
     })
@@ -413,6 +417,8 @@ describe("revision API contract", () => {
         school: "Example High School",
         city: "Dhaka",
         studentClass: 10,
+        academicGroup: "SCIENCE",
+        curriculumVersion: "ENGLISH",
       })
     ).resolves.toEqual({
       data: { message: "We’ve reached our current 200-user capacity. Your waitlist request has been received, and we’ll contact you when access becomes available." },
@@ -430,6 +436,8 @@ describe("revision API contract", () => {
       school: null,
       city: null,
       student_class: 10,
+      academic_group: "SCIENCE" as const,
+      curriculum_version: "ENGLISH" as const,
       email_verified_at: "2026-07-20T00:00:00.000Z",
       last_login_at: null,
       created_at: "2026-07-20T00:00:00.000Z",
@@ -470,6 +478,8 @@ describe("revision API contract", () => {
         school: "Example High School",
         city: "Dhaka",
         studentClass: 10,
+        academicGroup: "SCIENCE",
+        curriculumVersion: "ENGLISH",
       })
     ).rejects.toBeInstanceOf(ApiContractError)
 

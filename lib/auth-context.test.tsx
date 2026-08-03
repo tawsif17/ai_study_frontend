@@ -73,6 +73,8 @@ const authUser = {
   school: null,
   city: null,
   student_class: 10,
+  academic_group: "SCIENCE",
+  curriculum_version: "ENGLISH",
   email_verified_at: "2026-07-20T00:00:00.000Z",
   last_login_at: null,
   created_at: "2026-07-20T00:00:00.000Z",

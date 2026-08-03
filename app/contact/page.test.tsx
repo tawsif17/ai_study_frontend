@@ -34,6 +34,8 @@ function setAuthenticatedUser() {
       school: null,
       city: null,
       student_class: null,
+      academic_group: "SCIENCE",
+      curriculum_version: "ENGLISH",
       email_verified_at: null,
       last_login_at: null,
       created_at: "2026-02-27T00:00:00.000Z",
