@@ -159,10 +159,10 @@ test("signup 201 stays in place and offers prefilled verification recovery", asy
   )
 })
 
-test("signup 202 preserves the private-beta request confirmation", async ({ page }) => {
+test("signup 202 preserves the capacity waitlist confirmation", async ({ page }) => {
   await mockDistricts(page)
   await page.route(`${API_BASE}/auth/register`, (route) =>
-    fulfillData(route, { message: "Your beta access request has been received." }, 202)
+    fulfillData(route, { message: "We’ve reached our current 200-user capacity. Your waitlist request has been received, and we’ll contact you when access becomes available." }, 202)
   )
 
   await page.goto("/signup")
@@ -170,7 +170,7 @@ test("signup 202 preserves the private-beta request confirmation", async ({ page
   await page.getByRole("button", { name: "Create Account" }).click()
 
   await expect(page.getByText("Request received")).toBeVisible()
-  await expect(page.getByText("Your beta access request has been received.")).toBeVisible()
+  await expect(page.getByText(/We’ve reached our current 200-user capacity/)).toBeVisible()
   await expect(page.getByRole("heading", { name: "Check your email" })).toHaveCount(0)
 })
 

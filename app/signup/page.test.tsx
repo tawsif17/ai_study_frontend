@@ -128,7 +128,7 @@ describe("signup page", () => {
     })
   })
 
-  it("shows check-email guidance when a closed beta account is created", async () => {
+  it("shows check-email guidance when an account is created below capacity", async () => {
     mockRegister.mockResolvedValueOnce({
       data: { message: "Registration successful. Please check your email to verify your account." },
       status: 201,
@@ -162,11 +162,11 @@ describe("signup page", () => {
     expect(mockPush).not.toHaveBeenCalled()
   })
 
-  it("shows private beta success in place when signup interest is captured", async () => {
+  it("shows the waitlist confirmation in place when capacity is reached", async () => {
     mockRegister.mockResolvedValueOnce({
       data: {
         message:
-          "Thank you for your interest! We're currently in a private beta and are gradually inviting new users. We've received your request and will contact you as soon as access becomes available.",
+          "We’ve reached our current 200-user capacity. Your waitlist request has been received, and we’ll contact you when access becomes available.",
       },
       status: 202,
     })
@@ -179,7 +179,7 @@ describe("signup page", () => {
     const status = await screen.findByRole("status")
     expect(status).toHaveTextContent("Request received")
     expect(
-      screen.getByText(/Thank you for your interest! We're currently in a private beta/)
+      screen.getByText(/We’ve reached our current 200-user capacity/)
     ).toBeInTheDocument()
     expect(screen.getByLabelText("Password")).toHaveValue("")
     expect(mockPush).not.toHaveBeenCalled()

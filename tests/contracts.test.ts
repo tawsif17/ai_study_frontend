@@ -30,7 +30,7 @@ describe("matchEntitlementErrorByExactMessage", () => {
 })
 
 describe("contract request validators", () => {
-  it("validates closed beta register payload and password rules", () => {
+  it("validates capacity-based register payload and password rules", () => {
     const valid = validateRegisterRequest({
       email: "student@example.com",
       password: "Password123",
