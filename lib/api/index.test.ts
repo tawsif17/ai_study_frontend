@@ -35,7 +35,7 @@ describe("auth API contract calls", () => {
     })
   })
 
-  it("calls register endpoint with exact closed beta contract payload and preserves status", async () => {
+  it("calls register endpoint with the capacity-based contract payload and preserves status", async () => {
     vi.mocked(apiClientWithResponse).mockResolvedValueOnce({
       data: { message: "Registration successful. You can now log in." },
       status: 201,
@@ -399,9 +399,9 @@ describe("revision API contract", () => {
     })
   })
 
-  it("preserves the private-beta 202 registration result", async () => {
+  it("preserves the capacity waitlist 202 registration result", async () => {
     vi.mocked(apiClientWithResponse).mockResolvedValueOnce({
-      data: { message: "Your private beta request has been received." },
+      data: { message: "We’ve reached our current 200-user capacity. Your waitlist request has been received, and we’ll contact you when access becomes available." },
       status: 202,
     })
 
@@ -415,7 +415,7 @@ describe("revision API contract", () => {
         studentClass: 10,
       })
     ).resolves.toEqual({
-      data: { message: "Your private beta request has been received." },
+      data: { message: "We’ve reached our current 200-user capacity. Your waitlist request has been received, and we’ll contact you when access becomes available." },
       status: 202,
     })
   })
