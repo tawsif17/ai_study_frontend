@@ -75,7 +75,7 @@
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "4.1.10",
     "eslint": "^9.39.3",
-    "eslint-config-next": "16.2.11",
+    "eslint-config-next": "16.2.12",
     "jsdom": "^28.1.0",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
