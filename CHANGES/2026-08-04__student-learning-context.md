@@ -1,7 +1,7 @@
 # Change Brief
 
 ## Status
-Planned
+Done
 
 ## Context
 Signup collects class but not academic group or curriculum version, Profile cannot display those values, and the authenticated Subjects screen renders the entire hardcoded beta presentation list even when the API catalog is narrower.
