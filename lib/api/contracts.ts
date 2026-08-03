@@ -1,15 +1,30 @@
 import { z } from "zod"
-import { ApiClientError } from "./client"
-import { questionReportReasonOptions } from "./types"
+import { ApiClientError, ApiContractError } from "./client"
+import { BANGLADESH_DISTRICT_NAMES, questionReportReasonOptions } from "./types"
 import type {
   ContactSubmitRequest,
+  AuthMeResponse,
+  AuthUser,
+  CsrfResponse,
+  DistrictsResponse,
   LoginRequest,
+  LoginResponse,
+  LogoutResponse,
   PracticeGenerateRequest,
   QuestionReportRequest,
   QuestionsListRequest,
-  RegisterRequest,
+    RegisterRequest,
+    RegisterResponse,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
+    ResetPasswordRequest,
+    ResetPasswordResponse,
+    RefreshResponse,
   ResendVerificationRequest,
+  ResendVerificationResponse,
+  UpgradeToProResponse,
   VerifyEmailRequest,
+  VerifyEmailResponse,
 } from "./types"
 
 export const entitlementErrorMessages = {
@@ -18,6 +33,7 @@ export const entitlementErrorMessages = {
   subjectProRequired: "This subject requires pro plan for practice. Upgrade to pro to continue.",
   trialGraceExpiredDowngraded:
     "Trial ended and grace period expired. Your plan is now free. Upgrade to pro to continue.",
+  boardOnlyProRequired: "Board-only practice requires Beta Pro.",
 } as const
 
 export type EntitlementErrorType = keyof typeof entitlementErrorMessages
@@ -33,7 +49,9 @@ const registerRequestSchema = z
       .regex(/[0-9]/, "Password must include at least one number"),
     fullName: z.string().min(1),
     school: z.string().min(1),
-    city: z.string().min(1),
+    city: z.enum(BANGLADESH_DISTRICT_NAMES, {
+      errorMap: () => ({ message: "City must be a valid Bangladesh district" }),
+    }),
     studentClass: z.number().int(),
   })
   .strict()
@@ -92,9 +110,10 @@ const practiceGenerateRequestSchema = z
     exam_type_id: z.number().int(),
     subject_id: z.number().int(),
     mode: z.enum(["MCQ", "CQ", "MIXED"]),
+    question_pool: z.enum(["STANDARD", "BOARD_ONLY"]).optional(),
     selection: z
       .object({
-        type: z.enum(["CHAPTERS", "FULL_SYLLABUS"]),
+        type: z.enum(["CHAPTERS", "FULL_SYLLABUS", "BOOKMARKED"]),
         chapter_ids: z.array(z.number().int()).min(1).optional(),
       })
       .strict(),
@@ -106,6 +125,148 @@ const practiceGenerateRequestSchema = z
     cq_requested: z.number().int().optional(),
     language: z.string().optional(),
   })
+  .strict()
+
+const practiceGenerateRequestSchemaWithRules = practiceGenerateRequestSchema.superRefine((value, context) => {
+    if (value.selection.type === "CHAPTERS" && !value.selection.chapter_ids?.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["selection", "chapter_ids"],
+        message: "selection.chapter_ids is required when selection.type is CHAPTERS",
+      })
+    }
+
+    if (value.question_pool === "BOARD_ONLY") {
+      if (value.mode !== "MCQ") {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["mode"],
+          message: "BOARD_ONLY question_pool supports only MCQ mode",
+        })
+      }
+      if (value.selection.type !== "CHAPTERS") {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["selection", "type"],
+          message: "BOARD_ONLY question_pool requires CHAPTERS selection",
+        })
+      }
+    }
+
+    if (value.selection.type !== "BOOKMARKED") return
+
+    if (value.mode !== "MCQ") {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["mode"],
+        message: "BOOKMARKED selection supports only MCQ mode",
+      })
+    }
+
+    if (value.selection.chapter_ids !== undefined) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["selection", "chapter_ids"],
+        message: "selection.chapter_ids is not allowed for BOOKMARKED selection",
+      })
+    }
+
+    for (const field of ["question_pool", "mcq_count", "mcqCount", "mcq_requested", "cq_count", "cqCount", "cq_requested", "language"] as const) {
+      if (value[field] !== undefined) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [field],
+          message: `${field} is not allowed for BOOKMARKED selection`,
+        })
+      }
+    }
+  })
+
+const forgotPasswordRequestSchema = z
+  .object({
+    email: z.string().min(1),
+  })
+  .strict()
+
+const resetPasswordRequestSchema = z
+  .object({
+    token: z.string().min(1),
+    newPassword: z
+      .string()
+      .min(8, "Password must be at least 8 characters long")
+      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+      .regex(/[0-9]/, "Password must contain at least one number"),
+  })
+  .strict()
+
+const authUserSchema: z.ZodType<AuthUser> = z
+  .object({
+    id: z.string(),
+    email: z.string(),
+    full_name: z.string(),
+    role: z.string(),
+    plan_tier: z.enum(["free", "pro"]),
+    school: z.string().nullable(),
+    city: z.string().nullable(),
+    student_class: z.number().int().nullable(),
+    email_verified_at: z.string().nullable(),
+    last_login_at: z.string().nullable(),
+    created_at: z.string(),
+    updated_at: z.string(),
+  })
+  .strict()
+const verifiedAuthUserSchema: z.ZodType<AuthUser> = authUserSchema.superRefine((user, context) => {
+  if (user.email_verified_at === null) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["email_verified_at"],
+      message: "email_verified_at is required for a logged-in user",
+    })
+  }
+})
+
+const messageResponseSchema = z.object({ message: z.string().min(1) }).strict()
+const registerResponseSchema: z.ZodType<RegisterResponse> = messageResponseSchema
+const verifyEmailResponseSchema: z.ZodType<VerifyEmailResponse> = messageResponseSchema
+const resendVerificationResponseSchema: z.ZodType<ResendVerificationResponse> = messageResponseSchema
+const forgotPasswordResponseSchema: z.ZodType<ForgotPasswordResponse> = z
+  .object({
+    message: z.literal("If the account is eligible, a password reset email has been sent."),
+  })
+  .strict()
+const resetPasswordResponseSchema: z.ZodType<ResetPasswordResponse> = z
+  .object({
+    message: z.literal("Password reset successful. Please log in with your new password."),
+  })
+  .strict()
+const loginResponseSchema: z.ZodType<LoginResponse> = z
+  .object({ user: verifiedAuthUserSchema, csrfToken: z.string().min(1) })
+  .strict()
+const authMeResponseSchema: z.ZodType<AuthMeResponse> = z
+  .object({ user: authUserSchema })
+  .strict()
+const csrfResponseSchema: z.ZodType<CsrfResponse> = z
+  .object({ csrfToken: z.string().min(1) })
+  .strict()
+const refreshResponseSchema: z.ZodType<RefreshResponse> = csrfResponseSchema
+const logoutResponseSchema: z.ZodType<LogoutResponse> = z
+  .object({ message: z.literal("Logged out successfully") })
+  .strict()
+const districtsResponseSchema: z.ZodType<DistrictsResponse> = z
+  .object({
+    districts: z
+      .array(z.enum(BANGLADESH_DISTRICT_NAMES))
+      .length(BANGLADESH_DISTRICT_NAMES.length)
+      .refine(
+        (districts) =>
+          districts.every((district, index) => district === BANGLADESH_DISTRICT_NAMES[index]),
+        "Districts must match the canonical ascending contract order"
+      ),
+  })
+  .strict()
+const upgradeToProResponseSchema: z.ZodType<UpgradeToProResponse> = z
+  .object({ message: z.string().min(1), plan_tier: z.literal("pro") })
   .strict()
 
 function zodMessage(error: z.ZodError): string {
@@ -175,17 +336,69 @@ export function validateQuestionReportRequest(
 export function validatePracticeGenerateRequest(
   input: PracticeGenerateRequest
 ): PracticeGenerateRequest {
-  const parsed = practiceGenerateRequestSchema.safeParse(input)
+  const parsed = practiceGenerateRequestSchemaWithRules.safeParse(input)
   if (!parsed.success) {
     throw new Error(zodMessage(parsed.error))
   }
 
-  if (parsed.data.selection.type === "CHAPTERS" && !parsed.data.selection.chapter_ids?.length) {
-    throw new Error("selection.chapter_ids is required when selection.type is CHAPTERS")
-  }
-
   return parsed.data
 }
+
+export function validateForgotPasswordRequest(input: ForgotPasswordRequest): ForgotPasswordRequest {
+  const parsed = forgotPasswordRequestSchema.safeParse(input)
+  if (!parsed.success) throw new Error(zodMessage(parsed.error))
+  return parsed.data
+}
+
+export function validateResetPasswordRequest(input: ResetPasswordRequest): ResetPasswordRequest {
+  const parsed = resetPasswordRequestSchema.safeParse(input)
+  if (!parsed.success) throw new Error(zodMessage(parsed.error))
+  return parsed.data
+}
+
+function parseResponse<T>(schema: z.ZodType<T>, input: unknown, contractName: string): T {
+  const parsed = schema.safeParse(input)
+  if (!parsed.success) {
+    throw new ApiContractError(`Invalid ${contractName} response`, { cause: parsed.error })
+  }
+  return parsed.data
+}
+
+export const parseRegisterResponse = (input: unknown) =>
+  parseResponse(registerResponseSchema, input, "registration")
+
+export const parseLoginResponse = (input: unknown) =>
+  parseResponse(loginResponseSchema, input, "login")
+
+export const parseAuthMeResponse = (input: unknown) =>
+  parseResponse(authMeResponseSchema, input, "account")
+
+export const parseCsrfResponse = (input: unknown) =>
+  parseResponse(csrfResponseSchema, input, "CSRF token")
+
+export const parseRefreshResponse = (input: unknown) =>
+  parseResponse(refreshResponseSchema, input, "session refresh")
+
+export const parseLogoutResponse = (input: unknown) =>
+  parseResponse(logoutResponseSchema, input, "logout")
+
+export const parseDistrictsResponse = (input: unknown) =>
+  parseResponse(districtsResponseSchema, input, "districts")
+
+export const parseVerifyEmailResponse = (input: unknown) =>
+  parseResponse(verifyEmailResponseSchema, input, "email verification")
+
+export const parseResendVerificationResponse = (input: unknown) =>
+  parseResponse(resendVerificationResponseSchema, input, "resend verification")
+
+export const parseForgotPasswordResponse = (input: unknown) =>
+  parseResponse(forgotPasswordResponseSchema, input, "password recovery")
+
+export const parseResetPasswordResponse = (input: unknown) =>
+  parseResponse(resetPasswordResponseSchema, input, "password reset")
+
+export const parseUpgradeToProResponse = (input: unknown) =>
+  parseResponse(upgradeToProResponseSchema, input, "Beta Pro activation")
 
 export function matchEntitlementErrorByExactMessage(
   error: unknown
@@ -207,5 +420,5 @@ export function matchEntitlementErrorByExactMessage(
 }
 
 export function isUnverifiedLoginError(error: unknown): boolean {
-  return error instanceof ApiClientError && error.status === 401 && error.message === "Email verification required"
+  return error instanceof ApiClientError && error.status === 403 && error.message === "Email verification required"
 }

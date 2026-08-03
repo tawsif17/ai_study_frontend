@@ -4,6 +4,7 @@ import { TrustPage } from "@/components/trust-page"
 // Founder review required before launch. Keep claims factual and avoid invented company/team details.
 export const metadata: Metadata = {
   title: "About | Shikkha Buddy",
+  alternates: { canonical: "/about" },
   description: "Learn what Shikkha Buddy is, who it is for, and the current SSC science practice focus.",
   openGraph: {
     title: "About | Shikkha Buddy",
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
 const sections = [
   {
     title: "What Shikkha Buddy is",
-    body: "Shikkha Buddy is a focused practice platform for Bangladesh SSC science students. It is designed to help students choose a subject, practice questions, review explanations, and return to study with a clearer next step.",
+    body: "Shikkha Buddy is a focused practice platform for Bangladesh SSC science students. Students can choose a subject, practise AI-generated MCQs, and review correct answers after submitting a session. Beta Pro adds deeper revision features.",
   },
   {
     title: "Who it is for",
@@ -31,7 +32,7 @@ const sections = [
   },
   {
     title: "Current focus",
-    body: "The current frontend is focused on SSC science practice. The public product surface currently highlights Higher Math, Physics, and Chemistry.",
+    body: "The current frontend is focused on SSC science practice. The public product surface currently highlights General Math, Physics, and Chemistry.",
   },
   {
     title: "Still improving",

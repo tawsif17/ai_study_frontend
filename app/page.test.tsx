@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import HomePage from "./page"
+import { useAuth } from "@/lib/auth-context"
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/",
@@ -16,18 +17,30 @@ vi.mock("@/components/brand-logo", async () => {
 })
 
 vi.mock("@/lib/auth-context", () => ({
-  useAuth: () => ({
-    isAuthenticated: false,
+  useAuth: vi.fn(),
+}))
+
+function mockAuth(isAuthenticated: boolean) {
+  vi.mocked(useAuth).mockReturnValue({
+    authStatus: isAuthenticated ? "authenticated" : "unauthenticated",
+    authError: null,
+    isAuthenticated,
     isLoading: false,
     user: null,
     login: vi.fn(),
     register: vi.fn(),
     logout: vi.fn(),
     refreshUser: vi.fn(),
-  }),
-}))
+    retryAuth: vi.fn(),
+  })
+}
 
 describe("homepage final UI", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockAuth(false)
+  })
+
   it("renders the approved homepage sections and navigation targets", () => {
     render(<HomePage />)
 
@@ -49,17 +62,25 @@ describe("homepage final UI", () => {
       "href",
       "/login?next=%2Fsubjects"
     )
-    expect(screen.getByRole("link", { name: "Board-only practice, Pro option, opens pricing" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Continue practicing" })).toHaveAttribute("href", "/subjects")
+    expect(screen.getByRole("link", { name: "Board-only MCQ sets, Beta Pro option, opens pricing" })).toHaveAttribute(
       "href",
       "/pricing"
     )
+
+    const subjectStartLinks = screen.getAllByRole("link", { name: "Start Practice" })
+    expect(subjectStartLinks).toHaveLength(3)
+    expect(subjectStartLinks[0]).toHaveAttribute("href", "/login?next=%2Fsubjects%3Fsubject%3Dgeneral-math")
+    expect(subjectStartLinks[1]).toHaveAttribute("href", "/login?next=%2Fsubjects%3Fsubject%3Dphysics")
+    expect(subjectStartLinks[2]).toHaveAttribute("href", "/login?next=%2Fsubjects%3Fsubject%3Dchemistry")
   })
 
   it("renders static availability, disabled future modes, subjects, and hidden social links", () => {
     render(<HomePage />)
 
     expect(screen.getByText("Correct. Review: Refraction")).toBeInTheDocument()
-    expect(screen.getByText(/Activate beta Pro access later only if board-only sets/)).toBeInTheDocument()
+    expect(screen.getAllByText("Board-only MCQ sets")).toHaveLength(1)
+    expect(screen.getAllByText("Beta Pro").length).toBeGreaterThanOrEqual(1)
 
     expect(screen.getByText("CQ Practice")).toBeInTheDocument()
     expect(screen.getByText("Mixed Practice")).toBeInTheDocument()
@@ -73,5 +94,15 @@ describe("homepage final UI", () => {
     expect(screen.queryByRole("link", { name: /facebook/i })).not.toBeInTheDocument()
     expect(screen.queryByRole("link", { name: /instagram/i })).not.toBeInTheDocument()
     expect(screen.queryByRole("link", { name: /youtube/i })).not.toBeInTheDocument()
+  })
+
+  it("uses Practice for public acquisition CTAs after login", () => {
+    mockAuth(true)
+    render(<HomePage />)
+
+    expect(screen.getAllByRole("link", { name: "Practice" })).toHaveLength(4)
+    expect(screen.queryByRole("link", { name: "Start free practice" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Start free" })).not.toBeInTheDocument()
+    expect(screen.getAllByRole("link", { name: "Start Practice" })).toHaveLength(3)
   })
 })

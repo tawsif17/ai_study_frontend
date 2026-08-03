@@ -5,39 +5,76 @@
 export * from "./types"
 export * from "./client"
 export * from "./contracts"
+export * from "./response-contracts"
 
-import { apiClient, apiClientWithResponse } from "./client"
 import {
+  ApiContractError,
+  apiClient,
+  apiClientWithResponse,
+  notifySessionInvalid,
+  runWithSessionTermination,
+} from "./client"
+import {
+  parseAuthMeResponse,
+  parseDistrictsResponse,
+  parseLogoutResponse,
+  parseForgotPasswordResponse,
+  parseLoginResponse,
+  parseRegisterResponse,
+  parseResendVerificationResponse,
+  parseResetPasswordResponse,
+  parseUpgradeToProResponse,
+  parseVerifyEmailResponse,
   validateContactSubmitRequest,
   validateLoginRequest,
+  validateForgotPasswordRequest,
   validatePracticeGenerateRequest,
   validateQuestionReportRequest,
   validateQuestionsListRequest,
   validateRegisterRequest,
   validateResendVerificationRequest,
+  validateResetPasswordRequest,
   validateVerifyEmailRequest,
 } from "./contracts"
+import {
+  parseGetAnswersResponse,
+  parsePracticeGenerateResponse,
+  parsePracticeItemsResponse,
+  parsePracticeSummaryResponse,
+  parseProgressDashboardResponse,
+  parseQuestionDetailResponse,
+  parseQuestionsListResponse,
+  parseRemoveBookmarkResponse,
+  parseResultsJumpResponse,
+  parseResultsResponse,
+  parseRevisionListResponse,
+  parseRevisionSummaryResponse,
+  parseSaveAnswersResponse,
+  parseSaveBookmarkResponse,
+  parseSubmitResponse,
+  type RawPracticeSummaryResponse,
+} from "./response-contracts"
 import type {
   AuthMeResponse,
   Chapter,
   ChaptersResponse,
   ContactSubmitRequest,
   ContactSubmitResponse,
+  DistrictName,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
   CompleteResultsResponse,
   ExamType,
   GetAnswersResponse,
   LoginRequest,
   LoginResponse,
-  McqOption,
+  LogoutResponse,
   PracticeGenerateRequest,
   PracticeGenerateResponse,
-  PracticeItemsResponse,
   ProgressDashboardResponse,
   PracticeItem,
-  PracticeMode,
   PracticeSummaryResponse,
   QuestionDetail,
-  QuestionPart,
   QuestionReportRequest,
   QuestionReportResponse,
   QuestionsListRequest,
@@ -45,8 +82,16 @@ import type {
   RegisterRequest,
   RegisterResponse,
   RegisterResult,
+  RemoveBookmarkResponse,
   ResendVerificationRequest,
   ResendVerificationResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
+  RevisionListKind,
+  RevisionListRequest,
+  RevisionListResponse,
+  RevisionSummaryResponse,
+  SaveBookmarkResponse,
   UpgradeToProResponse,
   ResultsJumpResponse,
   ResultsResponse,
@@ -56,7 +101,6 @@ import type {
   Subject,
   SubjectsResponse,
   SubmitResponse,
-  AttemptStatus,
   VerifyEmailRequest,
   VerifyEmailResponse,
 } from "./types"
@@ -67,7 +111,7 @@ import type {
 
 export async function register(data: RegisterRequest): Promise<RegisterResult> {
   const payload = validateRegisterRequest({
-    email: data.email,
+    email: data.email.trim().toLowerCase(),
     password: data.password,
     fullName: data.fullName.trim(),
     school: data.school,
@@ -78,52 +122,107 @@ export async function register(data: RegisterRequest): Promise<RegisterResult> {
   const response = await apiClientWithResponse<RegisterResponse>("/auth/register", {
     method: "POST",
     body: payload,
+    responseEnvelope: "required",
   })
 
+  if (response.status !== 201 && response.status !== 202) {
+    throw new ApiContractError(`Unexpected registration status: ${response.status}`)
+  }
+
   return {
-    data: response.data,
-    status: response.status === 202 ? 202 : 201,
+    data: parseRegisterResponse(response.data),
+    status: response.status,
   }
 }
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
-  const payload = validateLoginRequest(data)
-  return apiClient<LoginResponse>("/auth/login", {
+  const payload = validateLoginRequest({
+    ...data,
+    email: data.email.trim().toLowerCase(),
+  })
+  const response = await apiClient<unknown>("/auth/login", {
     method: "POST",
     body: payload,
+    responseEnvelope: "required",
   })
+  return parseLoginResponse(response)
 }
 
 export async function getAuthMe(): Promise<AuthMeResponse> {
-  return apiClient<AuthMeResponse>("/auth/me", {
-    requiresAuth: true,
+  const response = await apiClient<unknown>("/auth/me", {
+    auth: "required",
+    responseEnvelope: "required",
+  })
+  return parseAuthMeResponse(response)
+}
+
+export async function logout(): Promise<LogoutResponse> {
+  return runWithSessionTermination(async () => {
+    const response = await apiClient<unknown>("/auth/logout", {
+      method: "POST",
+      auth: "required",
+      responseEnvelope: "required",
+    })
+    return parseLogoutResponse(response)
   })
 }
 
 export async function verifyEmail(data: VerifyEmailRequest): Promise<VerifyEmailResponse> {
   const payload = validateVerifyEmailRequest(data)
-  return apiClient<VerifyEmailResponse>("/auth/verify-email", {
+  const response = await apiClient<unknown>("/auth/verify-email", {
     method: "POST",
     body: payload,
+    responseEnvelope: "required",
   })
+  return parseVerifyEmailResponse(response)
 }
 
 export async function resendVerification(
   data: ResendVerificationRequest
 ): Promise<ResendVerificationResponse> {
-  const payload = validateResendVerificationRequest(data)
-  return apiClient<ResendVerificationResponse>("/auth/resend-verification", {
+  const payload = validateResendVerificationRequest({
+    email: data.email.trim().toLowerCase(),
+  })
+  const response = await apiClient<unknown>("/auth/resend-verification", {
     method: "POST",
     body: payload,
+    responseEnvelope: "required",
   })
+  return parseResendVerificationResponse(response)
+}
+
+export async function forgotPassword(data: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
+  const payload = validateForgotPasswordRequest({
+    email: data.email.trim().toLowerCase(),
+  })
+  const response = await apiClient<unknown>("/auth/forgot-password", {
+    method: "POST",
+    body: payload,
+    responseEnvelope: "required",
+  })
+  return parseForgotPasswordResponse(response)
+}
+
+export async function resetPassword(data: ResetPasswordRequest): Promise<ResetPasswordResponse> {
+  const payload = validateResetPasswordRequest(data)
+  const response = await apiClient<unknown>("/auth/reset-password", {
+    method: "POST",
+    body: payload,
+    responseEnvelope: "required",
+  })
+  const parsed = parseResetPasswordResponse(response)
+  notifySessionInvalid({ forceBroadcast: true })
+  return parsed
 }
 
 export async function upgradeToPro(): Promise<UpgradeToProResponse> {
-  return apiClient<UpgradeToProResponse>("/auth/upgrade-to-pro", {
+  const response = await apiClient<unknown>("/auth/upgrade-to-pro", {
     method: "POST",
     body: {},
-    requiresAuth: true,
+    auth: "required",
+    responseEnvelope: "required",
   })
+  return parseUpgradeToProResponse(response)
 }
 
 export async function submitContact(
@@ -138,8 +237,20 @@ export async function submitContact(
   return apiClient<ContactSubmitResponse>("/contact", {
     method: "POST",
     body: payload,
-    includeAuth: true,
+    auth: "optional",
+    responseEnvelope: "required",
   })
+}
+
+// ============================================
+// LOCATIONS API
+// ============================================
+
+export async function getDistricts(): Promise<DistrictName[]> {
+  const response = await apiClient<unknown>("/locations/districts", {
+    responseEnvelope: "required",
+  })
+  return parseDistrictsResponse(response).districts
 }
 
 // ============================================
@@ -157,7 +268,7 @@ export async function getExamTypes(): Promise<ExamType[]> {
 export async function getSubjects(examType?: string): Promise<Subject[]> {
   const response = await apiClient<SubjectsResponse>("/subjects", {
     params: examType ? { exam_type: examType } : undefined,
-    requiresAuth: true,
+    auth: "required",
   })
   return response.subjects
 }
@@ -173,7 +284,7 @@ export async function getSubjectChapters(subjectId: number): Promise<Chapter[]> 
 
 export async function getQuestions(query: QuestionsListRequest): Promise<QuestionsListResponse> {
   const params = validateQuestionsListRequest(query)
-  return apiClient<QuestionsListResponse>("/questions", {
+  const response = await apiClient<unknown>("/questions", {
     params: {
       exam_type_id: params.exam_type_id,
       subject_id: params.subject_id,
@@ -181,36 +292,34 @@ export async function getQuestions(query: QuestionsListRequest): Promise<Questio
       question_type: params.question_type,
       language: params.language,
     },
-    requiresAuth: true,
+    auth: "required",
+    responseEnvelope: "required",
   })
+  return parseQuestionsListResponse(response)
 }
 
 export async function getQuestionById(questionId: number): Promise<QuestionDetail> {
-  type QuestionDetailsEnvelope = {
-    question: QuestionDetail
-    options?: McqOption[]
-    parts?: (QuestionPart & { marks: number | string })[]
-    media?: unknown[]
-  }
-  const response = await apiClient<QuestionDetail | QuestionDetailsEnvelope>(`/questions/${questionId}`)
+  const rawResponse = await apiClient<unknown>(`/questions/${questionId}`, {
+    responseEnvelope: "required",
+  })
+  const response = parseQuestionDetailResponse(rawResponse)
 
-  if ("question" in response) {
-    return {
-      ...(response.question ?? {}),
-      ...(response.options ? { options: response.options } : {}),
-      ...(response.parts
-        ? {
-            parts: response.parts.map((part) => ({
-              ...part,
-              marks: typeof part.marks === "string" ? Number.parseFloat(part.marks) : part.marks,
-            })),
-          }
-        : {}),
-      ...(response.media ? { media: response.media } : {}),
-    } as QuestionDetail
+  return {
+    id: response.question.id,
+    question_type: response.question.question_type,
+    stem_text: response.question.stem_text,
+    source: response.question.source,
+    source_badge: response.question.source_badge,
+    language: response.question.language,
+    options: response.options.map(({ label, option_text }) => ({ label, option_text })),
+    parts: response.parts.map(({ label, order_no, prompt_text, marks }) => ({
+      label,
+      order_no,
+      prompt_text,
+      marks,
+    })),
+    media: response.media,
   }
-
-  return response
 }
 
 export async function reportQuestion(
@@ -226,7 +335,7 @@ export async function reportQuestion(
   return apiClient<QuestionReportResponse>(`/questions/${questionId}/reports`, {
     method: "POST",
     body: payload,
-    requiresAuth: true,
+    auth: "required",
   })
 }
 
@@ -239,51 +348,89 @@ export async function generatePractice(
 ): Promise<PracticeGenerateResponse> {
   const payload = validatePracticeGenerateRequest(data)
 
-  return apiClient<PracticeGenerateResponse>("/practice/generate", {
+  const response = await apiClient<unknown>("/practice/generate", {
     method: "POST",
     body: payload,
-    requiresAuth: true,
+    auth: "required",
+    responseEnvelope: "required",
   })
+  return parsePracticeGenerateResponse(response)
+}
+
+// ============================================
+// REVISION API
+// ============================================
+
+export async function getRevisionItems(
+  kind: RevisionListKind,
+  query: RevisionListRequest = {}
+): Promise<RevisionListResponse> {
+  const response = await apiClient<unknown>(`/revision/${kind}`, {
+    params: {
+      subject_id: query.subject_id,
+      chapter_id: query.chapter_id,
+      page: query.page,
+      page_size: query.page_size,
+    },
+    auth: "required",
+    responseEnvelope: "required",
+  })
+  return parseRevisionListResponse(response, kind)
+}
+
+export async function getRevisionSummary(): Promise<RevisionSummaryResponse> {
+  const response = await apiClient<unknown>("/revision/summary", {
+    auth: "required",
+    responseEnvelope: "required",
+  })
+  return parseRevisionSummaryResponse(response)
+}
+
+export async function saveBookmark(practiceItemId: number): Promise<SaveBookmarkResponse> {
+  const response = await apiClient<unknown>(`/revision/bookmarks/practice-items/${practiceItemId}`, {
+    method: "PUT",
+    auth: "required",
+    responseEnvelope: "required",
+  })
+  return parseSaveBookmarkResponse(response)
+}
+
+export async function removeBookmark(questionId: number): Promise<RemoveBookmarkResponse> {
+  const response = await apiClient<unknown>(`/revision/bookmarks/questions/${questionId}`, {
+    method: "DELETE",
+    auth: "required",
+    responseEnvelope: "required",
+  })
+  return parseRemoveBookmarkResponse(response)
 }
 
 export async function getProgressDashboard(): Promise<ProgressDashboardResponse> {
-  return apiClient<ProgressDashboardResponse>("/profile/progress-dashboard", {
-    requiresAuth: true,
+  const response = await apiClient<unknown>("/profile/progress-dashboard", {
+    auth: "required",
+    responseEnvelope: "required",
   })
+  return parseProgressDashboardResponse(response)
 }
 
 export async function getPracticeSummary(
   practiceId: number
 ): Promise<PracticeSummaryResponse> {
-  const response = await apiClient<
-    | PracticeSummaryResponse
-    | {
-        session: {
-          id: number
-          exam_type_id: number
-          subject_id: number
-          mode: PracticeMode
-          attempt_status: AttemptStatus
-        }
-        totals?: { mcq_total?: number; cq_total?: number }
-      }
-  >(`/practice/${practiceId}/summary`, {
-    requiresAuth: true,
+  const rawResponse = await apiClient<unknown>(`/practice/${practiceId}/summary`, {
+    auth: "required",
+    responseEnvelope: "required",
   })
+  const response: RawPracticeSummaryResponse = parsePracticeSummaryResponse(rawResponse)
 
-  if ("session" in response) {
-    return {
-      practice_session_id: response.session.id,
-      exam_type_id: response.session.exam_type_id,
-      subject_id: response.session.subject_id,
-      mode: response.session.mode,
-      attempt_status: response.session.attempt_status,
-      mcq_total: response.totals?.mcq_total,
-      cq_total: response.totals?.cq_total,
-    }
+  return {
+    practice_session_id: response.session.id,
+    exam_type_id: response.session.exam_type_id,
+    subject_id: response.session.subject_id,
+    mode: response.session.mode,
+    question_pool: response.session.question_pool,
+    attempt_status: response.session.attempt_status,
+    mcq_total: response.totals.mcq_total,
+    cq_total: response.totals.cq_total,
   }
-
-  return response
 }
 
 export async function getPracticeItems(
@@ -291,10 +438,14 @@ export async function getPracticeItems(
   section: Section
 ): Promise<PracticeItem[]> {
   const pageSize = 20
-  const getPage = (page: number) => apiClient<PracticeItemsResponse>(`/practice/${practiceId}/items`, {
-    params: { section, page, page_size: pageSize },
-    requiresAuth: true,
-  })
+  const getPage = async (page: number) => {
+    const response = await apiClient<unknown>(`/practice/${practiceId}/items`, {
+      params: { section, page, page_size: pageSize },
+      auth: "required",
+      responseEnvelope: "required",
+    })
+    return parsePracticeItemsResponse(response)
+  }
 
   const firstResponse = await getPage(1)
 
@@ -327,24 +478,30 @@ export async function saveAnswers(
   practiceId: number,
   data: SaveAnswersRequest
 ): Promise<SaveAnswersResponse> {
-  return apiClient<SaveAnswersResponse>(`/practice/${practiceId}/answers`, {
+  const response = await apiClient<unknown>(`/practice/${practiceId}/answers`, {
     method: "PATCH",
     body: data,
-    requiresAuth: true,
+    auth: "required",
+    responseEnvelope: "required",
   })
+  return parseSaveAnswersResponse(response)
 }
 
 export async function getAnswers(practiceId: number): Promise<GetAnswersResponse> {
-  return apiClient<GetAnswersResponse>(`/practice/${practiceId}/answers`, {
-    requiresAuth: true,
+  const response = await apiClient<unknown>(`/practice/${practiceId}/answers`, {
+    auth: "required",
+    responseEnvelope: "required",
   })
+  return parseGetAnswersResponse(response)
 }
 
 export async function submitPractice(practiceId: number): Promise<SubmitResponse> {
-  return apiClient<SubmitResponse>(`/practice/${practiceId}/submit`, {
+  const response = await apiClient<unknown>(`/practice/${practiceId}/submit`, {
     method: "POST",
-    requiresAuth: true,
+    auth: "required",
+    responseEnvelope: "required",
   })
+  return parseSubmitResponse(response)
 }
 
 export async function getResults(
@@ -353,14 +510,16 @@ export async function getResults(
   page: number = 1,
   pageSize: number = 10
 ): Promise<ResultsResponse> {
-  return apiClient<ResultsResponse>(`/practice/${practiceId}/results`, {
+  const response = await apiClient<unknown>(`/practice/${practiceId}/results`, {
     params: {
       section,
       page,
       page_size: pageSize,
     },
-    requiresAuth: true,
+    auth: "required",
+    responseEnvelope: "required",
   })
+  return parseResultsResponse(response)
 }
 
 export async function getCompleteResults(
@@ -368,10 +527,6 @@ export async function getCompleteResults(
   section: Section = "MCQ"
 ): Promise<CompleteResultsResponse> {
   const pageSize = 20
-  // The existing practice contract accepts at most 50 MCQs per session. Keep
-  // this client-side check so malformed metadata cannot trigger unbounded
-  // pagination before a learner sees a score.
-  const maxMcqResults = 50
   const firstPage = await getResults(practiceId, section, 1, pageSize)
 
   if (
@@ -380,7 +535,6 @@ export async function getCompleteResults(
     firstPage.page !== 1 ||
     !Number.isSafeInteger(firstPage.total_in_section) ||
     firstPage.total_in_section < 0 ||
-    firstPage.total_in_section > maxMcqResults ||
     !Number.isSafeInteger(firstPage.page_size) ||
     firstPage.page_size < 1 ||
     firstPage.page_size > pageSize
@@ -402,6 +556,9 @@ export async function getCompleteResults(
       page.practice_session_id !== firstPage.practice_session_id ||
       page.section !== firstPage.section ||
       page.total_in_section !== firstPage.total_in_section ||
+      page.explanation_access.unlocked !== firstPage.explanation_access.unlocked ||
+      page.explanation_access.required_plan !== firstPage.explanation_access.required_plan ||
+      page.explanation_access.message !== firstPage.explanation_access.message ||
       page.page !== index + 1
     ) {
       throw new Error("The complete results response is inconsistent. Please retry.")
@@ -439,6 +596,7 @@ export async function getCompleteResults(
     practice_session_id: firstPage.practice_session_id,
     section: firstPage.section,
     total_in_section: firstPage.total_in_section,
+    explanation_access: firstPage.explanation_access,
     items,
   }
 }
@@ -448,11 +606,13 @@ export async function jumpToResult(
   section: Section,
   number: number
 ): Promise<ResultsJumpResponse> {
-  return apiClient<ResultsJumpResponse>(`/practice/${practiceId}/results/jump`, {
+  const response = await apiClient<unknown>(`/practice/${practiceId}/results/jump`, {
     params: {
       section,
       number,
     },
-    requiresAuth: true,
+    auth: "required",
+    responseEnvelope: "required",
   })
+  return parseResultsJumpResponse(response)
 }

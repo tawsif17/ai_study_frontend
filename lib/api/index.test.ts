@@ -1,10 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { getCompleteResults, getPracticeItems, getProgressDashboard, register, reportQuestion, resendVerification, submitContact, upgradeToPro, verifyEmail } from "./index"
-import { apiClient, apiClientWithResponse } from "./client"
+import { forgotPassword, generatePractice, getAnswers, getAuthMe, getCompleteResults, getDistricts, getPracticeItems, getPracticeSummary, getProgressDashboard, getQuestionById, getQuestions, getRevisionItems, getRevisionSummary, login, logout, register, removeBookmark, reportQuestion, resendVerification, resetPassword, saveAnswers, saveBookmark, submitContact, submitPractice, upgradeToPro, verifyEmail } from "./index"
+import { BANGLADESH_DISTRICT_NAMES } from "./types"
+import {
+  ApiContractError,
+  apiClient,
+  apiClientWithResponse,
+  notifySessionInvalid,
+  runWithSessionTermination,
+} from "./client"
 
 vi.mock("./client", () => ({
+  ApiClientError: class ApiClientError extends Error {},
+  ApiContractError: class ApiContractError extends Error {},
   apiClient: vi.fn(),
   apiClientWithResponse: vi.fn(),
+  notifySessionInvalid: vi.fn(),
+  runWithSessionTermination: vi.fn((operation: () => Promise<unknown>) => operation()),
 }))
 
 describe("auth API contract calls", () => {
@@ -20,6 +31,7 @@ describe("auth API contract calls", () => {
     expect(apiClient).toHaveBeenCalledWith("/auth/verify-email", {
       method: "POST",
       body: { token: "abc-token" },
+      responseEnvelope: "required",
     })
   })
 
@@ -52,6 +64,18 @@ describe("auth API contract calls", () => {
         city: "Dhaka",
         studentClass: 10,
       },
+      responseEnvelope: "required",
+    })
+  })
+
+  it("loads canonical districts through the exact public endpoint", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce({
+      districts: [...BANGLADESH_DISTRICT_NAMES],
+    })
+
+    await expect(getDistricts()).resolves.toEqual([...BANGLADESH_DISTRICT_NAMES])
+    expect(apiClient).toHaveBeenCalledWith("/locations/districts", {
+      responseEnvelope: "required",
     })
   })
 
@@ -65,7 +89,20 @@ describe("auth API contract calls", () => {
     expect(apiClient).toHaveBeenCalledWith("/auth/resend-verification", {
       method: "POST",
       body: { email: "student@example.com" },
+      responseEnvelope: "required",
     })
+  })
+
+  it("calls current-session logout with the exact empty authenticated request", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce({ message: "Logged out successfully" })
+
+    await expect(logout()).resolves.toEqual({ message: "Logged out successfully" })
+    expect(apiClient).toHaveBeenCalledWith("/auth/logout", {
+      method: "POST",
+      auth: "required",
+      responseEnvelope: "required",
+    })
+    expect(runWithSessionTermination).toHaveBeenCalledOnce()
   })
 
   it("calls upgrade to pro endpoint with exact contract payload", async () => {
@@ -79,7 +116,8 @@ describe("auth API contract calls", () => {
     expect(apiClient).toHaveBeenCalledWith("/auth/upgrade-to-pro", {
       method: "POST",
       body: {},
-      requiresAuth: true,
+      auth: "required",
+      responseEnvelope: "required",
     })
   })
 
@@ -101,7 +139,8 @@ describe("auth API contract calls", () => {
         email: "student@example.com",
         message: "I need help with the platform.",
       },
-      includeAuth: true,
+      auth: "optional",
+      responseEnvelope: "required",
     })
   })
 
@@ -126,7 +165,7 @@ describe("auth API contract calls", () => {
         reason_code: "OUT_OF_SYLLABUS",
         details: "This topic is no longer in the current SSC syllabus.",
       },
-      requiresAuth: true,
+      auth: "required",
     })
   })
 
@@ -150,7 +189,7 @@ describe("auth API contract calls", () => {
       body: {
         reason_code: "TYPO",
       },
-      requiresAuth: true,
+      auth: "required",
     })
   })
 })
@@ -160,6 +199,13 @@ describe("progress dashboard API contract", () => {
     const dashboard = {
       message: null,
       proficiency: { score: 68, trend_vs_last_week: 6 },
+      weak_areas_access: {
+        unlocked: true,
+        required_plan: null,
+        minimum_attempts: 5,
+        threshold_met: true,
+        message: null,
+      },
       weakness_ranking: [],
       recommendation: null,
     }
@@ -167,7 +213,306 @@ describe("progress dashboard API contract", () => {
 
     await expect(getProgressDashboard()).resolves.toEqual(dashboard)
     expect(apiClient).toHaveBeenCalledWith("/profile/progress-dashboard", {
-      requiresAuth: true,
+      auth: "required",
+      responseEnvelope: "required",
+    })
+  })
+})
+
+describe("practice entitlement API contracts", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("sends the exact Board-only generation request", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce({
+      practice_session_id: 123,
+      mcq_total: 20,
+      cq_total: 0,
+    })
+    await generatePractice({
+      exam_type_id: 1,
+      subject_id: 2,
+      mode: "MCQ",
+      question_pool: "BOARD_ONLY",
+      mcq_count: 20,
+      cq_count: 0,
+      language: "en",
+      selection: { type: "CHAPTERS", chapter_ids: [7] },
+    })
+    expect(apiClient).toHaveBeenCalledWith("/practice/generate", {
+      method: "POST",
+      body: {
+        exam_type_id: 1,
+        subject_id: 2,
+        mode: "MCQ",
+        question_pool: "BOARD_ONLY",
+        mcq_count: 20,
+        cq_count: 0,
+        language: "en",
+        selection: { type: "CHAPTERS", chapter_ids: [7] },
+      },
+      auth: "required",
+      responseEnvelope: "required",
+    })
+  })
+
+  it("loads and normalizes the required question pool from the session summary", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce({
+      session: {
+        id: 123,
+        user_id: "user-1",
+        exam_type_id: 1,
+        subject_id: 2,
+        selection_mode: "CHAPTERS",
+        syllabus_version_id: null,
+        mode: "MCQ",
+        question_pool: "BOARD_ONLY",
+        mcq_requested: 20,
+        cq_requested: 0,
+        attempt_status: "IN_PROGRESS",
+        created_at: "2026-07-29T00:00:00.000Z",
+        submitted_at: null,
+      },
+      totals: { mcq_total: 20, cq_total: 0 },
+    })
+    await expect(getPracticeSummary(123)).resolves.toMatchObject({
+      practice_session_id: 123,
+      question_pool: "BOARD_ONLY",
+    })
+    expect(apiClient).toHaveBeenCalledWith("/practice/123/summary", {
+      auth: "required",
+      responseEnvelope: "required",
+    })
+  })
+
+  it("requires Board badges through the exact question endpoints", async () => {
+    const listItem = {
+      id: 9001,
+      exam_type_id: 1,
+      subject_id: 2,
+      chapter_id: 7,
+      question_type: "MCQ",
+      stem_text: "2 + 2 = ?",
+      difficulty: 1,
+      source: "Dhaka Board 2025",
+      source_badge: "Dhaka Board · 2025",
+      language: "en",
+      created_at: "2026-07-29T00:00:00.000Z",
+    }
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce({ questions: [listItem] })
+      .mockResolvedValueOnce({
+        question: {
+          ...listItem,
+          status: "PUBLISHED",
+          updated_at: "2026-07-29T00:00:00.000Z",
+        },
+        options: [{ id: 1, question_id: 9001, label: "A", option_text: "4" }],
+        parts: [],
+        media: [],
+      })
+
+    await expect(getQuestions({ exam_type_id: 1, subject_id: 2 })).resolves.toEqual({
+      questions: [listItem],
+    })
+    await expect(getQuestionById(9001)).resolves.toMatchObject({
+      id: 9001,
+      source_badge: "Dhaka Board · 2025",
+    })
+    expect(apiClient).toHaveBeenNthCalledWith(1, "/questions", {
+      params: {
+        exam_type_id: 1,
+        subject_id: 2,
+        chapter_id: undefined,
+        question_type: undefined,
+        language: undefined,
+      },
+      auth: "required",
+      responseEnvelope: "required",
+    })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/questions/9001", {
+      responseEnvelope: "required",
+    })
+  })
+
+  it("normalizes the public prompt-only CQ detail shape", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce({
+      question: {
+        id: 9002,
+        exam_type_id: 1,
+        subject_id: 2,
+        chapter_id: 7,
+        question_type: "CQ",
+        stem_text: "Explain refraction.",
+        difficulty: 2,
+        source: null,
+        source_badge: null,
+        language: "en",
+        status: "PUBLISHED",
+        created_at: "2026-07-29T00:00:00.000Z",
+        updated_at: "2026-07-29T00:00:00.000Z",
+      },
+      options: [],
+      parts: [{
+        id: 10,
+        question_id: 9002,
+        label: "a",
+        order_no: 1,
+        prompt_text: "Define refraction.",
+        marks: 2,
+      }],
+      media: [],
+    })
+
+    await expect(getQuestionById(9002)).resolves.toMatchObject({
+      id: 9002,
+      parts: [{
+        label: "a",
+        order_no: 1,
+        prompt_text: "Define refraction.",
+        marks: 2,
+      }],
+    })
+  })
+})
+
+describe("revision API contract", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("normalizes password-recovery email and uses exact reset payloads", async () => {
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce({ message: "If the account is eligible, a password reset email has been sent." })
+      .mockResolvedValueOnce({ message: "Password reset successful. Please log in with your new password." })
+
+    await forgotPassword({ email: " Student@Example.COM " })
+    await resetPassword({ token: "reset-token", newPassword: "NewPassword123" })
+    expect(notifySessionInvalid).toHaveBeenCalledWith({ forceBroadcast: true })
+
+    expect(apiClient).toHaveBeenNthCalledWith(1, "/auth/forgot-password", {
+      method: "POST", body: { email: "student@example.com" }, responseEnvelope: "required",
+    })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/auth/reset-password", {
+      method: "POST", body: { token: "reset-token", newPassword: "NewPassword123" }, responseEnvelope: "required",
+    })
+  })
+
+  it("preserves the private-beta 202 registration result", async () => {
+    vi.mocked(apiClientWithResponse).mockResolvedValueOnce({
+      data: { message: "Your private beta request has been received." },
+      status: 202,
+    })
+
+    await expect(
+      register({
+        email: "student@example.com",
+        password: "Password123",
+        fullName: "Student Name",
+        school: "Example High School",
+        city: "Dhaka",
+        studentClass: 10,
+      })
+    ).resolves.toEqual({
+      data: { message: "Your private beta request has been received." },
+      status: 202,
+    })
+  })
+
+  it("normalizes auth emails and validates login and account responses", async () => {
+    const user = {
+      id: "student-id",
+      email: "student@example.com",
+      full_name: "Student Name",
+      role: "student",
+      plan_tier: "free" as const,
+      school: null,
+      city: null,
+      student_class: 10,
+      email_verified_at: "2026-07-20T00:00:00.000Z",
+      last_login_at: null,
+      created_at: "2026-07-20T00:00:00.000Z",
+      updated_at: "2026-07-20T00:00:00.000Z",
+    }
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce({ user, csrfToken: "signed-csrf-token" })
+      .mockResolvedValueOnce({ user })
+
+    await expect(login({ email: " Student@Example.COM ", password: "Password123" })).resolves.toEqual({
+      user,
+      csrfToken: "signed-csrf-token",
+    })
+    await expect(getAuthMe()).resolves.toEqual({ user })
+
+    expect(apiClient).toHaveBeenNthCalledWith(1, "/auth/login", {
+      method: "POST",
+      body: { email: "student@example.com", password: "Password123" },
+      responseEnvelope: "required",
+    })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/auth/me", {
+      auth: "required",
+      responseEnvelope: "required",
+    })
+  })
+
+  it("rejects unrecognized registration success statuses and malformed auth payloads", async () => {
+    vi.mocked(apiClientWithResponse).mockResolvedValueOnce({
+      data: { message: "Unexpected success" },
+      status: 200,
+    })
+
+    await expect(
+      register({
+        email: "student@example.com",
+        password: "Password123",
+        fullName: "Student Name",
+        school: "Example High School",
+        city: "Dhaka",
+        studentClass: 10,
+      })
+    ).rejects.toBeInstanceOf(ApiContractError)
+
+    vi.mocked(apiClient).mockResolvedValueOnce({ csrfToken: "missing-user" })
+    await expect(
+      login({ email: "student@example.com", password: "Password123" })
+    ).rejects.toBeInstanceOf(ApiContractError)
+  })
+
+  it("uses authenticated revision list and summary endpoints", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce({ page: 1, page_size: 20, total: 0, items: [] })
+    vi.mocked(apiClient).mockResolvedValueOnce({ bookmark_total: 0, active_mistake_total: 0, saved_question_total: 0, subjects: [] })
+
+    await getRevisionItems("bookmarks", { subject_id: 2, chapter_id: 7, page: 2, page_size: 20 })
+    await getRevisionSummary()
+
+    expect(apiClient).toHaveBeenNthCalledWith(1, "/revision/bookmarks", {
+      params: { subject_id: 2, chapter_id: 7, page: 2, page_size: 20 },
+      auth: "required",
+      responseEnvelope: "required",
+    })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/revision/summary", {
+      auth: "required",
+      responseEnvelope: "required",
+    })
+  })
+
+  it("saves from a practice item and removes only a manual bookmark", async () => {
+    vi.mocked(apiClient).mockResolvedValueOnce({ question_id: 42, bookmarked: true, bookmarked_at: "2026-07-20T00:00:00.000Z" })
+    vi.mocked(apiClient).mockResolvedValueOnce({ question_id: 42, bookmarked: false })
+
+    await saveBookmark(9)
+    await removeBookmark(42)
+
+    expect(apiClient).toHaveBeenNthCalledWith(1, "/revision/bookmarks/practice-items/9", {
+      method: "PUT",
+      auth: "required",
+      responseEnvelope: "required",
+    })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/revision/bookmarks/questions/42", {
+      method: "DELETE",
+      auth: "required",
+      responseEnvelope: "required",
     })
   })
 })
@@ -182,6 +527,7 @@ describe("practice items pagination", () => {
     question_id: 100 + number,
     order_no: number,
     section_order_no: number,
+    section: "MCQ" as const,
   })
 
   it("loads, combines, and orders every page in a 25-question session", async () => {
@@ -211,11 +557,13 @@ describe("practice items pagination", () => {
     )
     expect(apiClient).toHaveBeenNthCalledWith(1, "/practice/12/items", {
       params: { section: "MCQ", page: 1, page_size: 20 },
-      requiresAuth: true,
+      auth: "required",
+      responseEnvelope: "required",
     })
     expect(apiClient).toHaveBeenNthCalledWith(2, "/practice/12/items", {
       params: { section: "MCQ", page: 2, page_size: 20 },
-      requiresAuth: true,
+      auth: "required",
+      responseEnvelope: "required",
     })
   })
 
@@ -233,7 +581,8 @@ describe("practice items pagination", () => {
     expect(apiClient).toHaveBeenCalledTimes(1)
     expect(apiClient).toHaveBeenCalledWith("/practice/12/items", {
       params: { section: "MCQ", page: 1, page_size: 20 },
-      requiresAuth: true,
+      auth: "required",
+      responseEnvelope: "required",
     })
   })
 
@@ -253,6 +602,48 @@ describe("practice items pagination", () => {
   })
 })
 
+describe("active practice response envelopes", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("requires documented envelopes for answer reads, writes, and submission", async () => {
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce({ saved: true })
+      .mockResolvedValueOnce({ answers: [] })
+      .mockResolvedValueOnce({
+        practice_session_id: 12,
+        mcq_total: 10,
+        mcq_correct: 8,
+        mcq_score: 8,
+      })
+
+    await saveAnswers(12, {
+      answers: [{ practice_item_id: 7, answer_type: "MCQ", selected_option_label: "A" }],
+    })
+    await getAnswers(12)
+    await submitPractice(12)
+
+    expect(apiClient).toHaveBeenNthCalledWith(1, "/practice/12/answers", {
+      method: "PATCH",
+      body: {
+        answers: [{ practice_item_id: 7, answer_type: "MCQ", selected_option_label: "A" }],
+      },
+      auth: "required",
+      responseEnvelope: "required",
+    })
+    expect(apiClient).toHaveBeenNthCalledWith(2, "/practice/12/answers", {
+      auth: "required",
+      responseEnvelope: "required",
+    })
+    expect(apiClient).toHaveBeenNthCalledWith(3, "/practice/12/submit", {
+      method: "POST",
+      auth: "required",
+      responseEnvelope: "required",
+    })
+  })
+})
+
 describe("complete practice results pagination", () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -269,6 +660,7 @@ describe("complete practice results pagination", () => {
       explanation: null,
       difficulty: 1,
       source: null,
+      source_badge: null,
       language: "en" as const,
     },
     user_answer: { selected_option_label: "A" },
@@ -286,6 +678,7 @@ describe("complete practice results pagination", () => {
     page: pageNumber,
     page_size: 20,
     total_in_section: total,
+    explanation_access: { unlocked: true, required_plan: null, message: null },
     items,
   })
 
@@ -298,7 +691,8 @@ describe("complete practice results pagination", () => {
     })
     expect(apiClient).toHaveBeenCalledWith("/practice/12/results", {
       params: { section: "MCQ", page: 1, page_size: 20 },
-      requiresAuth: true,
+      auth: "required",
+      responseEnvelope: "required",
     })
   })
 
@@ -333,6 +727,18 @@ describe("complete practice results pagination", () => {
     expect(apiClient).toHaveBeenCalledTimes(3)
   })
 
+  it("does not reject a contract-valid result set based on an undocumented count cap", async () => {
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce(page(1, 51, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))))
+      .mockResolvedValueOnce(page(2, 51, Array.from({ length: 20 }, (_, index) => resultItem(index + 21))))
+      .mockResolvedValueOnce(page(3, 51, Array.from({ length: 11 }, (_, index) => resultItem(index + 41))))
+
+    await expect(getCompleteResults(12)).resolves.toMatchObject({
+      total_in_section: 51,
+      items: expect.arrayContaining([resultItem(51)]),
+    })
+  })
+
   it("loads exactly one remaining page for a 25-question session", async () => {
     vi.mocked(apiClient)
       .mockResolvedValueOnce(page(1, 25, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))))
@@ -341,11 +747,13 @@ describe("complete practice results pagination", () => {
     await expect(getCompleteResults(12)).resolves.toMatchObject({ total_in_section: 25 })
     expect(apiClient).toHaveBeenNthCalledWith(1, "/practice/12/results", {
       params: { section: "MCQ", page: 1, page_size: 20 },
-      requiresAuth: true,
+      auth: "required",
+      responseEnvelope: "required",
     })
     expect(apiClient).toHaveBeenNthCalledWith(2, "/practice/12/results", {
       params: { section: "MCQ", page: 2, page_size: 20 },
-      requiresAuth: true,
+      auth: "required",
+      responseEnvelope: "required",
     })
     expect(apiClient).toHaveBeenCalledTimes(2)
   })
@@ -387,14 +795,7 @@ describe("complete practice results pagination", () => {
     vi.mocked(apiClient)
       .mockResolvedValueOnce({ ...page(1, 20, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))), total_in_section: -1 })
 
-    await expect(getCompleteResults(12)).rejects.toThrow("response is inconsistent")
-    expect(apiClient).toHaveBeenCalledTimes(1)
-
-    vi.mocked(apiClient).mockReset()
-    vi.mocked(apiClient)
-      .mockResolvedValueOnce({ ...page(1, 51, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))) })
-
-    await expect(getCompleteResults(12)).rejects.toThrow("response is inconsistent")
+    await expect(getCompleteResults(12)).rejects.toBeInstanceOf(ApiContractError)
     expect(apiClient).toHaveBeenCalledTimes(1)
 
     vi.mocked(apiClient).mockReset()
@@ -409,6 +810,21 @@ describe("complete practice results pagination", () => {
     vi.mocked(apiClient)
       .mockResolvedValueOnce(page(1, 21, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))))
       .mockResolvedValueOnce(page(2, 22, [resultItem(21)]))
+
+    await expect(getCompleteResults(12)).rejects.toThrow("response is inconsistent")
+  })
+
+  it("rejects inconsistent explanation access across result pages", async () => {
+    vi.mocked(apiClient)
+      .mockResolvedValueOnce(page(1, 21, Array.from({ length: 20 }, (_, index) => resultItem(index + 1))))
+      .mockResolvedValueOnce({
+        ...page(2, 21, [resultItem(21)]),
+        explanation_access: {
+          unlocked: false,
+          required_plan: "pro",
+          message: "Upgrade to Beta Pro to unlock explanations and revision.",
+        },
+      })
 
     await expect(getCompleteResults(12)).rejects.toThrow("response is inconsistent")
   })

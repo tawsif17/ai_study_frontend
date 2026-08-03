@@ -27,8 +27,14 @@ export function PageShell({
 }: PageShellProps) {
   return (
     <div className={cn("min-h-screen flex flex-col bg-background", className)}>
+      <a
+        href="#main-content"
+        className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-md bg-background px-4 py-3 font-semibold text-foreground shadow-lg ring-2 ring-ring transition-transform focus:translate-y-0"
+      >
+        Skip to main content
+      </a>
       {showNavbar && <Navbar />}
-      <main className={cn("flex-1", mainClassName)}>{children}</main>
+      <main id="main-content" tabIndex={-1} className={cn("flex-1", mainClassName)}>{children}</main>
       {showFooter && <Footer />}
     </div>
   )

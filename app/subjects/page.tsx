@@ -3,6 +3,7 @@ import { SubjectsContent } from "./subjects-content"
 
 export const metadata: Metadata = {
   title: "Practice | Shikkha Buddy",
+  alternates: { canonical: "/subjects" },
   description: "Choose an SSC subject, then select chapters and start focused MCQ practice in Shikkha Buddy.",
   openGraph: {
     title: "Practice | Shikkha Buddy",

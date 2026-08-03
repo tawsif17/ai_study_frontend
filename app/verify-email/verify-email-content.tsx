@@ -7,31 +7,47 @@ import { PageShell } from "@/components/page-shell"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { verifyEmail } from "@/lib/api"
-import { formatApiError } from "@/lib/api/client"
+import {
+  mapVerificationRecovery,
+  type VerificationRecovery,
+} from "@/lib/verification-form-recovery"
 
 type VerifyStatus = "idle" | "loading" | "success" | "error" | "empty"
 
 export function VerifyEmailContent() {
   const searchParams = useSearchParams()
-  const token = searchParams.get("token")
+  const [token] = useState(() => searchParams.get("token"))
   const hasAttempted = useRef(false)
   const [status, setStatus] = useState<VerifyStatus>("idle")
   const [message, setMessage] = useState("")
+  const [recovery, setRecovery] = useState<VerificationRecovery | null>(null)
 
   const verifyToken = useCallback(async (emailToken: string) => {
     setStatus("loading")
     setMessage("")
+    setRecovery(null)
     try {
       const response = await verifyEmail({ token: emailToken })
       setStatus("success")
       setMessage(response.message)
     } catch (error) {
+      const nextRecovery = mapVerificationRecovery(error)
       setStatus("error")
-      setMessage(formatApiError(error))
+      setRecovery(nextRecovery)
+      setMessage(nextRecovery.message)
     }
   }, [])
 
   useEffect(() => {
+    const url = new URL(window.location.href)
+    url.searchParams.delete("token")
+    const query = url.searchParams.toString()
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${query ? `?${query}` : ""}${url.hash}`
+    )
+
     if (!token) {
       setStatus("empty")
       setMessage("Verification token is missing.")
@@ -67,7 +83,8 @@ export function VerifyEmailContent() {
 
             {status === "error" && (
               <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
-                {message || "Verification failed. Please try again."}
+                <p className="font-medium">{recovery?.title ?? "Verification failed"}</p>
+                <p className="mt-1">{message || "Verification failed. Please request a new email."}</p>
               </div>
             )}
 
@@ -77,7 +94,7 @@ export function VerifyEmailContent() {
               </div>
             )}
 
-            {status === "error" && token && (
+            {status === "error" && token && recovery?.retryable && (
               <Button className="w-full rounded-lg" onClick={() => void verifyToken(token)}>
                 Try again
               </Button>
@@ -89,9 +106,15 @@ export function VerifyEmailContent() {
               </Button>
             )}
 
-            {(status === "empty" || status === "error") && (
+            {(status === "empty" || (status === "error" && recovery?.nextAction === "resend")) && (
               <Button asChild variant="outline" className="w-full rounded-lg bg-transparent">
                 <Link href="/resend-verification">Resend verification email</Link>
+              </Button>
+            )}
+
+            {status === "error" && recovery?.nextAction === "login" && (
+              <Button asChild className="w-full rounded-lg">
+                <Link href="/login">Go to login</Link>
               </Button>
             )}
           </CardContent>

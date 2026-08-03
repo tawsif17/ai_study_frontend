@@ -5,9 +5,18 @@ import type React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Menu, X, LogOut } from "@/components/icons"
 import { BrandLogo } from "@/components/brand-logo"
 import { useState } from "react"
+import type { AuthUser } from "@/lib/api"
+import { formatApiError } from "@/lib/api/client"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/auth-context"
 
@@ -35,8 +44,15 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
   )
 }
 
+function getInitials(name: string | undefined) {
+  const parts = name?.trim().split(/\s+/).filter(Boolean) ?? []
+
+  return parts.slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "SB"
+}
+
 export function Navbar() {
-  const { isAuthenticated, logout, isLoading } = useAuth()
+  const { authStatus, isAuthenticated, logout, isLoading, user } = useAuth()
+  const isSessionIndeterminate = authStatus === "retryable-refresh-error"
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/70">
@@ -47,6 +63,7 @@ export function Navbar() {
         </Link>
 
         <div className="hidden lg:flex items-center gap-8">
+          <NavLink href="/">Home</NavLink>
           <NavLink href="/subjects">Practice</NavLink>
           <NavLink href="/how-it-works">How it works</NavLink>
           <NavLink href="/pricing">Pricing</NavLink>
@@ -54,13 +71,10 @@ export function Navbar() {
 
         {/* Auth Buttons - Hidden on mobile */}
         <div className="hidden lg:flex items-center gap-3">
-          {!isLoading && (
+          {!isLoading && !isSessionIndeterminate && (
             <>
               {isAuthenticated ? (
-                <Button variant="ghost" size="sm" onClick={logout} className="min-h-11 gap-2">
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </Button>
+                <AccountMenu user={user} logout={logout} />
               ) : (
                 <>
                   <Button variant="ghost" size="sm" className="min-h-11" asChild>
@@ -82,25 +96,103 @@ export function Navbar() {
   )
 }
 
+function AccountMenu({
+  user,
+  logout,
+  onAfterAction,
+}: {
+  user: AuthUser | null
+  logout: () => Promise<void>
+  onAfterAction?: () => void
+}) {
+  const initials = getInitials(user?.full_name)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [logoutError, setLogoutError] = useState<string | null>(null)
+  const accountMenuLabel = user?.full_name
+    ? `Open ${user.full_name}'s account menu`
+    : "Open account menu"
+
+  const handleLogout = async (event: Event) => {
+    event.preventDefault()
+    if (isLoggingOut) return
+    setIsLoggingOut(true)
+    setLogoutError(null)
+    try {
+      await logout()
+      onAfterAction?.()
+    } catch (error) {
+      setLogoutError(formatApiError(error))
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          type="button"
+          className="size-11 rounded-full p-0"
+          aria-label={accountMenuLabel}
+        >
+          <span className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+            {initials}
+          </span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48 p-1">
+        <DropdownMenuItem asChild className="min-h-11 cursor-pointer px-3">
+          <Link href="/profile" onClick={onAfterAction}>Profile</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="min-h-11 cursor-pointer px-3">
+          <Link href="/dashboard/weak-areas" onClick={onAfterAction}>Dashboard</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="min-h-11 cursor-pointer px-3">
+          <Link href="/bookmarks" onClick={onAfterAction}>Bookmarks</Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="min-h-11 cursor-pointer px-3"
+          disabled={isLoggingOut}
+          onSelect={(event) => void handleLogout(event)}
+        >
+          <LogOut className="h-4 w-4" aria-hidden="true" />
+          {isLoggingOut ? "Logging out…" : "Logout"}
+        </DropdownMenuItem>
+        {logoutError ? (
+          <p className="px-3 py-2 text-xs leading-5 text-destructive" role="alert">
+            {logoutError}
+          </p>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
-  const { isAuthenticated, logout, isLoading } = useAuth()
+  const { authStatus, isAuthenticated, logout, isLoading, user } = useAuth()
+  const isSessionIndeterminate = authStatus === "retryable-refresh-error"
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/"
     return pathname.startsWith(href)
   }
 
-  const handleLogout = () => {
-    logout()
-    setIsOpen(false)
-  }
-
   const menuId = "mobile-navigation"
 
   return (
-    <div className="lg:hidden">
+    <div className="flex items-center gap-1 lg:hidden">
+      {!isLoading && !isSessionIndeterminate && isAuthenticated && (
+        <AccountMenu
+          user={user}
+          logout={logout}
+          onAfterAction={() => setIsOpen(false)}
+        />
+      )}
       <Button
         variant="ghost"
         size="icon"
@@ -117,6 +209,17 @@ function MobileMenu() {
       {isOpen && (
         <div id={menuId} className="absolute left-0 right-0 top-full border-b border-border bg-background/95 p-4 shadow-lg backdrop-blur">
           <div className="flex flex-col gap-1">
+            <Link
+              href="/"
+              aria-current={isActive("/") ? "page" : undefined}
+              onClick={() => setIsOpen(false)}
+              className={cn(
+                "flex min-h-11 items-center rounded-md px-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                isActive("/") ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary",
+              )}
+            >
+              Home
+            </Link>
             <Link
               href="/subjects"
               aria-current={isActive("/subjects") ? "page" : undefined}
@@ -150,14 +253,9 @@ function MobileMenu() {
             >
               Pricing
             </Link>
-            {!isLoading && (
+            {!isLoading && !isSessionIndeterminate && (
               <div className="flex flex-col gap-2 pt-2 border-t border-border">
-                {isAuthenticated ? (
-                  <Button variant="ghost" size="sm" className="min-h-11 justify-start gap-2" onClick={handleLogout}>
-                    <LogOut className="h-4 w-4" aria-hidden="true" />
-                    Logout
-                  </Button>
-                ) : (
+                {!isAuthenticated && (
                   <>
                     <Button variant="ghost" size="sm" className="min-h-11 justify-start" asChild>
                       <Link href="/login" onClick={() => setIsOpen(false)}>Login</Link>

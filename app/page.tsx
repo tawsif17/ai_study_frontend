@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { AuthGatedLink } from "@/components/auth-gated-link"
+import type { BetaSubjectKey } from "@/lib/beta-subjects"
 import { FeaturesSection } from "@/components/features-section"
 import { HeroSection } from "@/components/hero-section"
 import {
@@ -20,42 +21,47 @@ import { Button } from "@/components/ui/button"
 
 export const metadata: Metadata = {
   title: "SSC MCQ Practice | Shikkha Buddy",
+  alternates: { canonical: "/" },
   description:
-    "Practice SSC exam MCQs for General Math, Physics, and Chemistry with answer explanations and mistake review.",
+    "Practice AI-generated SSC MCQs for General Math, Physics, and Chemistry, then review correct answers after each submitted session.",
   openGraph: {
     title: "SSC MCQ Practice | Shikkha Buddy",
     description:
-      "Practice SSC exam MCQs for General Math, Physics, and Chemistry with answer explanations and mistake review.",
+      "Practice AI-generated SSC MCQs for General Math, Physics, and Chemistry, then review correct answers after each submitted session.",
   },
   twitter: {
     card: "summary",
     title: "SSC MCQ Practice | Shikkha Buddy",
     description:
-      "Practice SSC exam MCQs for General Math, Physics, and Chemistry with answer explanations and mistake review.",
+      "Practice AI-generated SSC MCQs for General Math, Physics, and Chemistry, then review correct answers after each submitted session.",
   },
 }
 
-const freePracticeBenefits = ["Topic-wise practice", "Answer explanations", "Mistake review"]
+const freePracticeBenefits = ["AI-generated MCQs", "Topic-wise practice", "Correct answers after you submit"]
 
 const subjects: Array<{
+  key: BetaSubjectKey
   title: string
   description: string
   icon: IconComponent
   tone: string
 }> = [
   {
+    key: "general-math",
     title: "General Math",
     description: "Algebra, Geometry, Arithmetic, Mensuration",
     icon: Calculator,
     tone: "from-[#7c6df2] to-[#5266d8]",
   },
   {
+    key: "physics",
     title: "Physics",
     description: "Light, Motion, Force, Electricity, Waves",
     icon: Atom,
     tone: "from-[#57c785] to-[#12964f]",
   },
   {
+    key: "chemistry",
     title: "Chemistry",
     description: "Structure, Bonding, Reactions, Acids & Bases",
     icon: FlaskConical,
@@ -79,8 +85,8 @@ const steps: Array<{
     icon: Target,
   },
   {
-    title: "Review and revise",
-    description: "Check your mistakes and improve step by step.",
+    title: "Review your answers",
+    description: "See the correct answers after you submit the session.",
     icon: Zap,
   },
 ]
@@ -107,7 +113,7 @@ function StartPracticingSection() {
             Start practicing
           </h2>
           <p className="mt-3 text-sm leading-6 text-muted-foreground md:text-base">
-            Begin with free MCQ practice. Activate beta Pro access later only if board-only sets and pro features help you revise.
+            Start with AI-generated MCQs and correct answers. Beta Pro adds explanations, Bookmarks and Mistakes revision, Weak Area Analysis, and Board-only MCQ sets.
           </p>
         </div>
 
@@ -120,7 +126,7 @@ function StartPracticingSection() {
               </Badge>
             </div>
             <p className="mt-5 max-w-xl text-sm leading-7 text-muted-foreground md:text-base">
-              AI-generated MCQs based on past board-question patterns, with past board questions mixed in.
+              Practise AI-generated MCQs by subject and chapter, then see the correct answers after you submit.
             </p>
 
             <div className="my-7 border-t border-border" />
@@ -135,7 +141,9 @@ function StartPracticingSection() {
             </ul>
 
             <Button className="mt-8 h-14 w-full rounded-lg text-base shadow-primary" asChild>
-              <AuthGatedLink href="/subjects">Start free practice</AuthGatedLink>
+              <AuthGatedLink href="/subjects" authenticatedChildren="Practice">
+                Start free practice
+              </AuthGatedLink>
             </Button>
           </div>
 
@@ -145,15 +153,15 @@ function StartPracticingSection() {
               <Link
                 href="/pricing"
                 className="group flex items-center justify-between gap-4 rounded-xl border border-[#ffd89a] bg-[#fffaf2] p-5 transition-colors hover:border-[#f79009] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                aria-label="Board-only practice, Pro option, opens pricing"
+                aria-label="Board-only MCQ sets, Beta Pro option, opens pricing"
               >
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <h4 className="text-base font-bold text-foreground">Board-only practice</h4>
-                    <Badge className="border-transparent bg-[#fff2cc] text-[#dc6803] hover:bg-[#fff2cc]">Pro</Badge>
+                    <h4 className="text-base font-bold text-foreground">Board-only MCQ sets</h4>
+                    <Badge className="border-transparent bg-primary/10 text-primary hover:bg-primary/10">Beta Pro</Badge>
                   </div>
                   <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
-                    Practice only past board questions when you want stricter exam revision.
+                    A Beta Pro revision feature for focused past-board-question practice.
                   </p>
                 </div>
                 <ChevronRight className="h-6 w-6 shrink-0 text-foreground transition-transform group-hover:translate-x-0.5" />
@@ -223,6 +231,7 @@ function SubjectsSection() {
 
 function SubjectPreviewCard({ subject }: { subject: (typeof subjects)[number] }) {
   const Icon = subject.icon
+  const destination = `/subjects?subject=${subject.key}`
 
   return (
     <article className="rounded-2xl border border-border bg-card p-6 shadow-sm">
@@ -244,12 +253,9 @@ function SubjectPreviewCard({ subject }: { subject: (typeof subjects)[number] })
         MCQ practice available
       </p>
 
-      <AuthGatedLink
-        href="/subjects"
-        className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-lg border border-primary bg-background px-5 text-sm font-bold text-primary transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-      >
-        View topics
-      </AuthGatedLink>
+      <Button className="mt-6 h-13 w-full rounded-lg text-base shadow-primary" asChild>
+        <AuthGatedLink href={destination}>Start Practice</AuthGatedLink>
+      </Button>
     </article>
   )
 }
@@ -262,15 +268,12 @@ function HowItWorksSection() {
           How it works
         </h2>
         <ol className="mt-8 grid gap-7 md:grid-cols-3">
-          {steps.map((step, index) => {
+          {steps.map((step) => {
             const Icon = step.icon
 
             return (
               <li key={step.title} className="relative text-center">
-                <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                  {index + 1}
-                </div>
-                <div className="mx-auto mt-3 flex h-12 w-12 items-center justify-center rounded-full border border-primary/20 bg-background text-primary shadow-sm">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-primary/20 bg-background text-primary shadow-sm">
                   <Icon className="h-6 w-6" aria-hidden="true" />
                 </div>
                 <h3 className="mt-4 text-sm font-bold text-foreground">{step.title}</h3>
@@ -311,11 +314,12 @@ function FinalCtaSection() {
               Start your first SSC practice session today
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground md:text-base">
-              Try free MCQ practice now. Activate beta Pro access later only if you want board-only sets and other pro features
-              designed to make your practice smarter.
+              Start with AI-generated MCQs and correct answers. Beta Pro adds explanations, Bookmarks and Mistakes revision, Weak Area Analysis, and Board-only MCQ sets.
             </p>
             <Button className="mt-5 h-11 w-full rounded-lg px-10 shadow-primary sm:w-auto" asChild>
-              <AuthGatedLink href="/subjects">Start free</AuthGatedLink>
+              <AuthGatedLink href="/subjects" authenticatedChildren="Practice">
+                Start free
+              </AuthGatedLink>
             </Button>
             <p className="mt-2 text-xs text-muted-foreground">No credit card required.</p>
           </div>

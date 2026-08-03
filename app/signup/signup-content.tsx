@@ -2,7 +2,6 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { AlertCircle, MailCheck } from "lucide-react"
 import { PageShell } from "@/components/page-shell"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -13,16 +12,45 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { GraduationCap } from "@/components/icons"
 import { useAuth } from "@/lib/auth-context"
-import { formatApiError } from "@/lib/api/client"
+import { ApiClientError, formatApiError } from "@/lib/api/client"
+import { useDistricts } from "@/lib/api/hooks"
+import type { DistrictName } from "@/lib/api"
+import {
+  isUncertainSignupDeliveryError,
+  isValidVerificationEmail,
+  normalizeVerificationEmail,
+} from "@/lib/verification-form-recovery"
+import { DistrictCombobox } from "./district-combobox"
+
+type SignupField = "name" | "email" | "password" | "school" | "city" | "class"
+type SignupFieldErrors = Partial<Record<SignupField, string>>
 
 export function SignupContent() {
-  const router = useRouter()
   const { register } = useAuth()
+  const {
+    districts,
+    isLoading: districtsLoading,
+    isValidating: districtsValidating,
+    isError: districtsError,
+    mutate: retryDistricts,
+  } = useDistricts()
 
   const [isLoading, setIsLoading] = useState(false)
+  const [districtOpen, setDistrictOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
+  const [registrationComplete, setRegistrationComplete] = useState(false)
+  const [submittedEmail, setSubmittedEmail] = useState("")
+  const [deliveryUncertain, setDeliveryUncertain] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<SignupFieldErrors>({})
+  const [formData, setFormData] = useState<{
+    name: string
+    email: string
+    password: string
+    school: string
+    city: DistrictName | ""
+    class: string
+  }>({
     name: "",
     email: "",
     password: "",
@@ -33,17 +61,37 @@ export function SignupContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const normalizedEmail = normalizeVerificationEmail(formData.email)
+    const selectedDistrict = formData.city
+    const nextFieldErrors: SignupFieldErrors = {}
+    if (!formData.name.trim()) nextFieldErrors.name = "Enter your full name."
+    if (!isValidVerificationEmail(normalizedEmail)) nextFieldErrors.email = "Enter a valid email address."
+    if (formData.password.length < 8 || !/[A-Z]/.test(formData.password) || !/[a-z]/.test(formData.password) || !/[0-9]/.test(formData.password)) {
+      nextFieldErrors.password = "Use at least 8 characters with uppercase, lowercase, and a number."
+    }
+    if (!formData.school.trim()) nextFieldErrors.school = "Enter your school name."
+    if (!selectedDistrict || !districts?.includes(selectedDistrict)) {
+      nextFieldErrors.city = "Select a valid Bangladesh district."
+    }
+    if (!formData.class) nextFieldErrors.class = "Select your class."
+    setFieldErrors(nextFieldErrors)
+    if (Object.keys(nextFieldErrors).length > 0) return
+    if (!selectedDistrict) return
+
+    setSubmittedEmail(normalizedEmail)
+    setFormData((current) => ({ ...current, email: normalizedEmail }))
     setError(null)
     setSuccess(null)
+    setDeliveryUncertain(false)
     setIsLoading(true)
 
     try {
       const response = await register({
-        email: formData.email,
+        email: normalizedEmail,
         password: formData.password,
         fullName: formData.name,
         school: formData.school,
-        city: formData.city,
+        city: selectedDistrict,
         studentClass: Number.parseInt(formData.class, 10),
       })
       if (response.status === 202) {
@@ -51,10 +99,35 @@ export function SignupContent() {
         setFormData((current) => ({ ...current, password: "" }))
         return
       }
-      const params = new URLSearchParams({ registered: "true", email: formData.email })
-      router.push(`/login?${params.toString()}`)
+      if (response.status !== 201) {
+        throw new Error("We couldn't confirm that your account was created. Please try again.")
+      }
+      setRegistrationComplete(true)
+      setFormData((current) => ({ ...current, password: "" }))
     } catch (err) {
-      setError(formatApiError(err))
+      if (
+        err instanceof ApiClientError &&
+        err.status === 400 &&
+        err.message === "City must be a valid Bangladesh district"
+      ) {
+        setFormData((current) => ({ ...current, city: "" }))
+        setFieldErrors((current) => ({ ...current, city: err.message }))
+        setDistrictOpen(false)
+        try {
+          const refreshedDistricts = await retryDistricts()
+          if (refreshedDistricts) setDistrictOpen(true)
+        } catch {
+          // The hook exposes the retry failure alongside the district control.
+        }
+        return
+      }
+      const uncertain = isUncertainSignupDeliveryError(err)
+      setDeliveryUncertain(uncertain)
+      setError(
+        uncertain
+          ? "We couldn't confirm whether your verification email was sent. You can safely request another verification email."
+          : formatApiError(err)
+      )
     } finally {
       setIsLoading(false)
     }
@@ -74,7 +147,26 @@ export function SignupContent() {
             <CardDescription>Start focused SSC science practice</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {registrationComplete ? (
+              <div className="space-y-5 text-center">
+                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-700" role="status" aria-live="polite">
+                  <MailCheck className="mx-auto mb-3 h-8 w-8" aria-hidden="true" />
+                  <h2 className="text-lg font-semibold text-foreground">Check your email</h2>
+                  <p className="mt-2 leading-6">
+                    We sent a verification link to <span className="font-medium">{submittedEmail}</span>. Click the link to verify your account before signing in.
+                  </p>
+                </div>
+                <Button asChild className="w-full rounded-lg">
+                  <Link href={`/resend-verification?email=${encodeURIComponent(submittedEmail)}`}>
+                    Resend verification email
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="w-full rounded-lg bg-transparent">
+                  <Link href={`/login?email=${encodeURIComponent(submittedEmail)}`}>Go to login</Link>
+                </Button>
+              </div>
+            ) : (
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               {success && (
                 <Alert variant="success" role="status">
                   <MailCheck aria-hidden="true" />
@@ -91,17 +183,33 @@ export function SignupContent() {
                 </Alert>
               )}
 
+              {deliveryUncertain && submittedEmail && (
+                <Button asChild variant="outline" className="w-full rounded-lg bg-transparent">
+                  <Link href={`/resend-verification?email=${encodeURIComponent(submittedEmail)}`}>
+                    Resend verification email
+                  </Link>
+                </Button>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input
                   id="name"
                   type="text"
+                  name="name"
+                  autoComplete="name"
                   placeholder="Your full name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, name: e.target.value })
+                    setFieldErrors((current) => ({ ...current, name: undefined }))
+                  }}
+                  aria-invalid={Boolean(fieldErrors.name)}
+                  aria-describedby={fieldErrors.name ? "signup-name-error" : undefined}
                   required
                   disabled={isLoading}
                 />
+                {fieldErrors.name && <p id="signup-name-error" className="text-sm text-destructive">{fieldErrors.name}</p>}
               </div>
 
               <div className="space-y-2">
@@ -109,12 +217,20 @@ export function SignupContent() {
                 <Input
                   id="email"
                   type="email"
+                  name="email"
+                  autoComplete="email"
                   placeholder="you@example.com"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value })
+                    setFieldErrors((current) => ({ ...current, email: undefined }))
+                  }}
+                  aria-invalid={Boolean(fieldErrors.email)}
+                  aria-describedby={fieldErrors.email ? "signup-email-error" : undefined}
                   required
                   disabled={isLoading}
                 />
+                {fieldErrors.email && <p id="signup-email-error" className="text-sm text-destructive">{fieldErrors.email}</p>}
               </div>
 
               <div className="space-y-2">
@@ -122,12 +238,23 @@ export function SignupContent() {
                 <Input
                   id="password"
                   type="password"
+                  name="password"
+                  autoComplete="new-password"
                   placeholder="Create a password"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, password: e.target.value })
+                    setFieldErrors((current) => ({ ...current, password: undefined }))
+                  }}
+                  aria-invalid={Boolean(fieldErrors.password)}
+                  aria-describedby={fieldErrors.password ? "signup-password-requirements signup-password-error" : "signup-password-requirements"}
                   required
                   disabled={isLoading}
                 />
+                <p id="signup-password-requirements" className="text-xs text-muted-foreground">
+                  Use at least 8 characters, including uppercase, lowercase, and a number.
+                </p>
+                {fieldErrors.password && <p id="signup-password-error" className="text-sm text-destructive">{fieldErrors.password}</p>}
               </div>
 
               <div className="space-y-2">
@@ -135,36 +262,91 @@ export function SignupContent() {
                 <Input
                   id="school"
                   type="text"
+                  name="organization"
+                  autoComplete="organization"
                   placeholder="Your school name"
                   value={formData.school}
-                  onChange={(e) => setFormData({ ...formData, school: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, school: e.target.value })
+                    setFieldErrors((current) => ({ ...current, school: undefined }))
+                  }}
+                  aria-invalid={Boolean(fieldErrors.school)}
+                  aria-describedby={fieldErrors.school ? "signup-school-error" : undefined}
                   required
                   disabled={isLoading}
                 />
+                {fieldErrors.school && <p id="signup-school-error" className="text-sm text-destructive">{fieldErrors.school}</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <Input
+                  <Label htmlFor="city">District</Label>
+                  <DistrictCombobox
                     id="city"
-                    type="text"
-                    placeholder="Your city"
                     value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    required
-                    disabled={isLoading}
+                    districts={districts ?? []}
+                    open={districtOpen}
+                    onOpenChange={setDistrictOpen}
+                    onValueChange={(value) => {
+                      setFormData((current) => ({ ...current, city: value }))
+                      setFieldErrors((current) => ({ ...current, city: undefined }))
+                    }}
+                    invalid={Boolean(fieldErrors.city)}
+                    describedBy={[
+                      fieldErrors.city ? "signup-city-error" : "",
+                      districtsLoading || districtsValidating ? "signup-district-loading" : "",
+                      districtsError ? "signup-district-load-error" : "",
+                    ].filter(Boolean).join(" ") || undefined}
+                    disabled={
+                      isLoading ||
+                      districtsLoading ||
+                      districtsValidating ||
+                      Boolean(districtsError) ||
+                      !districts
+                    }
                   />
+                  {(districtsLoading || districtsValidating) && (
+                    <p
+                      id="signup-district-loading"
+                      className="text-sm text-muted-foreground"
+                      role="status"
+                    >
+                      {districtsValidating && !districtsLoading
+                        ? "Refreshing districts..."
+                        : "Loading districts..."}
+                    </p>
+                  )}
+                  {districtsError && !districtsValidating && (
+                    <div
+                      id="signup-district-load-error"
+                      className="space-y-2 text-sm text-destructive"
+                      role="alert"
+                    >
+                      <p>We couldn&apos;t load the district list. Check your connection and retry.</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void retryDistricts()}
+                      >
+                        Retry districts
+                      </Button>
+                    </div>
+                  )}
+                  {fieldErrors.city && <p id="signup-city-error" className="text-sm text-destructive">{fieldErrors.city}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="class">Class</Label>
                   <Select
                     value={formData.class}
-                    onValueChange={(value) => setFormData({ ...formData, class: value })}
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, class: value })
+                      setFieldErrors((current) => ({ ...current, class: undefined }))
+                    }}
                     disabled={isLoading}
                   >
-                    <SelectTrigger id="class">
+                    <SelectTrigger id="class" aria-invalid={Boolean(fieldErrors.class)} aria-describedby={fieldErrors.class ? "signup-class-error" : undefined}>
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
@@ -172,10 +354,21 @@ export function SignupContent() {
                       <SelectItem value="10">Class 10</SelectItem>
                     </SelectContent>
                   </Select>
+                  {fieldErrors.class && <p id="signup-class-error" className="text-sm text-destructive">{fieldErrors.class}</p>}
                 </div>
               </div>
 
-              <Button type="submit" className="w-full rounded-lg" disabled={isLoading || !formData.class}>
+              <Button
+                type="submit"
+                className="w-full rounded-lg"
+                disabled={
+                  isLoading ||
+                  districtsLoading ||
+                  districtsValidating ||
+                  Boolean(districtsError) ||
+                  !districts
+                }
+              >
                 {isLoading ? "Creating account..." : "Create Account"}
               </Button>
 
@@ -186,6 +379,7 @@ export function SignupContent() {
                 </Link>
               </p>
             </form>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -1,38 +1,37 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useSWRConfig } from "swr"
 import { Button } from "@/components/ui/button"
 import { upgradeToPro } from "@/lib/api"
 import { ApiClientError, formatApiError } from "@/lib/api/client"
 import { useAuth } from "@/lib/auth-context"
-
-const DEFAULT_NEXT_PATH = "/subjects"
-
-function normalizeNextPath(value: string | null): string {
-  if (typeof value === "string" && value.startsWith("/") && !value.startsWith("//")) {
-    return value
-  }
-  return DEFAULT_NEXT_PATH
-}
+import { getSafeNextPath } from "@/lib/safe-next-path"
 
 export function UpgradeToProButton() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { isAuthenticated, isLoading, user, refreshUser } = useAuth()
+  const { mutate } = useSWRConfig()
+  const { authStatus, isAuthenticated, isLoading, user, refreshUser } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isUnavailable, setIsUnavailable] = useState(false)
 
-  const nextPath = useMemo(() => normalizeNextPath(searchParams.get("next")), [searchParams])
+  const nextPath = useMemo(() => getSafeNextPath(searchParams.get("next")), [searchParams])
   const loginRedirect = `/login?next=${encodeURIComponent(`/pricing?next=${encodeURIComponent(nextPath)}`)}`
   const isAlreadyActive = user?.plan_tier === "pro"
   const isVerified = Boolean(user?.email_verified_at)
+  const isSessionIndeterminate = authStatus === "retryable-refresh-error"
   const isUnverified = isAuthenticated && !isLoading && !isAlreadyActive && !isVerified
+  const resendVerificationHref = user?.email ? `/resend-verification?email=${encodeURIComponent(user.email)}` : "/resend-verification"
 
   const handleUpgrade = async () => {
     setError(null)
     setIsUnavailable(false)
+
+    if (isLoading || isSessionIndeterminate) return
 
     if (!isAuthenticated) {
       router.push(loginRedirect)
@@ -41,10 +40,6 @@ export function UpgradeToProButton() {
 
     if (isAlreadyActive) {
       router.push(nextPath)
-      return
-    }
-
-    if (isUnverified) {
       return
     }
 
@@ -58,7 +53,7 @@ export function UpgradeToProButton() {
 
       const refreshedUser = await refreshUser()
       if (!refreshedUser) {
-        router.push(loginRedirect)
+        setError("We could not refresh your account. Please try again.")
         return
       }
 
@@ -67,6 +62,14 @@ export function UpgradeToProButton() {
         return
       }
 
+      await mutate(
+        (key) =>
+          key === "revision-summary" ||
+          (Array.isArray(key) &&
+            ["practice-results", "progress-dashboard", "revision-items"].includes(String(key[0]))),
+        undefined,
+        { revalidate: false }
+      )
       sessionStorage.setItem("beta-pro-activation-confirmed", nextPath)
       router.push(`/pricing/success?next=${encodeURIComponent(nextPath)}`)
     } catch (err) {
@@ -82,7 +85,7 @@ export function UpgradeToProButton() {
     }
   }
 
-  const label = isLoading
+  const label = isLoading || isSessionIndeterminate
     ? "Loading beta access..."
     : isAlreadyActive
       ? "Continue with Beta Pro"
@@ -92,7 +95,7 @@ export function UpgradeToProButton() {
           ? "Activating Beta Pro..."
           : "Activate Beta Pro"
 
-  const helperText = isLoading
+  const helperText = isLoading || isSessionIndeterminate
     ? "Checking your beta access."
     : isAlreadyActive
       ? "Beta Pro is already active for this account."
@@ -102,14 +105,20 @@ export function UpgradeToProButton() {
 
   return (
     <div>
-      <Button
-        aria-describedby="beta-pro-helper"
-        className="min-h-11 w-full"
-        onClick={handleUpgrade}
-        disabled={isLoading || isSubmitting || isUnverified || isUnavailable}
-      >
-        {label}
-      </Button>
+      {isUnverified ? (
+        <Button asChild aria-describedby="beta-pro-helper" className="min-h-11 w-full">
+          <Link href={resendVerificationHref}>Verify your email</Link>
+        </Button>
+      ) : (
+        <Button
+          aria-describedby="beta-pro-helper"
+          className="min-h-11 w-full"
+          onClick={handleUpgrade}
+          disabled={isLoading || isSessionIndeterminate || isSubmitting || isUnavailable}
+        >
+          {label}
+        </Button>
+      )}
       <p id="beta-pro-helper" className="mt-2 text-center text-xs leading-5 text-muted-foreground" role="status">
         {helperText}
       </p>

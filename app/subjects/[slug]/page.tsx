@@ -17,9 +17,9 @@ export default function SubjectDetailPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = use(params)
-  const subjectId = Number.parseInt(slug, 10)
+  const subjectId = parseSubjectId(slug)
 
-  if (Number.isNaN(subjectId)) {
+  if (subjectId === null) {
     notFound()
   }
 
@@ -30,17 +30,23 @@ export default function SubjectDetailPage({
   )
 }
 
+export function parseSubjectId(slug: string): number | null {
+  if (!/^[1-9]\d*$/.test(slug)) return null
+  const subjectId = Number(slug)
+  return Number.isSafeInteger(subjectId) ? subjectId : null
+}
+
 export function SubjectDetailWrapper({ subjectId }: { subjectId: number }) {
   const router = useRouter()
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { authStatus, isAuthenticated, isLoading: authLoading } = useAuth()
 
-  const { examTypes, isLoading: examTypesLoading } = useExamTypes()
-  const { subjects, isLoading: subjectsLoading, isError: subjectsError } = useSubjects("SSC", isAuthenticated)
+  const { examTypes, isLoading: examTypesLoading, isError: examTypesError, mutate: retryExamTypes } = useExamTypes()
+  const { subjects, isLoading: subjectsLoading, isError: subjectsError, mutate: retrySubjects } = useSubjects("SSC", isAuthenticated)
 
   const sscExamType = examTypes?.find((et) => et.code === "SSC")
   const subject = subjects?.find((s) => s.id === subjectId)
 
-  const { questions, isLoading: questionsLoading, isError: questionsError } = useQuestions(
+  const { questions, isLoading: questionsLoading, isError: questionsError, mutate: retryQuestions } = useQuestions(
     sscExamType && subject
       ? {
           exam_type_id: sscExamType.id,
@@ -51,13 +57,19 @@ export function SubjectDetailWrapper({ subjectId }: { subjectId: number }) {
   )
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
+    if (!authLoading && authStatus === "unauthenticated") {
       router.push(`/login?next=${encodeURIComponent(`/subjects/${subjectId}`)}`)
     }
-  }, [authLoading, isAuthenticated, router, subjectId])
+  }, [authLoading, authStatus, router, subjectId])
 
-  const isLoading = authLoading || examTypesLoading || subjectsLoading || questionsLoading
+  const isLoading =
+    authLoading ||
+    authStatus === "retryable-refresh-error" ||
+    examTypesLoading ||
+    subjectsLoading ||
+    questionsLoading
   const hasUnauthorized =
+    (examTypesError instanceof ApiClientError && examTypesError.status === 401) ||
     (subjectsError instanceof ApiClientError && subjectsError.status === 401) ||
     (questionsError instanceof ApiClientError && questionsError.status === 401)
 
@@ -90,7 +102,7 @@ export function SubjectDetailWrapper({ subjectId }: { subjectId: number }) {
     )
   }
 
-  if (!isAuthenticated) {
+  if (authStatus === "unauthenticated") {
     return (
       <div className="container mx-auto px-4 py-12 text-center space-y-4">
         <h1 className="text-xl font-semibold text-foreground mb-2">Redirecting to login</h1>
@@ -99,11 +111,18 @@ export function SubjectDetailWrapper({ subjectId }: { subjectId: number }) {
     )
   }
 
-  if (subjectsError || questionsError) {
+  if (examTypesError || subjectsError || questionsError) {
     return (
-      <div className="container mx-auto px-4 py-12 text-center">
+      <div className="container mx-auto px-4 py-12 text-center" role="alert">
         <h1 className="text-xl font-semibold text-foreground mb-2">Unable to load subject</h1>
         <p className="text-muted-foreground">Please try again in a moment.</p>
+        <Button
+          type="button"
+          className="mt-5"
+          onClick={() => void Promise.allSettled([retryExamTypes(), retrySubjects(), retryQuestions()])}
+        >
+          Try again
+        </Button>
       </div>
     )
   }

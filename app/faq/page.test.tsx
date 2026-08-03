@@ -1,7 +1,8 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import FAQPage from "./page"
+import { useAuth } from "@/lib/auth-context"
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/faq",
@@ -17,18 +18,30 @@ vi.mock("@/components/brand-logo", async () => {
 })
 
 vi.mock("@/lib/auth-context", () => ({
-  useAuth: () => ({
-    isAuthenticated: false,
+  useAuth: vi.fn(),
+}))
+
+function mockAuth(isAuthenticated: boolean) {
+  vi.mocked(useAuth).mockReturnValue({
+    isAuthenticated,
     isLoading: false,
+    authStatus: isAuthenticated ? "authenticated" : "unauthenticated",
+    authError: null,
     user: null,
     login: vi.fn(),
     register: vi.fn(),
     logout: vi.fn(),
     refreshUser: vi.fn(),
-  }),
-}))
+    retryAuth: vi.fn(),
+  })
+}
 
 describe("FAQ page", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockAuth(false)
+  })
+
   it("renders the approved beta copy and valid destinations", async () => {
     const user = userEvent.setup()
     render(<FAQPage />)
@@ -41,7 +54,7 @@ describe("FAQ page", () => {
     expect(screen.queryByText(/Refund Policy/i)).not.toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "How is my data used?" }))
-    expect(screen.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute("href", "/privacy")
+    expect(screen.getAllByRole("link", { name: "Privacy Policy" }).some((link) => link.getAttribute("href") === "/privacy")).toBe(true)
 
     await user.click(screen.getByRole("button", { name: "How do I contact support?" }))
     expect(screen.getByRole("link", { name: "Contact page" })).toHaveAttribute("href", "/contact")
@@ -73,7 +86,7 @@ describe("FAQ page", () => {
     render(<FAQPage />)
 
     const triggers = screen.getAllByRole("button", {
-      name: /Which subjects|What can I practise|What is Beta Pro|Is payment required|How does Board-only|Can AI-generated|How is my data|How do I contact support/,
+      name: /Which subjects|What can I practise|What is Beta Pro|Is payment required|How do Board-only|Can AI-generated|How is my data|How do I contact support/,
     })
 
     for (const trigger of triggers) {
@@ -115,8 +128,31 @@ describe("FAQ page", () => {
       ),
     ).toBeVisible()
 
+    await user.click(screen.getByRole("button", { name: "What is Beta Pro?" }))
+    expect(
+      screen.getByText(
+        "Beta Pro is optional access for verified beta users. It includes explanations, Bookmarks and Mistakes revision, Weak Area Analysis, and Board-only MCQ sets. It does not create a paid subscription.",
+      ),
+    ).toBeVisible()
+
+    await user.click(screen.getByRole("button", { name: "How do Board-only MCQ sets work?" }))
+    expect(
+      screen.getByText(
+        "Board-only MCQ sets are available with Beta Pro for focused past-board-question practice. Choose MCQ practice, select one or more chapters, and then choose the Board-only question pool.",
+      ),
+    ).toBeVisible()
+
     await user.click(screen.getByRole("button", { name: "Can AI-generated content contain mistakes?" }))
-    expect(screen.getByText(/AI-generated questions, feedback, and explanations may contain mistakes/)).toBeVisible()
+    expect(screen.getByText(/AI-generated questions, answers, and Beta Pro explanations may contain mistakes/)).toBeVisible()
     expect(screen.queryByText(/guaranteed|always accurate|improve your grades/i)).not.toBeInTheDocument()
+  })
+
+  it("shows Practice instead of Start free after login", () => {
+    mockAuth(true)
+    render(<FAQPage />)
+
+    const page = within(screen.getByRole("main"))
+    expect(page.getByRole("link", { name: "Practice" })).toHaveAttribute("href", "/subjects")
+    expect(page.queryByRole("link", { name: "Start free" })).not.toBeInTheDocument()
   })
 })

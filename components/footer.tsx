@@ -14,8 +14,9 @@ const footerGroups = [
   {
     title: "Trust & Legal",
     links: [
-      { label: "Privacy", href: "/privacy" },
-      { label: "Terms", href: "/terms" },
+      { label: "Privacy Policy", href: "/privacy" },
+      { label: "Terms of Use", href: "/terms" },
+      { label: "Cookie Policy", href: "/cookies" },
     ],
   },
 ]

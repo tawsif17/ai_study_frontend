@@ -4,6 +4,7 @@ import Link from "next/link"
 import { CircleHelp } from "lucide-react"
 import { PageShell } from "@/components/page-shell"
 import { Button } from "@/components/ui/button"
+import { AuthGatedLink } from "@/components/auth-gated-link"
 import {
   Accordion,
   AccordionContent,
@@ -33,7 +34,7 @@ const frequentlyAsked: FAQItem[] = [
     value: "beta-pro",
     question: "What is Beta Pro?",
     answer:
-      "Beta Pro is optional access for verified beta users. It is intended to include Board-only practice and does not create a paid subscription.",
+      "Beta Pro is optional access for verified beta users. It includes explanations, Bookmarks and Mistakes revision, Weak Area Analysis, and Board-only MCQ sets. It does not create a paid subscription.",
   },
   {
     value: "beta-payment",
@@ -43,9 +44,9 @@ const frequentlyAsked: FAQItem[] = [
   },
   {
     value: "board-only",
-    question: "How does Board-only practice work?",
+    question: "How do Board-only MCQ sets work?",
     answer:
-      "Board-only practice is intended to be available through Beta Pro. Its availability will depend on the completed beta integration.",
+      "Board-only MCQ sets are available with Beta Pro for focused past-board-question practice. Choose MCQ practice, select one or more chapters, and then choose the Board-only question pool.",
   },
 ]
 
@@ -54,7 +55,7 @@ const usingShikkhaBuddy: FAQItem[] = [
     value: "ai-mistakes",
     question: "Can AI-generated content contain mistakes?",
     answer:
-      "Yes. AI-generated questions, feedback, and explanations may contain mistakes. Check important answers against textbooks, teachers, or other trusted learning materials.",
+      "Yes. AI-generated questions, answers, and Beta Pro explanations may contain mistakes. Check important answers against textbooks, teachers, or other trusted learning materials.",
   },
   {
     value: "data-use",
@@ -163,7 +164,13 @@ export function FAQContent() {
                 <Link href="/contact">Contact support</Link>
               </Button>
               <Button className="min-h-11 rounded-lg px-6 shadow-primary" asChild>
-                <Link href="/signup">Start free</Link>
+                <AuthGatedLink
+                  href="/subjects"
+                  unauthenticatedHref="/signup"
+                  authenticatedChildren="Practice"
+                >
+                  Start free
+                </AuthGatedLink>
               </Button>
             </div>
           </div>

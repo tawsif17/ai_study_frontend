@@ -17,6 +17,7 @@ import {
 import { PageShell } from "@/components/page-shell"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { AuthAwareStartFreeButton } from "./auth-aware-start-free-button"
 import {
   Table,
   TableBody,
@@ -29,6 +30,7 @@ import {
 
 export const metadata: Metadata = {
   title: "How SSC Practice Works | Shikkha Buddy",
+  alternates: { canonical: "/how-it-works" },
   description: "See how Shikkha Buddy helps SSC students choose a subject, practice MCQs, and plan their next revision.",
   openGraph: {
     title: "How SSC Practice Works | Shikkha Buddy",
@@ -42,33 +44,28 @@ export const metadata: Metadata = {
 }
 
 const journeySteps: Array<{
-  number: number
   title: string
   description: string
   icon: LucideIcon
 }> = [
   {
-    number: 1,
     title: "Choose subject",
     description: "Pick the subject and topic you want to practice.",
     icon: BookOpen,
   },
   {
-    number: 2,
     title: "Choose chapter",
     description: "Select a chapter for the session.",
     icon: NotebookTabs,
   },
   {
-    number: 3,
     title: "Practice MCQs",
     description: "Answer focused questions based on exam-style patterns.",
     icon: Target,
   },
   {
-    number: 4,
-    title: "Review mistakes",
-    description: "Use explanations to plan the next revision.",
+    title: "Review answers",
+    description: "See the correct answers after you submit the session.",
     icon: CircleCheck,
   },
 ]
@@ -89,15 +86,15 @@ const sessionSteps: Array<{
   },
   {
     number: 2,
-    title: "Read the explanation",
-    description: "See why the answer is right or wrong.",
+    title: "Review the answer",
+    description: "See the correct answer after you submit.",
     icon: MessageSquareText,
     iconClass: "bg-emerald-500/10 text-emerald-700",
   },
   {
     number: 3,
-    title: "Mark what to review",
-    description: "Use mistakes to decide your next chapter.",
+    title: "Revise with Beta Pro",
+    description: "Use explanations, Bookmarks and Mistakes, and Weak Area Analysis.",
     icon: Bookmark,
     iconClass: "bg-orange-500/10 text-orange-600",
   },
@@ -107,10 +104,11 @@ const availabilityRows = [
   { type: "MCQ Practice", status: "Available now", bestFor: "Focused chapter revision", tone: "available" },
   { type: "CQ Practice", status: "Coming soon", bestFor: "Full creative-question practice", tone: "coming" },
   { type: "Mixed Practice", status: "Coming soon", bestFor: "MCQ + CQ practice sets", tone: "coming" },
-  { type: "Board-only sets", status: "Pro", bestFor: "Stricter exam revision", tone: "pro" },
+  { type: "Board-only MCQ sets", status: "Beta Pro", bestFor: "Focused past-board-question revision", tone: "pro" },
+  { type: "Weak Area Analysis", status: "Beta Pro", bestFor: "Identifying chapters that need more practice", tone: "pro" },
 ] as const
 
-const reviewPoints = ["See correct answers", "Review missed questions", "Practice again by chapter"]
+const reviewPoints = ["See correct answers", "Beta Pro: read explanations", "Beta Pro: revise saved questions and mistakes"]
 
 export default function HowItWorksPage() {
   return (
@@ -129,9 +127,6 @@ export default function HowItWorksPage() {
             </p>
             <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
               <Button className="h-11 rounded-lg px-8 text-base shadow-primary" asChild>
-                <Link href="/signup">Start free</Link>
-              </Button>
-              <Button variant="outline" className="h-11 rounded-lg border-primary px-8 text-base text-primary hover:bg-primary/5" asChild>
                 <Link href="/subjects">Choose a subject</Link>
               </Button>
             </div>
@@ -156,17 +151,14 @@ export default function HowItWorksPage() {
               const isLast = index === journeySteps.length - 1
 
               return (
-                <li key={step.number} className="relative px-3 text-center">
+                <li key={step.title} className="relative px-3 text-center">
                   {!isLast && (
                     <ArrowRight
                       className="absolute right-[-14px] top-12 hidden h-5 w-5 text-primary/60 md:block"
                       aria-hidden="true"
                     />
                   )}
-                  <span className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                    {step.number}
-                  </span>
-                  <div className="mx-auto mt-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/5 text-primary">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary/5 text-primary">
                     <Icon className="h-7 w-7" aria-hidden="true" />
                   </div>
                   <h3 className="mt-3 text-sm font-bold text-foreground">{step.title}</h3>
@@ -222,7 +214,7 @@ export default function HowItWorksPage() {
               {availabilityRows.map((row) => (
                 <TableRow key={row.type}>
                   <TableCell className="font-medium text-foreground">{row.type}</TableCell>
-                  <TableCell><AvailabilityStatus tone={row.tone} label={row.status} /></TableCell>
+                  <TableCell><AvailabilityStatus type={row.type} tone={row.tone} label={row.status} /></TableCell>
                   <TableCell className="text-muted-foreground">{row.bestFor}</TableCell>
                 </TableRow>
               ))}
@@ -237,7 +229,7 @@ export default function HowItWorksPage() {
           <div>
             <h3 className="text-lg font-bold text-foreground">Turn answers into the next revision step</h3>
             <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-              After each session, review missed questions, read explanations, and choose the next chapter with more confidence.
+              After each session, review the correct answers. Beta Pro adds explanations, saved-question revision, and Weak Area Analysis for deeper revision.
             </p>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
               {reviewPoints.map((point) => (
@@ -265,11 +257,9 @@ export default function HowItWorksPage() {
           <div className="text-center sm:text-left">
             <h2 className="text-xl font-bold text-foreground">Try the flow in a free MCQ session</h2>
             <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-              Start with one subject and one chapter. You can upgrade later only if board-only sets and pro tools help you revise.
+              Start with one subject and one chapter. Beta Pro adds explanations, Bookmarks and Mistakes revision, Weak Area Analysis, and Board-only MCQ sets.
             </p>
-            <Button className="mt-4 h-11 rounded-lg px-6 shadow-primary" asChild>
-              <Link href="/signup">Start free</Link>
-            </Button>
+            <AuthAwareStartFreeButton className="mt-4 h-11 rounded-lg px-6 shadow-primary" />
             <p className="mt-2 text-xs text-muted-foreground">No credit card required.</p>
           </div>
         </div>
@@ -337,7 +327,7 @@ function QuestionPreview() {
   )
 }
 
-function AvailabilityStatus({ tone, label }: { tone: (typeof availabilityRows)[number]["tone"]; label: string }) {
+function AvailabilityStatus({ type, tone, label }: { type: string; tone: (typeof availabilityRows)[number]["tone"]; label: string }) {
   if (tone === "available") {
     return <Badge className="border-transparent bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/10">{label}</Badge>
   }
@@ -345,7 +335,7 @@ function AvailabilityStatus({ tone, label }: { tone: (typeof availabilityRows)[n
   if (tone === "pro") {
     return (
       <Badge asChild className="border-transparent bg-orange-500/10 text-orange-600 hover:bg-orange-500/10">
-        <Link href="/pricing" aria-label="Board-only sets, Pro option, opens pricing">{label}</Link>
+        <Link href="/pricing" aria-label={`${type}, ${label} option, opens pricing`}>{label}</Link>
       </Badge>
     )
   }

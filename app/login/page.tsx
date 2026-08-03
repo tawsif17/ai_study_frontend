@@ -6,6 +6,7 @@ import { LoginContent } from "./login-content"
 export const metadata: Metadata = {
   title: "Login | Shikkha Buddy",
   description: "Sign in to continue your Shikkha Buddy SSC science practice.",
+  robots: { index: false, follow: false },
   openGraph: {
     title: "Login | Shikkha Buddy",
     description: "Sign in to continue your Shikkha Buddy SSC science practice.",

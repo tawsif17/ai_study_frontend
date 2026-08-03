@@ -4,6 +4,7 @@ import { TrustPage } from "@/components/trust-page"
 // Founder review required before launch. Do not add support SLAs or email addresses until approved.
 export const metadata: Metadata = {
   title: "Support | Shikkha Buddy",
+  alternates: { canonical: "/support" },
   description: "Find the current support path for Shikkha Buddy account, practice, and content questions.",
   openGraph: {
     title: "Support | Shikkha Buddy",
@@ -27,7 +28,7 @@ const sections = [
       "Account signup, login, or email verification issues.",
       "Questions not loading or practice sessions not starting.",
       "A possible mistake in a question, option, answer, or explanation.",
-      "Questions about Free and Pro access in the current beta release.",
+      "Questions about Free AI-generated MCQ practice or Beta Pro revision features.",
     ],
   },
   {

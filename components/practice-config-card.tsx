@@ -7,12 +7,14 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ArrowRight, Clock } from "@/components/icons"
 import {
   generatePractice,
   matchEntitlementErrorByExactMessage,
   type Language,
   type PracticeMode,
+  type QuestionPool,
 } from "@/lib/api"
 import { formatApiError } from "@/lib/api/client"
 import { useAuth } from "@/lib/auth-context"
@@ -57,19 +59,33 @@ export function PracticeConfigCard({
   availability = "available",
 }: PracticeConfigCardProps) {
   const router = useRouter()
-  const { isAuthenticated } = useAuth()
+  const { authStatus, isAuthenticated, isLoading: authLoading, user } = useAuth()
   const [count, setCount] = useState("10")
+  const [questionPool, setQuestionPool] = useState<QuestionPool>("STANDARD")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const controlIdPrefix = `practice-${subjectId}-${mode.toLowerCase()}`
   const isComingSoon = availability === "coming-soon"
+  const isSessionIndeterminate = authStatus === "retryable-refresh-error"
   const comingSoonFeature =
     mode === "MIXED" ? "Combined MCQ + CQ sessions" : mode === "CQ" ? "Creative Question practice" : "Additional practice options"
+
+  const handleQuestionPoolChange = (value: string) => {
+    const nextPool = value as QuestionPool
+    if (nextPool === "BOARD_ONLY" && user?.plan_tier === "free") {
+      router.push(`/pricing?next=${encodeURIComponent(`/subjects/${subjectId}`)}`)
+      return
+    }
+    setQuestionPool(nextPool)
+    setError(null)
+  }
 
   const handleStartPractice = async () => {
     if (isComingSoon) {
       return
     }
+
+    if (authLoading || isSessionIndeterminate) return
 
     if (!isAuthenticated) {
       router.push("/login")
@@ -93,6 +109,7 @@ export function PracticeConfigCard({
           chapter_ids: chapterIds,
         },
         mode,
+        question_pool: questionPool,
         mcq_count: Number.parseInt(count, 10),
         cq_count: 0,
         language: ACTIVE_LANGUAGE,
@@ -111,7 +128,7 @@ export function PracticeConfigCard({
     }
   }
 
-  const isStartDisabled = disabled || isLoading
+  const isStartDisabled = disabled || isLoading || authLoading || isSessionIndeterminate
 
   return (
     <div className="group relative flex h-full flex-col rounded-2xl border border-border bg-card p-5 transition-all duration-300 hover:border-primary/20 hover:shadow-lg sm:p-6">
@@ -144,23 +161,56 @@ export function PracticeConfigCard({
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
-            <Label id={`${controlIdPrefix}-count-label`} className="text-xs font-medium text-muted-foreground">
-              Number of questions
-            </Label>
-            <Select value={count} onValueChange={setCount} disabled={isLoading}>
-              <SelectTrigger className="h-9 w-full text-sm" aria-labelledby={`${controlIdPrefix}-count-label`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {mcqCountOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <>
+            <fieldset className="space-y-2">
+              <legend className="text-xs font-medium text-muted-foreground">Question pool</legend>
+              <RadioGroup
+                value={questionPool}
+                onValueChange={handleQuestionPoolChange}
+                disabled={isLoading || authLoading || isSessionIndeterminate}
+                aria-label="Question pool"
+              >
+                <Label htmlFor={`${controlIdPrefix}-standard`} className="flex min-h-14 cursor-pointer items-start gap-3 rounded-lg border border-border bg-background p-3">
+                  <RadioGroupItem id={`${controlIdPrefix}-standard`} value="STANDARD" className="mt-0.5" />
+                  <span>
+                    <span className="block text-sm font-semibold text-foreground">Standard mix</span>
+                    <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">Targets a mix of Board and non-board MCQs and backfills when content is limited.</span>
+                  </span>
+                </Label>
+                <Label htmlFor={`${controlIdPrefix}-board-only`} className="flex min-h-14 cursor-pointer items-start gap-3 rounded-lg border border-border bg-background p-3">
+                  <RadioGroupItem id={`${controlIdPrefix}-board-only`} value="BOARD_ONLY" className="mt-0.5" />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-2 text-sm font-semibold text-foreground">
+                      Board-only
+                      {user?.plan_tier === "free" && (
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                          Beta Pro
+                        </span>
+                      )}
+                    </span>
+                    <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">Practise only eligible past Board MCQs from the selected chapters.</span>
+                  </span>
+                </Label>
+              </RadioGroup>
+            </fieldset>
+            <div className="space-y-2">
+              <Label id={`${controlIdPrefix}-count-label`} className="text-xs font-medium text-muted-foreground">
+                Number of questions
+              </Label>
+              <Select value={count} onValueChange={setCount} disabled={isLoading}>
+                <SelectTrigger className="h-9 w-full text-sm" aria-labelledby={`${controlIdPrefix}-count-label`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {mcqCountOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </>
         )}
 
         <div className="space-y-2">

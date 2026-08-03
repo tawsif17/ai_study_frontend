@@ -1,5 +1,6 @@
 import React from "react"
 import "@testing-library/jest-dom/vitest"
+import "vitest-axe/extend-expect"
 import { vi } from "vitest"
 
 class ResizeObserverMock {
@@ -9,6 +10,10 @@ class ResizeObserverMock {
 }
 
 globalThis.ResizeObserver = ResizeObserverMock
+
+if (!HTMLElement.prototype.scrollIntoView) {
+  HTMLElement.prototype.scrollIntoView = vi.fn()
+}
 
 if (!globalThis.localStorage || typeof globalThis.localStorage.clear !== "function") {
   const store = new Map<string, string>()

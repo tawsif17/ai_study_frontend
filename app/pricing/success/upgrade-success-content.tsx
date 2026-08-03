@@ -7,21 +7,13 @@ import { PageShell } from "@/components/page-shell"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
-
-const DEFAULT_NEXT_PATH = "/subjects"
-
-function normalizeNextPath(value: string | null): string {
-  if (typeof value === "string" && value.startsWith("/") && !value.startsWith("//")) {
-    return value
-  }
-  return DEFAULT_NEXT_PATH
-}
+import { getSafeNextPath } from "@/lib/safe-next-path"
 
 export function UpgradeSuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { isLoading, user } = useAuth()
-  const nextPath = useMemo(() => normalizeNextPath(searchParams.get("next")), [searchParams])
+  const nextPath = useMemo(() => getSafeNextPath(searchParams.get("next")), [searchParams])
   const [isMarkerChecked, setIsMarkerChecked] = useState(false)
   const [hasSessionConfirmation, setHasSessionConfirmation] = useState(false)
 

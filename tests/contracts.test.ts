@@ -133,6 +133,30 @@ describe("contract request validators", () => {
     ).toThrow("selection.chapter_ids is required when selection.type is CHAPTERS")
   })
 
+  it("accepts the exact saved-question session payload and rejects extra fields", () => {
+    expect(validatePracticeGenerateRequest({
+      exam_type_id: 1,
+      subject_id: 2,
+      mode: "MCQ",
+      selection: { type: "BOOKMARKED" },
+    })).toMatchObject({ selection: { type: "BOOKMARKED" } })
+
+    expect(() => validatePracticeGenerateRequest({
+      exam_type_id: 1,
+      subject_id: 2,
+      mode: "MCQ",
+      selection: { type: "BOOKMARKED" },
+      mcq_count: 10,
+    })).toThrow("mcq_count is not allowed for BOOKMARKED selection")
+
+    expect(() => validatePracticeGenerateRequest({
+      exam_type_id: 1,
+      subject_id: 2,
+      mode: "CQ",
+      selection: { type: "BOOKMARKED" },
+    })).toThrow("BOOKMARKED selection supports only MCQ mode")
+  })
+
   it("validates question report contract values and rejects readable labels", () => {
     const valid = validateQuestionReportRequest({
       reason_code: "OUT_OF_SYLLABUS",

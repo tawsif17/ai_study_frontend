@@ -1,11 +1,29 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react"
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react"
 import { useSWRConfig } from "swr"
-import { clearAuthToken, setAuthToken } from "./api/client"
+import { SessionRecoveryBanner } from "@/components/session-recovery-banner"
+import {
+  ApiAbortError,
+  ApiClientError,
+  clearSessionCredentials,
+  formatApiError,
+  removeLegacyAuthToken,
+  setCsrfToken,
+  subscribeToSessionInvalid,
+} from "./api/client"
 import {
   getAuthMe,
   login as apiLogin,
+  logout as apiLogout,
   register as apiRegister,
   type AuthUser,
   type LoginRequest,
@@ -13,129 +31,271 @@ import {
   type RegisterResult,
 } from "./api"
 
-interface AuthContextValue {
+export type AuthStatus = "loading" | "authenticated" | "unauthenticated" | "retryable-refresh-error"
+
+export interface AuthContextValue {
   isAuthenticated: boolean
   isLoading: boolean
+  authStatus: AuthStatus
+  authError: string | null
   user: AuthUser | null
   login: (data: LoginRequest) => Promise<void>
   register: (data: RegisterRequest) => Promise<RegisterResult>
-  logout: () => void
+  logout: () => Promise<void>
   refreshUser: () => Promise<AuthUser | null>
+  retryAuth: () => Promise<AuthUser | null>
 }
+
+type AuthSyncMessage = { type: "login" | "logout"; sentAt: number }
+
+const AUTH_CHANNEL_NAME = "shikkha-buddy-auth"
+const AUTH_SYNC_STORAGE_KEY = "shikkha_buddy_auth_sync"
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+function isTerminalAccountError(error: unknown): boolean {
+  return error instanceof ApiClientError && (error.status === 401 || error.status === 404)
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { mutate } = useSWRConfig()
+  const channelRef = useRef<BroadcastChannel | null>(null)
+  const sessionVersionRef = useRef(0)
+  const authenticatedRef = useRef(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [user, setUser] = useState<AuthUser | null>(null)
+  const [authStatus, setAuthStatus] = useState<AuthStatus>("loading")
+  const [authError, setAuthError] = useState<string | null>(null)
 
-  const refreshUser = useCallback(async () => {
-    try {
-      const response = await getAuthMe()
-      setUser(response.user)
-      setIsAuthenticated(true)
-      return response.user
-    } catch {
-      clearAuthToken()
-      setUser(null)
-      setIsAuthenticated(false)
-      return null
-    }
-  }, [])
-
-  useEffect(() => {
-    let mounted = true
-
-    const initializeAuth = async () => {
-      if (typeof window === "undefined") {
-        return
-      }
-
-      const token = localStorage.getItem("auth_token")
-      if (!token) {
-        if (mounted) {
-          setUser(null)
-          setIsAuthenticated(false)
-          setIsLoading(false)
-        }
-        return
-      }
-
-      try {
-        const response = await getAuthMe()
-        if (mounted) {
-          setUser(response.user)
-          setIsAuthenticated(true)
-        }
-      } catch {
-        clearAuthToken()
-        if (mounted) {
-          setUser(null)
-          setIsAuthenticated(false)
-        }
-      } finally {
-        if (mounted) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    initializeAuth()
-
-    return () => {
-      mounted = false
-    }
-  }, [])
-
-  const login = useCallback(async (data: LoginRequest) => {
-    const response = await apiLogin(data)
-    setAuthToken(response.token)
-    setUser(response.user)
-    setIsAuthenticated(true)
-  }, [])
-
-  const register = useCallback(async (data: RegisterRequest) => {
-    return apiRegister(data)
-  }, [])
-
-  const logout = useCallback(() => {
-    clearAuthToken()
-    setUser(null)
-    setIsAuthenticated(false)
-    mutate(
+  const clearAuthCache = useCallback(() => {
+    void mutate(
       (key) =>
-        Array.isArray(key) &&
-        ["subjects", "questions", "practice-summary", "practice-items", "practice-answers", "practice-results", "progress-dashboard"].includes(
-          key[0]
-        ),
+        key === "revision-summary" ||
+        (Array.isArray(key) &&
+          [
+            "subjects",
+            "questions",
+            "practice-summary",
+            "practice-items",
+            "practice-answers",
+            "practice-results",
+            "progress-dashboard",
+            "revision-items",
+          ].includes(key[0])),
       undefined,
       { revalidate: false }
     )
   }, [mutate])
+
+  const publishAuthChange = useCallback((type: AuthSyncMessage["type"]) => {
+    const message: AuthSyncMessage = { type, sentAt: Date.now() }
+    if (channelRef.current) {
+      channelRef.current.postMessage(message)
+      return
+    }
+    try {
+      localStorage.setItem(AUTH_SYNC_STORAGE_KEY, JSON.stringify(message))
+    } catch {
+      // Storage can be unavailable in private browser contexts. The current tab
+      // remains correct even when other tabs cannot be notified.
+    }
+  }, [])
+
+  const clearSession = useCallback(
+    ({
+      broadcast = true,
+      forceBroadcast = false,
+    }: { broadcast?: boolean; forceBroadcast?: boolean } = {}) => {
+      const hadAuthenticatedSession = authenticatedRef.current
+      sessionVersionRef.current += 1
+      clearSessionCredentials()
+      authenticatedRef.current = false
+      setUser(null)
+      setIsAuthenticated(false)
+      setAuthStatus("unauthenticated")
+      setAuthError(null)
+      clearAuthCache()
+      if (broadcast && (hadAuthenticatedSession || forceBroadcast)) publishAuthChange("logout")
+    },
+    [clearAuthCache, publishAuthChange]
+  )
+
+  const setRetryableRefreshError = useCallback((error: unknown) => {
+    setAuthStatus("retryable-refresh-error")
+    setAuthError(formatApiError(error))
+  }, [])
+
+  const refreshUser = useCallback(async () => {
+    const requestVersion = sessionVersionRef.current + 1
+    sessionVersionRef.current = requestVersion
+    try {
+      const response = await getAuthMe()
+      if (sessionVersionRef.current !== requestVersion) return null
+      setUser(response.user)
+      authenticatedRef.current = true
+      setIsAuthenticated(true)
+      setAuthStatus("authenticated")
+      setAuthError(null)
+      return response.user
+    } catch (error) {
+      if (sessionVersionRef.current !== requestVersion) return null
+      if (isTerminalAccountError(error)) clearSession()
+      else setRetryableRefreshError(error)
+      return null
+    }
+  }, [clearSession, setRetryableRefreshError])
+
+  useEffect(() => {
+    let active = true
+
+    const initializeAuth = async () => {
+      removeLegacyAuthToken()
+      const requestVersion = sessionVersionRef.current + 1
+      sessionVersionRef.current = requestVersion
+
+      try {
+        const response = await getAuthMe()
+        if (active && sessionVersionRef.current === requestVersion) {
+          setUser(response.user)
+          authenticatedRef.current = true
+          setIsAuthenticated(true)
+          setAuthStatus("authenticated")
+          setAuthError(null)
+        }
+      } catch (error) {
+        if (active && sessionVersionRef.current === requestVersion) {
+          if (isTerminalAccountError(error)) clearSession()
+          else setRetryableRefreshError(error)
+        }
+      } finally {
+        if (active) setIsLoading(false)
+      }
+    }
+
+    void initializeAuth()
+    return () => {
+      active = false
+    }
+  }, [clearSession, setRetryableRefreshError])
+
+  useEffect(
+    () =>
+      subscribeToSessionInvalid((event) =>
+        clearSession({ forceBroadcast: event.forceBroadcast })
+      ),
+    [clearSession]
+  )
+
+  useEffect(() => {
+    const receiveAuthChange = (message: AuthSyncMessage) => {
+      if (message.type === "logout") clearSession({ broadcast: false })
+      else void refreshUser()
+    }
+
+    if (typeof BroadcastChannel !== "undefined") {
+      const channel = new BroadcastChannel(AUTH_CHANNEL_NAME)
+      channelRef.current = channel
+      channel.addEventListener("message", (event: MessageEvent<AuthSyncMessage>) => {
+        if (event.data?.type === "login" || event.data?.type === "logout") {
+          receiveAuthChange(event.data)
+        }
+      })
+      return () => {
+        channelRef.current = null
+        channel.close()
+      }
+    }
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== AUTH_SYNC_STORAGE_KEY || !event.newValue) return
+      try {
+        const message = JSON.parse(event.newValue) as AuthSyncMessage
+        if (message.type === "login" || message.type === "logout") receiveAuthChange(message)
+      } catch {
+        // Ignore malformed values written by unrelated scripts or browser extensions.
+      }
+    }
+    window.addEventListener("storage", onStorage)
+    return () => window.removeEventListener("storage", onStorage)
+  }, [clearSession, refreshUser])
+
+  const login = useCallback(
+    async (data: LoginRequest) => {
+      const requestVersion = sessionVersionRef.current
+      const response = await apiLogin(data)
+      if (sessionVersionRef.current !== requestVersion) {
+        setCsrfToken(response.csrfToken)
+        try {
+          await apiLogout()
+        } catch {
+          // A newer local or cross-tab session decision already won. Best-effort
+          // cleanup prevents the stale login response from restoring that session.
+        } finally {
+          clearSessionCredentials()
+        }
+        throw new ApiAbortError()
+      }
+      setCsrfToken(response.csrfToken)
+      sessionVersionRef.current += 1
+      setUser(response.user)
+      authenticatedRef.current = true
+      setIsAuthenticated(true)
+      setAuthStatus("authenticated")
+      setAuthError(null)
+      publishAuthChange("login")
+    },
+    [publishAuthChange]
+  )
+
+  const register = useCallback((data: RegisterRequest) => apiRegister(data), [])
+  const logout = useCallback(async () => {
+    if (isLoggingOut) return
+    setIsLoggingOut(true)
+    setAuthError(null)
+    try {
+      await apiLogout()
+      clearSession()
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 401) {
+        clearSession()
+        return
+      }
+      setAuthError(formatApiError(error))
+      throw error
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }, [clearSession, isLoggingOut])
 
   return (
     <AuthContext.Provider
       value={{
         isAuthenticated,
         isLoading,
+        authStatus,
+        authError,
         user,
         login,
         register,
         logout,
         refreshUser,
+        retryAuth: refreshUser,
       }}
     >
+      <SessionRecoveryBanner
+        authStatus={authStatus}
+        authError={authError}
+        onRetry={refreshUser}
+      />
       {children}
     </AuthContext.Provider>
   )
 }
 
-export function useAuth() {
+export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider")
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider")
   return context
 }

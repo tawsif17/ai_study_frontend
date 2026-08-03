@@ -1,7 +1,7 @@
 import type React from "react"
-import { render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { SubjectDetailWrapper } from "./page"
+import { parseSubjectId, SubjectDetailWrapper } from "./page"
 import { useExamTypes, useQuestions, useSubjects } from "@/lib/api/hooks"
 import { useAuth } from "@/lib/auth-context"
 
@@ -54,11 +54,14 @@ describe("subject detail protected route", () => {
     vi.mocked(useAuth).mockReturnValue({
       isAuthenticated: false,
       isLoading: false,
+      authStatus: "unauthenticated",
+      authError: null,
       user: null,
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
       refreshUser: vi.fn(),
+      retryAuth: vi.fn(),
     })
     vi.mocked(useSubjects).mockReturnValue({
       subjects: undefined,
@@ -80,11 +83,14 @@ describe("subject detail protected route", () => {
     vi.mocked(useAuth).mockReturnValue({
       isAuthenticated: true,
       isLoading: false,
+      authStatus: "authenticated",
+      authError: null,
       user: null,
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
       refreshUser: vi.fn(),
+      retryAuth: vi.fn(),
     })
     vi.mocked(useSubjects).mockReturnValue({
       subjects: [],
@@ -95,5 +101,57 @@ describe("subject detail protected route", () => {
 
     expect(() => render(<SubjectDetailWrapper subjectId={5} />)).toThrow("NEXT_NOT_FOUND")
     expect(mockNotFound).toHaveBeenCalled()
+  })
+
+  it("accepts only positive base-10 integer subject slugs", () => {
+    expect(parseSubjectId("42")).toBe(42)
+    for (const slug of ["0", "-1", "+1", "1.5", "1abc", "01", " 1", "9007199254740992"]) {
+      expect(parseSubjectId(slug)).toBeNull()
+    }
+  })
+
+  it("retries recoverable subject catalog failures", async () => {
+    const retryExamTypes = vi.fn()
+    const retrySubjects = vi.fn()
+    const retryQuestions = vi.fn()
+    vi.mocked(useAuth).mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      authStatus: "authenticated",
+      authError: null,
+      user: null,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshUser: vi.fn(),
+      retryAuth: vi.fn(),
+    })
+    vi.mocked(useExamTypes).mockReturnValue({
+      examTypes: undefined,
+      isLoading: false,
+      isError: new Error("offline"),
+      mutate: retryExamTypes,
+    })
+    vi.mocked(useSubjects).mockReturnValue({
+      subjects: undefined,
+      isLoading: false,
+      isError: undefined,
+      mutate: retrySubjects,
+    })
+    vi.mocked(useQuestions).mockReturnValue({
+      questions: undefined,
+      isLoading: false,
+      isError: undefined,
+      mutate: retryQuestions,
+    })
+
+    render(<SubjectDetailWrapper subjectId={5} />)
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }))
+
+    await waitFor(() => {
+      expect(retryExamTypes).toHaveBeenCalledOnce()
+      expect(retrySubjects).toHaveBeenCalledOnce()
+      expect(retryQuestions).toHaveBeenCalledOnce()
+    })
   })
 })

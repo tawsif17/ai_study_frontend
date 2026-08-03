@@ -6,6 +6,7 @@ import { ResendVerificationContent } from "./resend-verification-content"
 export const metadata: Metadata = {
   title: "Resend Verification Email | Shikkha Buddy",
   description: "Request a new verification email for your Shikkha Buddy account.",
+  robots: { index: false, follow: false },
   openGraph: {
     title: "Resend Verification Email | Shikkha Buddy",
     description: "Request a new verification email for your Shikkha Buddy account.",

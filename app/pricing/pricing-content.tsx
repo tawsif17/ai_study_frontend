@@ -1,4 +1,3 @@
-import Link from "next/link"
 import { Suspense } from "react"
 import { PageShell } from "@/components/page-shell"
 import { Badge } from "@/components/ui/badge"
@@ -6,26 +5,30 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowRight, BookOpen, Check, CheckCircle, Sparkles, Target, Zap } from "@/components/icons"
 import { UpgradeToProButton } from "@/components/upgrade-to-pro-button"
+import { AuthGatedLink } from "@/components/auth-gated-link"
 
 const subjects = "General Math, Physics & Chemistry"
 
 const freeFeatures = [
-  "Daily MCQ practice",
+  "AI-generated MCQ practice",
   subjects,
-  "Answer explanations",
-  "Results saved",
+  "Correct answers after submitted practice",
 ]
 
 const betaProFeatures = [
-  { label: "More MCQ practice" },
-  { label: "Weak Area Analysis", availability: "Available now" },
-  { label: subjects },
-  { label: "Results and revision tools" },
+  { label: "Explanations" },
+  { label: "Bookmarks and Mistakes revision" },
+  { label: "Weak Area Analysis" },
+  { label: "Board-only MCQ sets" },
 ]
 
 const comparisonRows = [
-  { feature: "Free MCQ practice", free: "Available now", betaPro: "Available now" },
-  { feature: "Weak Area Analysis", free: "Not included", betaPro: "Available now" },
+  { feature: "AI-generated MCQ practice", free: "Available now", betaPro: "Available now" },
+  { feature: "Correct answers after submitted practice", free: "Included", betaPro: "Included" },
+  { feature: "Explanations", free: "Not included", betaPro: "Beta Pro" },
+  { feature: "Bookmarks and Mistakes revision", free: "Not included", betaPro: "Beta Pro" },
+  { feature: "Weak Area Analysis", free: "Not included", betaPro: "Beta Pro" },
+  { feature: "Board-only MCQ sets", free: "Not included", betaPro: "Beta Pro" },
   { feature: "CQ & Mixed Practice", free: "Coming soon", betaPro: "Coming soon" },
   { feature: "No payment during beta", free: "Included", betaPro: "Included" },
 ]
@@ -59,6 +62,10 @@ function ComparisonValue({ value }: { value: string }) {
     return <Badge className="border-0 bg-muted px-2 py-1 text-muted-foreground" variant="secondary">{value}</Badge>
   }
 
+  if (value === "Beta Pro") {
+    return <Badge className="border-0 bg-primary/10 px-2 py-1 text-primary" variant="secondary">Beta Pro</Badge>
+  }
+
   if (value === "Not included") {
     return <span className="text-muted-foreground" aria-label="Not included">—</span>
   }
@@ -82,13 +89,13 @@ export function PricingContent() {
               Start free. Activate Beta Pro when revision needs more focus.
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-pretty text-base leading-7 text-muted-foreground md:text-lg">
-              Practise free SSC MCQs now. Verified beta users can activate Beta Pro for Weak Area Analysis and more focused revision tools.
+              Practise AI-generated SSC MCQs and review correct answers after submitting. Beta Pro adds explanations and deeper revision tools for verified beta users.
             </p>
             <ul className="mx-auto mt-6 flex max-w-3xl flex-col items-center justify-center gap-3 text-sm font-medium text-foreground sm:flex-row sm:gap-0">
               {[
                 "MCQ available now",
                 "No payment during beta",
-                "Pro features available now",
+                "Beta Pro revision features",
               ].map((item, index) => (
                 <li key={item} className="flex items-center gap-2 sm:px-5 sm:[&:not(:last-child)]:border-r sm:[&:not(:last-child)]:border-border">
                   {index === 1 ? <CheckCircle aria-hidden="true" className="size-5 text-primary" /> : index === 2 ? <Sparkles aria-hidden="true" className="size-5 text-primary" /> : <CheckCircle aria-hidden="true" className="size-5 text-success" />}
@@ -109,7 +116,7 @@ export function PricingContent() {
               </div>
               <CardTitle className="text-2xl">Free</CardTitle>
               <p className="mt-2 text-3xl font-bold text-foreground">Tk 0</p>
-              <p className="text-sm text-muted-foreground">Focused MCQ practice</p>
+              <p className="text-sm text-muted-foreground">AI-generated MCQ practice</p>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col px-7">
               <ul className="mb-7 flex-1 space-y-4 border-t border-border pt-6 text-sm text-muted-foreground">
@@ -121,14 +128,20 @@ export function PricingContent() {
                 ))}
               </ul>
               <Button asChild className="min-h-11 w-full" variant="outline">
-                <Link href="/subjects">Start free</Link>
+                <AuthGatedLink
+                  href="/subjects"
+                  unauthenticatedHref="/subjects"
+                  authenticatedChildren="Practice"
+                >
+                  Start free
+                </AuthGatedLink>
               </Button>
               <p className="mt-3 text-center text-xs text-muted-foreground">No credit card required.</p>
             </CardContent>
           </Card>
 
           <Card className="relative flex flex-col border-primary py-7 shadow-lg shadow-primary/10">
-            <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1" variant="default">Best for focused revision</Badge>
+            <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1" variant="default">For deeper revision</Badge>
             <CardHeader className="items-center px-7 pb-4 pt-8 text-center">
               <div className="mb-2 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                 <Sparkles aria-hidden="true" className="size-7" />
@@ -139,12 +152,11 @@ export function PricingContent() {
             </CardHeader>
             <CardContent className="flex flex-1 flex-col px-7">
               <ul className="mb-7 flex-1 space-y-4 border-t border-border pt-6 text-sm text-muted-foreground">
-                {betaProFeatures.map(({ label, availability }) => (
+                {betaProFeatures.map(({ label }) => (
                   <li key={label} className="flex items-start gap-3">
                     <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-success" />
                     <span className="flex flex-1 flex-wrap items-center justify-between gap-2">
                       <span>{label}</span>
-                      {availability && <AvailabilityBadge>{availability}</AvailabilityBadge>}
                     </span>
                   </li>
                 ))}
@@ -161,12 +173,11 @@ export function PricingContent() {
         <div className="mx-auto grid max-w-5xl items-center gap-7 rounded-2xl border border-primary/15 bg-primary/5 p-6 md:grid-cols-[1fr_1.15fr] md:p-8">
           <div>
             <div className="flex flex-wrap gap-2">
-              <Badge className="border-0 bg-primary/10 text-primary" variant="secondary">Pro feature</Badge>
-              <AvailabilityBadge>Available now</AvailabilityBadge>
+              <Badge className="border-0 bg-primary/10 text-primary" variant="secondary">Beta Pro feature</Badge>
             </div>
             <h2 className="mt-4 text-balance text-2xl font-bold tracking-tight text-foreground md:text-3xl">Turn completed practice into a clearer next step</h2>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Weak Area Analysis uses submitted MCQ performance to highlight chapters that may need more practice. It does not predict exam results or guarantee improvement.
+              Beta Pro Weak Area Analysis uses submitted MCQ performance to highlight chapters that may need more practice. It does not predict exam results or guarantee improvement.
             </p>
           </div>
           <div className="rounded-xl border border-primary/25 bg-background p-4 shadow-sm">

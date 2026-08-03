@@ -6,6 +6,7 @@ import { UpgradeSuccessContent } from "./upgrade-success-content"
 export const metadata: Metadata = {
   title: "Upgrade Successful | Shikkha Buddy",
   description: "Your Shikkha Buddy plan upgrade has been confirmed.",
+  robots: { index: false, follow: false },
   openGraph: {
     title: "Upgrade Successful | Shikkha Buddy",
     description: "Your Shikkha Buddy plan upgrade has been confirmed.",

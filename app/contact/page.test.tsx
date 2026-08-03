@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import type React from "react"
 import ContactPage from "./page"
 import { submitContact } from "@/lib/api"
+import { ApiClientError } from "@/lib/api/client"
 import { useAuth } from "@/lib/auth-context"
 
 vi.mock("@/components/page-shell", () => ({
@@ -22,6 +23,8 @@ function setAuthenticatedUser() {
   vi.mocked(useAuth).mockReturnValue({
     isAuthenticated: true,
     isLoading: false,
+    authStatus: "authenticated",
+    authError: null,
     user: {
       id: "1",
       email: "student@example.com",
@@ -40,6 +43,7 @@ function setAuthenticatedUser() {
     register: vi.fn(),
     logout: vi.fn(),
     refreshUser: vi.fn(),
+    retryAuth: vi.fn(),
   })
 }
 
@@ -57,11 +61,14 @@ describe("contact page", () => {
     vi.mocked(useAuth).mockReturnValue({
       isAuthenticated: false,
       isLoading: false,
+      authStatus: "unauthenticated",
+      authError: null,
       user: null,
       login: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
       refreshUser: vi.fn(),
+      retryAuth: vi.fn(),
     })
   })
 
@@ -183,7 +190,9 @@ describe("contact page", () => {
   })
 
   it("shows backend validation errors and preserves every form value", async () => {
-    vi.mocked(submitContact).mockRejectedValueOnce(new Error("Name is required"))
+    vi.mocked(submitContact).mockRejectedValueOnce(
+      new ApiClientError({ message: "Name is required" }, 400)
+    )
     render(<ContactPage />)
     fillGuestForm()
 
@@ -197,7 +206,9 @@ describe("contact page", () => {
   })
 
   it("shows the rate-limit error without clearing the form", async () => {
-    vi.mocked(submitContact).mockRejectedValueOnce(new Error("Too many requests. Please try again later."))
+    vi.mocked(submitContact).mockRejectedValueOnce(
+      new ApiClientError({ message: "Too many requests. Please try again later." }, 429)
+    )
     render(<ContactPage />)
     fillGuestForm()
 

@@ -27,11 +27,14 @@ function mockAuth(isAuthenticated: boolean) {
   vi.mocked(useAuth).mockReturnValue({
     isAuthenticated,
     isLoading: false,
+    authStatus: isAuthenticated ? "authenticated" : "unauthenticated",
+    authError: null,
     user: null,
     login: vi.fn(),
     register: vi.fn(),
     logout: vi.fn(),
     refreshUser: vi.fn(),
+    retryAuth: vi.fn(),
   })
 }
 
@@ -67,6 +70,7 @@ describe("practice page final UI", () => {
     expect(screen.getByRole("heading", { name: "Chemistry" })).toBeInTheDocument()
     expect(screen.queryByText("Higher Math")).not.toBeInTheDocument()
     expect(screen.getAllByText("MCQ practice available")).toHaveLength(3)
+    expect(screen.getByText(/Beta Pro includes Weak Area Analysis and Board-only MCQ sets for more focused revision/)).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "How practice works" })).toHaveAttribute("href", "/how-it-works")
 
     expect(screen.getAllByRole("link", { name: "Start Practice" })[0]).toHaveAttribute(

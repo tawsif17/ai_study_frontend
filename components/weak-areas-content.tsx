@@ -55,7 +55,7 @@ function normalizeAttemptCount(value: number) {
 
 export function WeakAreasContent() {
   const router = useRouter()
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { authStatus, isAuthenticated, isLoading: authLoading } = useAuth()
   const { dashboard, isLoading, isError, mutate } = useProgressDashboard(isAuthenticated)
   const [selectedSubject, setSelectedSubject] = useState<SubjectFilterKey>("all")
   const [isStarting, setIsStarting] = useState(false)
@@ -65,10 +65,10 @@ export function WeakAreasContent() {
   const unauthorized = isError instanceof ApiClientError && isError.status === 401
 
   useEffect(() => {
-    if ((!authLoading && !isAuthenticated) || unauthorized) {
+    if ((!authLoading && authStatus === "unauthenticated") || unauthorized) {
       router.push(`/login?next=${encodeURIComponent(RETURN_PATH)}`)
     }
-  }, [authLoading, isAuthenticated, router, unauthorized])
+  }, [authLoading, authStatus, router, unauthorized])
 
   const ranking = useMemo(
     () => dashboard?.weakness_ranking ?? [],
@@ -132,9 +132,11 @@ export function WeakAreasContent() {
     }
   }
 
-  if (authLoading || (!isAuthenticated && !unauthorized)) return <WeakAreasSkeleton />
+  if (authLoading || (authStatus === "retryable-refresh-error" && !unauthorized)) {
+    return <WeakAreasSkeleton />
+  }
 
-  if (unauthorized || !isAuthenticated) {
+  if (unauthorized || authStatus === "unauthenticated") {
     return (
       <CenteredState
         icon={AlertCircle}
@@ -159,19 +161,6 @@ export function WeakAreasContent() {
     )
   }
 
-  const noData = dashboard.proficiency === null && ranking.length === 0 && supportedRecommendation === null
-
-  if (noData) {
-    return (
-      <CenteredState
-        icon={BookOpen}
-        heading="Your weak areas will appear here"
-        body="Complete and submit an MCQ practice session to start building your revision guide."
-        action={<Button asChild><Link href="/subjects">Choose a subject</Link></Button>}
-      />
-    )
-  }
-
   return (
     <div className="bg-[linear-gradient(180deg,rgba(19,117,201,0.045),rgba(255,255,255,0)_34rem)]">
       <div className="container mx-auto max-w-7xl px-4 py-8 sm:py-10 lg:px-8 lg:py-12">
@@ -184,7 +173,21 @@ export function WeakAreasContent() {
           {dashboard.proficiency && <ProficiencySummary score={dashboard.proficiency.score} trend={dashboard.proficiency.trend_vs_last_week} />}
         </header>
 
-        <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1.75fr)_minmax(19rem,0.9fr)] lg:items-start">
+        {dashboard.weak_areas_access.required_plan === "pro" ? (
+          <AccessPanel
+            heading="Weak Areas is in Beta Pro"
+            message={dashboard.weak_areas_access.message ?? "Activate Beta Pro to unlock chapter rankings and recommended practice."}
+            action={<Button asChild><Link href={`/pricing?next=${encodeURIComponent(RETURN_PATH)}`}>View Beta Pro</Link></Button>}
+          />
+        ) : !dashboard.weak_areas_access.unlocked ? (
+          <AccessPanel
+            heading="Complete more chapter practice"
+            message={dashboard.weak_areas_access.message ?? `Complete at least ${dashboard.weak_areas_access.minimum_attempts} questions in one chapter to unlock Weak Areas.`}
+            action={<Button asChild><Link href="/subjects">Choose a subject</Link></Button>}
+          />
+        ) : (
+          <>
+            <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1.75fr)_minmax(19rem,0.9fr)] lg:items-start">
           <aside className="lg:col-start-2 lg:row-start-1">
             {supportedRecommendation ? (
               <RecommendationPanel
@@ -238,7 +241,7 @@ export function WeakAreasContent() {
                 <div className="rounded-xl border border-border bg-card px-5 py-10 text-center">
                   <BookOpen className="mx-auto h-8 w-8 text-primary" aria-hidden="true" />
                   <h3 className="mt-3 text-lg font-semibold text-foreground">No assessed chapters for {subjectFilters.find((item) => item.key === selectedSubject)?.label}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">Complete and submit more MCQ practice for this subject, or return to all ranked chapters.</p>
+                  <p className="mt-2 text-sm text-muted-foreground">Complete and submit another MCQ session for this subject, or return to all ranked chapters.</p>
                   <Button variant="outline" className="mt-5" onClick={() => setSelectedSubject("all")}>Show all subjects</Button>
                 </div>
               )}
@@ -247,14 +250,27 @@ export function WeakAreasContent() {
             <p className="mt-4 flex items-start gap-2 text-sm leading-6 text-muted-foreground"><TrendingUp className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />Lower accuracy appears first when enough questions have been attempted.</p>
           </section>
 
-        </div>
+            </div>
 
-        <div className="mt-8 flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/[0.035] p-4 text-sm leading-6 text-muted-foreground">
-          <Info className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-          <p>Weak areas use submitted MCQ answers. Chapters with fewer than 5 attempted questions need more practice before assessment.</p>
-        </div>
+            <div className="mt-8 flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/[0.035] p-4 text-sm leading-6 text-muted-foreground">
+              <Info className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              <p>Weak areas use submitted MCQ answers. A chapter needs at least {dashboard.weak_areas_access.minimum_attempts} attempted questions before assessment.</p>
+            </div>
+          </>
+        )}
       </div>
     </div>
+  )
+}
+
+function AccessPanel({ heading, message, action }: { heading: string; message: string; action: ReactNode }) {
+  return (
+    <section className="mt-10 rounded-2xl border border-primary/20 bg-card p-8 text-center shadow-sm" aria-labelledby="weak-areas-access-heading">
+      <BookOpen className="mx-auto h-9 w-9 text-primary" aria-hidden="true" />
+      <h2 id="weak-areas-access-heading" className="mt-4 text-2xl font-bold text-foreground">{heading}</h2>
+      <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{message}</p>
+      <div className="mt-6">{action}</div>
+    </section>
   )
 }
 
