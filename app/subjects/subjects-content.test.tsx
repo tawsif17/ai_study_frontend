@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { SubjectsContent } from "./subjects-content"
 import { useSubjects } from "@/lib/api/hooks"
 import { useAuth } from "@/lib/auth-context"
+import type { AuthUser } from "@/lib/api"
 
 const mockReplace = vi.fn()
 
@@ -23,13 +24,30 @@ vi.mock("@/lib/api/hooks", () => ({
   useSubjects: vi.fn(),
 }))
 
-function mockAuth(isAuthenticated: boolean) {
+const authenticatedUser: AuthUser = {
+  id: "student-id",
+  email: "student@example.com",
+  full_name: "Student Name",
+  role: "student",
+  plan_tier: "free",
+  school: "Example High School",
+  city: "Dhaka",
+  student_class: 10,
+  academic_group: "SCIENCE",
+  curriculum_version: "ENGLISH",
+  email_verified_at: "2026-08-01T00:00:00.000Z",
+  last_login_at: null,
+  created_at: "2026-08-01T00:00:00.000Z",
+  updated_at: "2026-08-01T00:00:00.000Z",
+}
+
+function mockAuth(isAuthenticated: boolean, user: AuthUser = authenticatedUser) {
   vi.mocked(useAuth).mockReturnValue({
     isAuthenticated,
     isLoading: false,
     authStatus: isAuthenticated ? "authenticated" : "unauthenticated",
     authError: null,
-    user: null,
+    user: isAuthenticated ? user : null,
     login: vi.fn(),
     register: vi.fn(),
     logout: vi.fn(),
@@ -94,6 +112,37 @@ describe("practice page final UI", () => {
       expect(mockReplace).toHaveBeenCalledWith("/subjects/11")
     })
     expect(useSubjects).toHaveBeenCalledWith("SSC", true)
+  })
+
+  it("renders only subjects returned for an authenticated business studies student", () => {
+    mockAuth(true, { ...authenticatedUser, academic_group: "BUSINESS_STUDIES" })
+    mockSubjects([{ id: 7, name: "General Math" }])
+
+    render(<SubjectsContent />)
+
+    expect(screen.getByRole("heading", { name: "General Math" })).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Physics" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Chemistry" })).not.toBeInTheDocument()
+  })
+
+  it("shows the English-only message for an authenticated Bangla student", () => {
+    mockAuth(true, { ...authenticatedUser, curriculum_version: "BANGLA" })
+    mockSubjects([])
+
+    render(<SubjectsContent />)
+
+    expect(screen.getByText(
+      "Only English Version questions are available right now. Bangla Version questions are coming soon—stay tuned."
+    )).toBeInTheDocument()
+  })
+
+  it("keeps the generic empty state for an English student", () => {
+    mockAuth(true)
+    mockSubjects([])
+
+    render(<SubjectsContent />)
+
+    expect(screen.getByText("No subjects are available right now. Please check back soon.")).toBeInTheDocument()
   })
 
   it("shows a recovery state when the saved subject cannot be matched", async () => {

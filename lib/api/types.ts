@@ -76,6 +76,12 @@ export const BANGLADESH_DISTRICT_NAMES = [
 
 export type DistrictName = (typeof BANGLADESH_DISTRICT_NAMES)[number]
 
+export const ACADEMIC_GROUPS = ["SCIENCE", "BUSINESS_STUDIES", "HUMANITIES"] as const
+export type AcademicGroup = (typeof ACADEMIC_GROUPS)[number]
+
+export const CURRICULUM_VERSIONS = ["ENGLISH", "BANGLA"] as const
+export type CurriculumVersion = (typeof CURRICULUM_VERSIONS)[number]
+
 export interface DistrictsResponse {
   districts: DistrictName[]
 }
@@ -93,6 +99,8 @@ export interface AuthUser {
   school: string | null
   city: string | null
   student_class: number | null
+  academic_group: AcademicGroup
+  curriculum_version: CurriculumVersion
   email_verified_at: string | null
   last_login_at: string | null
   created_at: string
@@ -106,6 +114,8 @@ export interface RegisterRequest {
   school: string
   city: DistrictName
   studentClass: number
+  academicGroup: AcademicGroup
+  curriculumVersion: CurriculumVersion
 }
 
 export interface RegisterResponse {

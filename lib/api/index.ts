@@ -117,6 +117,8 @@ export async function register(data: RegisterRequest): Promise<RegisterResult> {
     school: data.school,
     city: data.city,
     studentClass: data.studentClass,
+    academicGroup: data.academicGroup,
+    curriculumVersion: data.curriculumVersion,
   })
 
   const response = await apiClientWithResponse<RegisterResponse>("/auth/register", {

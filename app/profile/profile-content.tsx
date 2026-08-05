@@ -32,7 +32,7 @@ const nextSteps: Array<{
 }> = [
   {
     title: "Start MCQ practice",
-    description: "Choose General Math, Physics, or Chemistry and practise by topic.",
+    description: "Choose an available subject and practise by topic.",
     action: "Choose a subject",
     href: "/subjects",
     icon: BookOpen,
@@ -178,6 +178,15 @@ function ProfileDetails({ user }: { user: AuthUser }) {
   const displayName = getDisplayName(user)
   const planLabel = user.plan_tier === "pro" ? "Beta Pro access" : "Free access"
   const classLabel = user.student_class === null ? "Not provided" : `Class ${user.student_class}`
+  const academicGroupLabel = {
+    SCIENCE: "Science",
+    BUSINESS_STUDIES: "Business Studies (Commerce)",
+    HUMANITIES: "Humanities (Arts)",
+  }[user.academic_group]
+  const curriculumVersionLabel = {
+    ENGLISH: "English Version",
+    BANGLA: "Bangla Version",
+  }[user.curriculum_version]
 
   return (
     <section className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-7" aria-labelledby="account-details-heading">
@@ -195,6 +204,8 @@ function ProfileDetails({ user }: { user: AuthUser }) {
         <ProfileField label="Email" value={user.email} />
         <ProfileField label="School" value={user.school?.trim() || "Not provided"} />
         <ProfileField label="Class" value={classLabel} />
+        <ProfileField label="Academic group" value={academicGroupLabel} />
+        <ProfileField label="Curriculum version" value={curriculumVersionLabel} />
         <ProfileField label="City" value={user.city?.trim() || "Not provided"} />
       </dl>
 

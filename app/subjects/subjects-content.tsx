@@ -17,11 +17,12 @@ import {
 } from "@/lib/beta-subjects"
 import { ApiClientError } from "@/lib/api/client"
 import { useSubjects } from "@/lib/api/hooks"
+import type { Subject } from "@/lib/api/types"
 import { useAuth } from "@/lib/auth-context"
 
 export function SubjectsContent({ selectedSubjectValue = null }: { selectedSubjectValue?: string | null }) {
   const router = useRouter()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const selectedKey = getBetaSubjectKey(selectedSubjectValue)
   const { subjects, isLoading: subjectsLoading, isError } = useSubjects("SSC", isAuthenticated)
   const [resumeError, setResumeError] = useState<string | null>(null)
@@ -110,10 +111,14 @@ export function SubjectsContent({ selectedSubjectValue = null }: { selectedSubje
               <CatalogMessage
                 icon={BookOpen}
                 title="No subjects available"
-                description="No subjects are available right now. Please check back soon."
+                description={
+                  user?.curriculum_version === "BANGLA"
+                    ? "Only English Version questions are available right now. Bangla Version questions are coming soon—stay tuned."
+                    : "No subjects are available right now. Please check back soon."
+                }
               />
             ) : (
-              <SubjectGrid />
+              <SubjectGrid catalogSubjects={isAuthenticated ? subjects : undefined} />
             )}
           </div>
 
@@ -131,10 +136,14 @@ export function SubjectsContent({ selectedSubjectValue = null }: { selectedSubje
   )
 }
 
-function SubjectGrid() {
+function SubjectGrid({ catalogSubjects }: { catalogSubjects?: Subject[] }) {
+  const visibleSubjects = catalogSubjects
+    ? betaSubjects.filter((subject) => findCatalogSubjectForBetaKey(catalogSubjects, subject.key))
+    : betaSubjects
+
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-10">
-      {betaSubjects.map((subject) => (
+      {visibleSubjects.map((subject) => (
         <SubjectCardDetailed key={subject.key} subject={subject} />
       ))}
     </div>

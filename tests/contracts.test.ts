@@ -38,6 +38,8 @@ describe("contract request validators", () => {
       school: "Example High School",
       city: "Dhaka",
       studentClass: 10,
+      academicGroup: "SCIENCE",
+      curriculumVersion: "ENGLISH",
     })
 
     expect(valid).toEqual({
@@ -47,6 +49,8 @@ describe("contract request validators", () => {
       school: "Example High School",
       city: "Dhaka",
       studentClass: 10,
+      academicGroup: "SCIENCE",
+      curriculumVersion: "ENGLISH",
     })
 
     expect(() =>
@@ -57,6 +61,8 @@ describe("contract request validators", () => {
         school: "Example High School",
         city: "Dhaka",
         studentClass: 10,
+        academicGroup: "SCIENCE",
+        curriculumVersion: "ENGLISH",
       })
     ).toThrow("Password must include at least one uppercase letter")
 
@@ -68,6 +74,8 @@ describe("contract request validators", () => {
         school: "Example High School",
         city: "Dhaka",
         studentClass: 10,
+        academicGroup: "SCIENCE",
+        curriculumVersion: "ENGLISH",
         inviteCode: "extra",
       } as never)
     ).toThrow()

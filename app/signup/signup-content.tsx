@@ -14,7 +14,7 @@ import { GraduationCap } from "@/components/icons"
 import { useAuth } from "@/lib/auth-context"
 import { ApiClientError, formatApiError } from "@/lib/api/client"
 import { useDistricts } from "@/lib/api/hooks"
-import type { DistrictName } from "@/lib/api"
+import type { AcademicGroup, CurriculumVersion, DistrictName } from "@/lib/api"
 import {
   isUncertainSignupDeliveryError,
   isValidVerificationEmail,
@@ -22,7 +22,15 @@ import {
 } from "@/lib/verification-form-recovery"
 import { DistrictCombobox } from "./district-combobox"
 
-type SignupField = "name" | "email" | "password" | "school" | "city" | "class"
+type SignupField =
+  | "name"
+  | "email"
+  | "password"
+  | "school"
+  | "city"
+  | "class"
+  | "academicGroup"
+  | "curriculumVersion"
 type SignupFieldErrors = Partial<Record<SignupField, string>>
 
 export function SignupContent() {
@@ -50,6 +58,8 @@ export function SignupContent() {
     school: string
     city: DistrictName | ""
     class: string
+    academicGroup: AcademicGroup | ""
+    curriculumVersion: CurriculumVersion | ""
   }>({
     name: "",
     email: "",
@@ -57,6 +67,8 @@ export function SignupContent() {
     school: "",
     city: "",
     class: "",
+    academicGroup: "",
+    curriculumVersion: "",
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,9 +86,11 @@ export function SignupContent() {
       nextFieldErrors.city = "Select a valid Bangladesh district."
     }
     if (!formData.class) nextFieldErrors.class = "Select your class."
+    if (!formData.academicGroup) nextFieldErrors.academicGroup = "Select your academic group."
+    if (!formData.curriculumVersion) nextFieldErrors.curriculumVersion = "Select your curriculum version."
     setFieldErrors(nextFieldErrors)
     if (Object.keys(nextFieldErrors).length > 0) return
-    if (!selectedDistrict) return
+    if (!selectedDistrict || !formData.academicGroup || !formData.curriculumVersion) return
 
     setSubmittedEmail(normalizedEmail)
     setFormData((current) => ({ ...current, email: normalizedEmail }))
@@ -93,6 +107,8 @@ export function SignupContent() {
         school: formData.school,
         city: selectedDistrict,
         studentClass: Number.parseInt(formData.class, 10),
+        academicGroup: formData.academicGroup,
+        curriculumVersion: formData.curriculumVersion,
       })
       if (response.status === 202) {
         setSuccess(response.data.message)
@@ -144,7 +160,7 @@ export function SignupContent() {
               </div>
             </div>
             <CardTitle className="text-2xl" role="heading" aria-level={1}>Create an account</CardTitle>
-            <CardDescription>Start focused SSC science practice</CardDescription>
+            <CardDescription>Start focused SSC practice</CardDescription>
           </CardHeader>
           <CardContent>
             {registrationComplete ? (
@@ -355,6 +371,67 @@ export function SignupContent() {
                     </SelectContent>
                   </Select>
                   {fieldErrors.class && <p id="signup-class-error" className="text-sm text-destructive">{fieldErrors.class}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="academic-group">Academic Group</Label>
+                  <Select
+                    value={formData.academicGroup}
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, academicGroup: value as AcademicGroup })
+                      setFieldErrors((current) => ({ ...current, academicGroup: undefined }))
+                    }}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger
+                      id="academic-group"
+                      aria-invalid={Boolean(fieldErrors.academicGroup)}
+                      aria-describedby={fieldErrors.academicGroup ? "signup-academic-group-error" : undefined}
+                    >
+                      <SelectValue placeholder="Select group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="SCIENCE">Science</SelectItem>
+                      <SelectItem value="BUSINESS_STUDIES">Business Studies (Commerce)</SelectItem>
+                      <SelectItem value="HUMANITIES">Humanities (Arts)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {fieldErrors.academicGroup && (
+                    <p id="signup-academic-group-error" className="text-sm text-destructive">
+                      {fieldErrors.academicGroup}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="curriculum-version">Curriculum Version</Label>
+                  <Select
+                    value={formData.curriculumVersion}
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, curriculumVersion: value as CurriculumVersion })
+                      setFieldErrors((current) => ({ ...current, curriculumVersion: undefined }))
+                    }}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger
+                      id="curriculum-version"
+                      aria-invalid={Boolean(fieldErrors.curriculumVersion)}
+                      aria-describedby={fieldErrors.curriculumVersion ? "signup-curriculum-version-error" : undefined}
+                    >
+                      <SelectValue placeholder="Select version" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ENGLISH">English Version</SelectItem>
+                      <SelectItem value="BANGLA">Bangla Version</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {fieldErrors.curriculumVersion && (
+                    <p id="signup-curriculum-version-error" className="text-sm text-destructive">
+                      {fieldErrors.curriculumVersion}
+                    </p>
+                  )}
                 </div>
               </div>
 

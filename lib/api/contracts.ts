@@ -1,6 +1,11 @@
 import { z } from "zod"
 import { ApiClientError, ApiContractError } from "./client"
-import { BANGLADESH_DISTRICT_NAMES, questionReportReasonOptions } from "./types"
+import {
+  ACADEMIC_GROUPS,
+  BANGLADESH_DISTRICT_NAMES,
+  CURRICULUM_VERSIONS,
+  questionReportReasonOptions,
+} from "./types"
 import type {
   ContactSubmitRequest,
   AuthMeResponse,
@@ -53,6 +58,8 @@ const registerRequestSchema = z
       errorMap: () => ({ message: "City must be a valid Bangladesh district" }),
     }),
     studentClass: z.number().int(),
+    academicGroup: z.enum(ACADEMIC_GROUPS),
+    curriculumVersion: z.enum(CURRICULUM_VERSIONS),
   })
   .strict()
 
@@ -210,6 +217,8 @@ const authUserSchema: z.ZodType<AuthUser> = z
     school: z.string().nullable(),
     city: z.string().nullable(),
     student_class: z.number().int().nullable(),
+    academic_group: z.enum(ACADEMIC_GROUPS),
+    curriculum_version: z.enum(CURRICULUM_VERSIONS),
     email_verified_at: z.string().nullable(),
     last_login_at: z.string().nullable(),
     created_at: z.string(),
