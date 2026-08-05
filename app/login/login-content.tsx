@@ -92,7 +92,7 @@ export function LoginContent() {
               </div>
             </div>
             <CardTitle className="text-2xl" role="heading" aria-level={1}>Welcome back</CardTitle>
-            <CardDescription>Sign in to continue your SSC science practice</CardDescription>
+            <CardDescription>Sign in to continue your SSC practice</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
