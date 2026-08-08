@@ -23,8 +23,8 @@ describe("BrandLogo", () => {
     const logo = screen.getByRole("img", { name: "Shikkha Buddy" })
 
     expect(logo).toHaveAttribute("data-src", "/shikkha-buddy-logo.svg")
-    expect(logo).toHaveAttribute("data-width", "877")
-    expect(logo).toHaveAttribute("data-height", "136")
+    expect(logo).toHaveAttribute("data-width", "980")
+    expect(logo).toHaveAttribute("data-height", "340")
     expect(logo).toHaveClass("h-10", "w-auto")
   })
 })
