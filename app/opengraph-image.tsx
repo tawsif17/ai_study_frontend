@@ -29,7 +29,7 @@ export default async function OpenGraphImage() {
           <div style={{ display: "flex", flexDirection: "column", maxWidth: "760px" }}>
             <div style={{ color: "#1375c9", fontSize: 34, fontWeight: 700 }}>Shikkha Buddy</div>
             <div style={{ marginTop: 28, fontSize: 66, lineHeight: 1.08, fontWeight: 800 }}>Practice smarter for SSC exams</div>
-            <div style={{ marginTop: 26, fontSize: 29, color: "#516078" }}>General Math · Physics · Chemistry</div>
+            <div style={{ marginTop: 26, fontSize: 29, color: "#516078" }}>Mathematics · Physics · Chemistry</div>
           </div>
           <div style={{ display: "flex", height: 240, width: 240, alignItems: "center", justifyContent: "center" }}>
             {/* eslint-disable-next-line @next/next/no-img-element -- ImageResponse renders embedded assets through img elements. */}

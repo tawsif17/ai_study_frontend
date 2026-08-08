@@ -56,7 +56,7 @@ const sections: PolicySection[] = [
     id: "about",
     title: "About Shikkha Buddy",
     paragraphs: [
-      "Shikkha Buddy is an SSC practice platform for students in Bangladesh. The current beta focuses on General Math, Physics, and Chemistry, with practice, explanations, revision guidance, and related learning tools.",
+      "Shikkha Buddy is an SSC practice platform for students in Bangladesh. The current beta focuses on Mathematics, Physics, and Chemistry, with practice, explanations, revision guidance, and related learning tools.",
     ],
   },
   {

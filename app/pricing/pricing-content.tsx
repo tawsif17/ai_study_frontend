@@ -7,7 +7,7 @@ import { ArrowRight, BookOpen, Check, CheckCircle, Sparkles, Target, Zap } from 
 import { UpgradeToProButton } from "@/components/upgrade-to-pro-button"
 import { AuthGatedLink } from "@/components/auth-gated-link"
 
-const subjects = "General Math, Physics & Chemistry"
+const subjects = "Mathematics, Physics & Chemistry"
 
 const freeFeatures = [
   "AI-generated MCQ practice",

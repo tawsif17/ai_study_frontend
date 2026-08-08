@@ -23,17 +23,17 @@ export const metadata: Metadata = {
   title: "SSC MCQ Practice | Shikkha Buddy",
   alternates: { canonical: "/" },
   description:
-    "Practice AI-generated SSC MCQs for General Math, Physics, and Chemistry, then review correct answers after each submitted session.",
+    "Practice AI-generated SSC MCQs for Mathematics, Physics, and Chemistry, then review correct answers after each submitted session.",
   openGraph: {
     title: "SSC MCQ Practice | Shikkha Buddy",
     description:
-      "Practice AI-generated SSC MCQs for General Math, Physics, and Chemistry, then review correct answers after each submitted session.",
+      "Practice AI-generated SSC MCQs for Mathematics, Physics, and Chemistry, then review correct answers after each submitted session.",
   },
   twitter: {
     card: "summary",
     title: "SSC MCQ Practice | Shikkha Buddy",
     description:
-      "Practice AI-generated SSC MCQs for General Math, Physics, and Chemistry, then review correct answers after each submitted session.",
+      "Practice AI-generated SSC MCQs for Mathematics, Physics, and Chemistry, then review correct answers after each submitted session.",
   },
 }
 
@@ -48,7 +48,7 @@ const subjects: Array<{
 }> = [
   {
     key: "general-math",
-    title: "General Math",
+    title: "Mathematics",
     description: "Algebra, Geometry, Arithmetic, Mensuration",
     icon: Calculator,
     tone: "from-[#7c6df2] to-[#5266d8]",
