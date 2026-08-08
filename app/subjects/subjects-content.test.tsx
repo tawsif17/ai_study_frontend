@@ -83,7 +83,7 @@ describe("practice page final UI", () => {
 
     expect(screen.getByRole("heading", { level: 1, name: "Choose a subject to practice" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Available subjects" })).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "General Math" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Mathematics" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Physics" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Chemistry" })).toBeInTheDocument()
     expect(screen.queryByText("Higher Math")).not.toBeInTheDocument()
@@ -101,7 +101,7 @@ describe("practice page final UI", () => {
   it("resumes a signed-in selected subject through its authenticated catalog ID", async () => {
     mockAuth(true)
     mockSubjects([
-      { id: 7, name: "General Math" },
+      { id: 7, name: "Mathematics" },
       { id: 11, name: "Physics" },
       { id: 19, name: "Chemistry" },
     ])
@@ -114,15 +114,30 @@ describe("practice page final UI", () => {
     expect(useSubjects).toHaveBeenCalledWith("SSC", true)
   })
 
-  it("renders only subjects returned for an authenticated business studies student", () => {
+  it("renders every authenticated catalogue subject in API order with database names and ID destinations", () => {
     mockAuth(true, { ...authenticatedUser, academic_group: "BUSINESS_STUDIES" })
-    mockSubjects([{ id: 7, name: "General Math" }])
+    mockSubjects([
+      { id: 19, name: "Chemistry" },
+      { id: 23, name: "Biology" },
+      { id: 7, name: "Mathematics" },
+      { id: 11, name: "Physics" },
+    ])
 
     render(<SubjectsContent />)
 
-    expect(screen.getByRole("heading", { name: "General Math" })).toBeInTheDocument()
-    expect(screen.queryByRole("heading", { name: "Physics" })).not.toBeInTheDocument()
-    expect(screen.queryByRole("heading", { name: "Chemistry" })).not.toBeInTheDocument()
+    expect(screen.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent)).toEqual([
+      "Chemistry",
+      "Biology",
+      "Mathematics",
+      "Physics",
+    ])
+    expect(screen.getByText("Choose chapters and start focused MCQ practice.")).toBeInTheDocument()
+    expect(screen.getAllByRole("link", { name: "Start Practice" }).map((link) => link.getAttribute("href"))).toEqual([
+      "/subjects/19",
+      "/subjects/23",
+      "/subjects/7",
+      "/subjects/11",
+    ])
   })
 
   it("shows the English-only message for an authenticated Bangla student", () => {
@@ -147,7 +162,7 @@ describe("practice page final UI", () => {
 
   it("shows a recovery state when the saved subject cannot be matched", async () => {
     mockAuth(true)
-    mockSubjects([{ id: 7, name: "General Math" }])
+    mockSubjects([{ id: 7, name: "Mathematics" }])
 
     render(<SubjectsContent selectedSubjectValue="chemistry" />)
 
@@ -155,4 +170,18 @@ describe("practice page final UI", () => {
     expect(screen.getByRole("link", { name: "Choose another subject" })).toHaveAttribute("href", "/subjects")
     expect(mockReplace).not.toHaveBeenCalled()
   })
+
+  it.each(["Mathematics", "Higher Mathematics"])(
+    "resolves the public Mathematics selection against the catalogue name %s",
+    async (catalogueName) => {
+      mockAuth(true)
+      mockSubjects([{ id: 7, name: catalogueName }])
+
+      render(<SubjectsContent selectedSubjectValue="general-math" />)
+
+      await waitFor(() => {
+        expect(mockReplace).toHaveBeenCalledWith("/subjects/7")
+      })
+    }
+  )
 })

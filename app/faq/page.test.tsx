@@ -49,7 +49,7 @@ describe("FAQ page", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Questions about practising with Shikkha Buddy?" }),
     ).toBeInTheDocument()
-    expect(screen.getByText("General Math, Physics, and Chemistry are available during the beta.")).toBeInTheDocument()
+    expect(screen.getByText("Mathematics, Physics, and Chemistry are available during the beta.")).toBeInTheDocument()
     expect(screen.queryByText(/Higher Math/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/Refund Policy/i)).not.toBeInTheDocument()
 

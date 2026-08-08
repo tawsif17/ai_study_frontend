@@ -86,7 +86,7 @@ describe("homepage final UI", () => {
     expect(screen.getByText("Mixed Practice")).toBeInTheDocument()
     expect(screen.getAllByText("Coming soon")).toHaveLength(2)
 
-    expect(screen.getByRole("heading", { name: "General Math" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Mathematics" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Physics" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Chemistry" })).toBeInTheDocument()
     expect(screen.queryByText("Higher Math")).not.toBeInTheDocument()

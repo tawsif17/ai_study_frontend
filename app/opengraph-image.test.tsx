@@ -30,6 +30,7 @@ describe("OpenGraphImage", () => {
     render(card)
 
     expect(dimensions).toEqual(size)
+    expect(screen.getByText("Mathematics · Physics · Chemistry")).toBeInTheDocument()
     expect(screen.getByRole("img", { name: "Shikkha Buddy monogram" })).toHaveAttribute(
       "src",
       `data:image/png;base64,${approvedMonogram}`,
