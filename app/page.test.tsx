@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import HomePage from "./page"
+import HomePage, { homepageStructuredData, metadata } from "./page"
 import { useAuth } from "@/lib/auth-context"
 
 vi.mock("next/navigation", () => ({
@@ -45,7 +45,7 @@ describe("homepage final UI", () => {
     render(<HomePage />)
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "Practice smarter for SSC exams" })
+      screen.getByRole("heading", { level: 1, name: "Practice smarter for SSC exams with Shikkha Buddy" })
     ).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "MCQ practice preview" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Start practicing" })).toBeInTheDocument()
@@ -73,6 +73,37 @@ describe("homepage final UI", () => {
     expect(subjectStartLinks[0]).toHaveAttribute("href", "/login?next=%2Fsubjects%3Fsubject%3Dgeneral-math")
     expect(subjectStartLinks[1]).toHaveAttribute("href", "/login?next=%2Fsubjects%3Fsubject%3Dphysics")
     expect(subjectStartLinks[2]).toHaveAttribute("href", "/login?next=%2Fsubjects%3Fsubject%3Dchemistry")
+  })
+
+  it("publishes brand-first metadata and linked website and organization entities", () => {
+    const graph = homepageStructuredData["@graph"]
+    const website = graph.find((node) => node["@type"] === "WebSite")
+    const organization = graph.find((node) => node["@type"] === "Organization")
+
+    expect(metadata.title).toBe("Shikkha Buddy | SSC MCQ Practice for Bangladesh")
+    expect(metadata.alternates).toEqual({ canonical: "https://shikkhabuddy.com/" })
+    expect(metadata.description).toContain("Bangladesh-focused SSC practice platform")
+    expect(website).toMatchObject({
+      "@id": "https://shikkhabuddy.com/#website",
+      url: "https://shikkhabuddy.com/",
+      name: "Shikkha Buddy",
+      alternateName: "Shikkha Buddy Bangladesh",
+      inLanguage: "en-BD",
+      publisher: { "@id": "https://shikkhabuddy.com/#organization" },
+    })
+    expect(organization).toMatchObject({
+      "@id": "https://shikkhabuddy.com/#organization",
+      url: "https://shikkhabuddy.com/",
+      name: "Shikkha Buddy",
+      logo: "https://shikkhabuddy.com/shikkha-buddy-monogram.png",
+      email: "shikkhabuddy@gmail.com",
+    })
+
+    render(<HomePage />)
+    const structuredDataScript = document.querySelector('script[type="application/ld+json"]')
+
+    expect(structuredDataScript).not.toBeNull()
+    expect(JSON.parse(structuredDataScript?.textContent ?? "")).toEqual(homepageStructuredData)
   })
 
   it("renders static availability, disabled future modes, subjects, and hidden social links", () => {
