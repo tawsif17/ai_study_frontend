@@ -22,7 +22,7 @@ const frequentlyAsked: FAQItem[] = [
   {
     value: "available-subjects",
     question: "Which subjects are available during the beta?",
-    answer: "General Math, Physics, and Chemistry are available during the beta.",
+    answer: "Mathematics, Physics, and Chemistry are available during the beta.",
   },
   {
     value: "practice-now",

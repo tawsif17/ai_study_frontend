@@ -38,7 +38,7 @@ describe("PricingContent", () => {
   it("shows the approved Beta Pro feature information", () => {
     render(<PricingContent />)
 
-    expect(screen.getAllByText("General Math, Physics & Chemistry")).toHaveLength(1)
+    expect(screen.getAllByText("Mathematics, Physics & Chemistry")).toHaveLength(1)
     expect(screen.getByText("Start free. Activate Beta Pro when revision needs more focus.")).toBeInTheDocument()
     expect(screen.getAllByText("Board-only MCQ sets")).toHaveLength(2)
     expect(screen.getAllByText("Weak Area Analysis")).toHaveLength(2)

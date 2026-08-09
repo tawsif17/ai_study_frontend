@@ -2,17 +2,17 @@ import type { Metadata } from "next"
 import { SubjectsContent } from "./subjects-content"
 
 export const metadata: Metadata = {
-  title: "Practice | Shikkha Buddy",
+  title: "SSC Mathematics, Physics & Chemistry MCQ Practice | Shikkha Buddy",
   alternates: { canonical: "/subjects" },
-  description: "Choose an SSC subject, then select chapters and start focused MCQ practice in Shikkha Buddy.",
+  description: "Choose SSC Mathematics, Physics, or Chemistry, select chapters, and start focused MCQ practice with Shikkha Buddy.",
   openGraph: {
-    title: "Practice | Shikkha Buddy",
-    description: "Choose an SSC subject, then select chapters and start focused MCQ practice in Shikkha Buddy.",
+    title: "SSC Mathematics, Physics & Chemistry MCQ Practice | Shikkha Buddy",
+    description: "Choose SSC Mathematics, Physics, or Chemistry, select chapters, and start focused MCQ practice with Shikkha Buddy.",
   },
   twitter: {
     card: "summary",
-    title: "Practice | Shikkha Buddy",
-    description: "Choose an SSC subject, then select chapters and start focused MCQ practice in Shikkha Buddy.",
+    title: "SSC Mathematics, Physics & Chemistry MCQ Practice | Shikkha Buddy",
+    description: "Choose SSC Mathematics, Physics, or Chemistry, select chapters, and start focused MCQ practice with Shikkha Buddy.",
   },
 }
 

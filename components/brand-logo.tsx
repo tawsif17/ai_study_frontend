@@ -11,8 +11,8 @@ export function BrandLogo({ className, priority = false }: BrandLogoProps) {
     <Image
       src="/shikkha-buddy-logo.svg"
       alt="Shikkha Buddy"
-      width={877}
-      height={136}
+      width={980}
+      height={340}
       priority={priority}
       unoptimized
       className={cn("h-9 w-auto shrink-0", className)}

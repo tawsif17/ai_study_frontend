@@ -1,10 +1,15 @@
 import { ImageResponse } from "next/og"
+import { readFile } from "node:fs/promises"
+import { join } from "node:path"
 
 export const alt = "Shikkha Buddy SSC practice"
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
 
-export default function OpenGraphImage() {
+export default async function OpenGraphImage() {
+  const monogramData = await readFile(join(process.cwd(), "public", "shikkha-buddy-monogram.png"), "base64")
+  const monogramSrc = `data:image/png;base64,${monogramData}`
+
   return new ImageResponse(
     (
       <div
@@ -24,9 +29,18 @@ export default function OpenGraphImage() {
           <div style={{ display: "flex", flexDirection: "column", maxWidth: "760px" }}>
             <div style={{ color: "#1375c9", fontSize: 34, fontWeight: 700 }}>Shikkha Buddy</div>
             <div style={{ marginTop: 28, fontSize: 66, lineHeight: 1.08, fontWeight: 800 }}>Practice smarter for SSC exams</div>
-            <div style={{ marginTop: 26, fontSize: 29, color: "#516078" }}>General Math · Physics · Chemistry</div>
+            <div style={{ marginTop: 26, fontSize: 29, color: "#516078" }}>Mathematics · Physics · Chemistry</div>
           </div>
-          <div style={{ display: "flex", height: 240, width: 240, alignItems: "center", justifyContent: "center", borderRadius: 52, background: "#1375c9", color: "white", fontSize: 112, fontWeight: 800 }}>SB</div>
+          <div style={{ display: "flex", height: 240, width: 240, alignItems: "center", justifyContent: "center" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- ImageResponse renders embedded assets through img elements. */}
+            <img
+              src={monogramSrc}
+              alt="Shikkha Buddy monogram"
+              width={240}
+              height={228}
+              style={{ objectFit: "contain" }}
+            />
+          </div>
         </div>
       </div>
     ),

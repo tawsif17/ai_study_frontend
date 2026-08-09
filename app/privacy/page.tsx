@@ -50,7 +50,7 @@ const sections: PolicySection[] = [
     title: "Introduction",
     paragraphs: [
       "This Privacy Policy explains what information Shikkha Buddy collects, how we use it, and how you can request access, correction, or deletion.",
-      "Shikkha Buddy is an SSC practice platform for students in Bangladesh. The current beta focuses on General Math, Physics, and Chemistry.",
+      "Shikkha Buddy is an SSC practice platform for students in Bangladesh. The current beta focuses on Mathematics, Physics, and Chemistry.",
     ],
   },
   {

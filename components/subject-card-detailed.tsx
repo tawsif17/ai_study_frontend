@@ -10,7 +10,6 @@ interface SubjectCardDetailedProps {
 
 export function SubjectCardDetailed({ subject }: SubjectCardDetailedProps) {
   const Icon = subject.icon
-  const destination = `/subjects?subject=${subject.key}`
 
   return (
     <article className="flex h-full flex-col rounded-xl border border-border bg-card p-6 shadow-sm">
@@ -35,7 +34,7 @@ export function SubjectCardDetailed({ subject }: SubjectCardDetailedProps) {
       </p>
 
       <Button className="mt-6 h-13 w-full rounded-lg text-base shadow-primary" asChild>
-        <AuthGatedLink href={destination}>Start Practice</AuthGatedLink>
+        <AuthGatedLink href={subject.destination}>Start Practice</AuthGatedLink>
       </Button>
     </article>
   )

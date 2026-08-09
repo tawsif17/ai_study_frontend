@@ -13,6 +13,8 @@ const verifiedUser = {
   school: "Example School",
   city: "Chattogram",
   student_class: 9,
+  academic_group: "SCIENCE",
+  curriculum_version: "ENGLISH",
   email_verified_at: now,
   last_login_at: now,
   created_at: now,
@@ -444,7 +446,7 @@ test("practice saves an answer, submits, and transitions to results", async ({ p
     if (path === "/api/subjects") {
       return fulfillData(route, {
         exam_type: "SSC",
-        subjects: [{ id: 2, name: "General Math", exam_type_id: 1, exam_type_code: "SSC", exam_type_name: "SSC" }],
+        subjects: [{ id: 2, name: "Mathematics", exam_type_id: 1, exam_type_code: "SSC", exam_type_name: "SSC" }],
       })
     }
     return fulfillError(route, 404, `Unmocked request: ${request.method()} ${path}`)
@@ -590,6 +592,43 @@ test("homepage acquisition CTAs switch to Practice after authentication", async 
   await expect(authenticatedMain.getByRole("link", { name: "Start free", exact: true })).toHaveCount(0)
   await expect(authenticatedMain.getByRole("link", { name: "Start free practice", exact: true })).toHaveCount(0)
   await expect(authenticatedMain.getByRole("link", { name: "Start Practice", exact: true })).toHaveCount(3)
+})
+
+test("authenticated subjects display database names in API order and use database IDs", async ({ page }) => {
+  await page.route(`${API_BASE}/auth/me`, (route) =>
+    fulfillData(route, {
+      user: { ...verifiedUser, academic_group: "SCIENCE", curriculum_version: "ENGLISH" },
+    })
+  )
+  await page.route(`${API_BASE}/subjects?*`, (route) =>
+    fulfillData(route, {
+      exam_type: "SSC",
+      subjects: [
+        { id: 19, name: "Chemistry", exam_type_id: 1, exam_type_code: "SSC", exam_type_name: "SSC" },
+        { id: 23, name: "Biology", exam_type_id: 1, exam_type_code: "SSC", exam_type_name: "SSC" },
+        { id: 7, name: "Mathematics", exam_type_id: 1, exam_type_code: "SSC", exam_type_name: "SSC" },
+        { id: 11, name: "Physics", exam_type_id: 1, exam_type_code: "SSC", exam_type_name: "SSC" },
+      ],
+    })
+  )
+
+  await page.goto("/subjects")
+
+  await expect(page.getByRole("heading", { level: 3 })).toHaveText([
+    "Chemistry",
+    "Biology",
+    "Mathematics",
+    "Physics",
+  ])
+  await expect(page.getByText("Choose chapters and start focused MCQ practice.")).toBeVisible()
+  expect(await page.getByRole("link", { name: "Start Practice" }).evaluateAll((links) =>
+    links.map((link) => link.getAttribute("href"))
+  )).toEqual([
+    "/subjects/19",
+    "/subjects/23",
+    "/subjects/7",
+    "/subjects/11",
+  ])
 })
 
 test("auth and recovery pages expose a keyboard skip path and reachable controls", async ({ page }) => {

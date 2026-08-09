@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   betaSubjects,
   findCatalogSubjectForBetaKey,
+  getCatalogSubjectPresentation,
   getBetaSubjectKey,
   type BetaSubjectKey,
 } from "@/lib/beta-subjects"
@@ -138,7 +139,7 @@ export function SubjectsContent({ selectedSubjectValue = null }: { selectedSubje
 
 function SubjectGrid({ catalogSubjects }: { catalogSubjects?: Subject[] }) {
   const visibleSubjects = catalogSubjects
-    ? betaSubjects.filter((subject) => findCatalogSubjectForBetaKey(catalogSubjects, subject.key))
+    ? catalogSubjects.map(getCatalogSubjectPresentation)
     : betaSubjects
 
   return (

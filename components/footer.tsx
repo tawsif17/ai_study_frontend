@@ -32,7 +32,7 @@ export function Footer() {
               <BrandLogo className="h-9" />
             </Link>
             <p className="max-w-sm text-sm leading-6 text-muted-foreground">
-              Focused SSC exam practice for General Math, Physics, and Chemistry.
+              Focused SSC exam practice for Mathematics, Physics, and Chemistry.
             </p>
           </div>
 

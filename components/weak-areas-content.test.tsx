@@ -58,7 +58,6 @@ describe("WeakAreasContent", () => {
     expect(screen.getByText("42%")).toBeInTheDocument()
     expect(screen.getByText("+6 points vs last week")).toBeInTheDocument()
     expect(screen.getAllByText("Higher Math")).toHaveLength(2)
-    expect(screen.queryByText("General Math")).not.toBeInTheDocument()
     expect(screen.getAllByText("Biology")).toHaveLength(2)
     expect(screen.queryByText(/^(CQ|Mixed)$/)).not.toBeInTheDocument()
     expect(screen.queryByText("Refund Policy")).not.toBeInTheDocument()

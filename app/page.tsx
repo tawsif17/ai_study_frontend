@@ -19,22 +19,50 @@ import { PageShell } from "@/components/page-shell"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://shikkhabuddy.com"
+const canonicalHomeUrl = new URL("/", siteUrl).toString()
+const organizationId = `${canonicalHomeUrl}#organization`
+const websiteId = `${canonicalHomeUrl}#website`
+const homepageDescription =
+  "Shikkha Buddy is a Bangladesh-focused SSC practice platform for Mathematics, Physics, and Chemistry MCQs, answer review, and focused revision."
+
 export const metadata: Metadata = {
-  title: "SSC MCQ Practice | Shikkha Buddy",
-  alternates: { canonical: "/" },
-  description:
-    "Practice AI-generated SSC MCQs for General Math, Physics, and Chemistry, then review correct answers after each submitted session.",
+  title: "Shikkha Buddy | SSC MCQ Practice for Bangladesh",
+  alternates: { canonical: canonicalHomeUrl },
+  description: homepageDescription,
   openGraph: {
-    title: "SSC MCQ Practice | Shikkha Buddy",
-    description:
-      "Practice AI-generated SSC MCQs for General Math, Physics, and Chemistry, then review correct answers after each submitted session.",
+    title: "Shikkha Buddy | SSC MCQ Practice for Bangladesh",
+    description: homepageDescription,
   },
   twitter: {
     card: "summary",
-    title: "SSC MCQ Practice | Shikkha Buddy",
-    description:
-      "Practice AI-generated SSC MCQs for General Math, Physics, and Chemistry, then review correct answers after each submitted session.",
+    title: "Shikkha Buddy | SSC MCQ Practice for Bangladesh",
+    description: homepageDescription,
   },
+}
+
+export const homepageStructuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": websiteId,
+      url: canonicalHomeUrl,
+      name: "Shikkha Buddy",
+      alternateName: "Shikkha Buddy Bangladesh",
+      inLanguage: "en-BD",
+      publisher: { "@id": organizationId },
+    },
+    {
+      "@type": "Organization",
+      "@id": organizationId,
+      url: canonicalHomeUrl,
+      name: "Shikkha Buddy",
+      description: homepageDescription,
+      logo: new URL("/shikkha-buddy-monogram.png", canonicalHomeUrl).toString(),
+      email: "shikkhabuddy@gmail.com",
+    },
+  ],
 }
 
 const freePracticeBenefits = ["AI-generated MCQs", "Topic-wise practice", "Correct answers after you submit"]
@@ -48,7 +76,7 @@ const subjects: Array<{
 }> = [
   {
     key: "general-math",
-    title: "General Math",
+    title: "Mathematics",
     description: "Algebra, Geometry, Arithmetic, Mensuration",
     icon: Calculator,
     tone: "from-[#7c6df2] to-[#5266d8]",
@@ -93,14 +121,20 @@ const steps: Array<{
 
 export default function HomePage() {
   return (
-    <PageShell>
-      <HeroSection />
-      <FeaturesSection />
-      <StartPracticingSection />
-      <SubjectsSection />
-      <HowItWorksSection />
-      <FinalCtaSection />
-    </PageShell>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageStructuredData).replaceAll("<", "\\u003c") }}
+      />
+      <PageShell>
+        <HeroSection />
+        <FeaturesSection />
+        <StartPracticingSection />
+        <SubjectsSection />
+        <HowItWorksSection />
+        <FinalCtaSection />
+      </PageShell>
+    </>
   )
 }
 

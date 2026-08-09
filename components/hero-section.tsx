@@ -19,7 +19,7 @@ export function HeroSection() {
             SSC MCQ practice available now
           </div>
           <h1 className="text-4xl font-bold leading-tight tracking-tight text-foreground text-balance sm:text-5xl lg:text-6xl">
-            Practice smarter for SSC exams
+            Practice smarter for SSC exams with Shikkha Buddy
           </h1>
           <p className="mt-6 max-w-xl text-base leading-8 text-muted-foreground sm:text-lg lg:mx-0">
             Answer focused SSC exam MCQs, review mistakes, and keep your next revision step clear.

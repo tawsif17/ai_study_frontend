@@ -17,10 +17,10 @@ export const metadata: Metadata = {
   },
 }
 
-const sections = [
+export const aboutSections = [
   {
     title: "What Shikkha Buddy is",
-    body: "Shikkha Buddy is a focused practice platform for Bangladesh SSC science students. Students can choose a subject, practise AI-generated MCQs, and review correct answers after submitting a session. Beta Pro adds deeper revision features.",
+    body: "Shikkha Buddy is a Bangladesh-focused SSC MCQ practice platform for Mathematics, Physics, and Chemistry. Students choose a subject and chapters, answer AI-generated questions shaped by exam-style patterns, and review correct answers after submitting. Beta Pro adds explanations, Bookmarks and Mistakes revision, Weak Area Analysis, and Board-only MCQ sets.",
   },
   {
     title: "Who it is for",
@@ -32,7 +32,7 @@ const sections = [
   },
   {
     title: "Current focus",
-    body: "The current frontend is focused on SSC science practice. The public product surface currently highlights General Math, Physics, and Chemistry.",
+    body: "The current frontend is focused on SSC science practice. The public product surface currently highlights Mathematics, Physics, and Chemistry.",
   },
   {
     title: "Still improving",
@@ -46,7 +46,7 @@ export default function AboutPage() {
       eyebrow="Company"
       title="About Shikkha Buddy"
       description="A simple overview of the product, current focus, and who it is built for."
-      sections={sections}
+      sections={aboutSections}
     />
   )
 }
