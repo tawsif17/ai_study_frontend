@@ -26,6 +26,7 @@ type SignupField =
   | "name"
   | "email"
   | "password"
+  | "confirmPassword"
   | "school"
   | "city"
   | "class"
@@ -55,6 +56,7 @@ export function SignupContent() {
     name: string
     email: string
     password: string
+    confirmPassword: string
     school: string
     city: DistrictName | ""
     class: string
@@ -64,6 +66,7 @@ export function SignupContent() {
     name: "",
     email: "",
     password: "",
+    confirmPassword: "",
     school: "",
     city: "",
     class: "",
@@ -80,6 +83,11 @@ export function SignupContent() {
     if (!isValidVerificationEmail(normalizedEmail)) nextFieldErrors.email = "Enter a valid email address."
     if (formData.password.length < 8 || !/[A-Z]/.test(formData.password) || !/[a-z]/.test(formData.password) || !/[0-9]/.test(formData.password)) {
       nextFieldErrors.password = "Use at least 8 characters with uppercase, lowercase, and a number."
+    }
+    if (!formData.confirmPassword) {
+      nextFieldErrors.confirmPassword = "Confirm your password."
+    } else if (formData.password !== formData.confirmPassword) {
+      nextFieldErrors.confirmPassword = "Passwords do not match."
     }
     if (!formData.school.trim()) nextFieldErrors.school = "Enter your school name."
     if (!selectedDistrict || !districts?.includes(selectedDistrict)) {
@@ -112,14 +120,14 @@ export function SignupContent() {
       })
       if (response.status === 202) {
         setSuccess(response.data.message)
-        setFormData((current) => ({ ...current, password: "" }))
+        setFormData((current) => ({ ...current, password: "", confirmPassword: "" }))
         return
       }
       if (response.status !== 201) {
         throw new Error("We couldn't confirm that your account was created. Please try again.")
       }
       setRegistrationComplete(true)
-      setFormData((current) => ({ ...current, password: "" }))
+      setFormData((current) => ({ ...current, password: "", confirmPassword: "" }))
     } catch (err) {
       if (
         err instanceof ApiClientError &&
@@ -260,7 +268,11 @@ export function SignupContent() {
                   value={formData.password}
                   onChange={(e) => {
                     setFormData({ ...formData, password: e.target.value })
-                    setFieldErrors((current) => ({ ...current, password: undefined }))
+                    setFieldErrors((current) => ({
+                      ...current,
+                      password: undefined,
+                      confirmPassword: undefined,
+                    }))
                   }}
                   aria-invalid={Boolean(fieldErrors.password)}
                   aria-describedby={fieldErrors.password ? "signup-password-requirements signup-password-error" : "signup-password-requirements"}
@@ -271,6 +283,31 @@ export function SignupContent() {
                   Use at least 8 characters, including uppercase, lowercase, and a number.
                 </p>
                 {fieldErrors.password && <p id="signup-password-error" className="text-sm text-destructive">{fieldErrors.password}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm Password</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  name="confirm-password"
+                  autoComplete="new-password"
+                  placeholder="Confirm your password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => {
+                    setFormData({ ...formData, confirmPassword: e.target.value })
+                    setFieldErrors((current) => ({ ...current, confirmPassword: undefined }))
+                  }}
+                  aria-invalid={Boolean(fieldErrors.confirmPassword)}
+                  aria-describedby={fieldErrors.confirmPassword ? "signup-confirm-password-error" : undefined}
+                  required
+                  disabled={isLoading}
+                />
+                {fieldErrors.confirmPassword && (
+                  <p id="signup-confirm-password-error" className="text-sm text-destructive">
+                    {fieldErrors.confirmPassword}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">

@@ -99,6 +99,7 @@ function fillValidSignupForm() {
   fireEvent.change(screen.getByLabelText("Full Name"), { target: { value: "Student Name" } })
   fireEvent.change(screen.getByLabelText("Email"), { target: { value: "student@example.com" } })
   fireEvent.change(screen.getByLabelText("Password"), { target: { value: "Password123" } })
+  fireEvent.change(screen.getByLabelText("Confirm Password"), { target: { value: "Password123" } })
   fireEvent.change(screen.getByLabelText("School Name"), {
     target: { value: "Example High School" },
   })
@@ -188,6 +189,7 @@ describe("signup page", () => {
       screen.getByText(/We’ve reached our current 200-user capacity/)
     ).toBeInTheDocument()
     expect(screen.getByLabelText("Password")).toHaveValue("")
+    expect(screen.getByLabelText("Confirm Password")).toHaveValue("")
     expect(mockPush).not.toHaveBeenCalled()
   })
 
@@ -223,6 +225,7 @@ describe("signup page", () => {
     expect(screen.getByLabelText("Full Name")).toBeDisabled()
     expect(screen.getByLabelText("Email")).toBeDisabled()
     expect(screen.getByLabelText("Password")).toBeDisabled()
+    expect(screen.getByLabelText("Confirm Password")).toBeDisabled()
     expect(screen.getByLabelText("School Name")).toBeDisabled()
     expect(screen.getByLabelText("District")).toBeDisabled()
     expect(screen.getByLabelText("Class")).toBeDisabled()
@@ -283,9 +286,25 @@ describe("signup page", () => {
 
     expect(screen.getByLabelText("Email")).toHaveAttribute("aria-invalid", "true")
     expect(screen.getByLabelText("Password")).toHaveAttribute("aria-invalid", "true")
+    expect(screen.getByLabelText("Confirm Password")).toHaveAttribute("aria-invalid", "true")
+    expect(screen.getByText("Confirm your password.")).toBeInTheDocument()
     expect(screen.getByText("Select your class.")).toBeInTheDocument()
     expect(screen.getByText("Select your academic group.")).toBeInTheDocument()
     expect(screen.getByText("Select your curriculum version.")).toBeInTheDocument()
+    expect(mockRegister).not.toHaveBeenCalled()
+  })
+
+  it("blocks registration when password confirmation does not match", () => {
+    render(<SignupPage />)
+    fillValidSignupForm()
+    fireEvent.change(screen.getByLabelText("Confirm Password"), {
+      target: { value: "DifferentPassword123" },
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: "Create Account" }))
+
+    expect(screen.getByText("Passwords do not match.")).toBeInTheDocument()
+    expect(screen.getByLabelText("Confirm Password")).toHaveAttribute("aria-invalid", "true")
     expect(mockRegister).not.toHaveBeenCalled()
   })
 
